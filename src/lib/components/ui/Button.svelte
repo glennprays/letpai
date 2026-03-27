@@ -28,21 +28,23 @@
   }: Props = $props();
 
   const variants = {
-    primary: 'bg-[#FF6B6B] hover:bg-[#EE5A5A] text-white border border-transparent',
-    secondary: 'bg-transparent border-2 border-[#FF6B6B] text-[#FF6B6B] hover:bg-[#FF6B6B] hover:text-white',
-    ghost: 'bg-transparent text-gray-600 hover:text-gray-900',
+    primary:
+      'bg-[#FF6B6B] hover:bg-[#FF5252] text-white border border-transparent shadow-[0_4px_14px_rgba(255,107,107,0.35)] hover:shadow-[0_6px_20px_rgba(255,107,107,0.4)] hover:-translate-y-px',
+    secondary:
+      'bg-white border-2 border-[#FF6B6B] text-[#FF6B6B] hover:bg-[#FF6B6B] hover:text-white',
+    ghost: 'bg-transparent text-gray-500 hover:text-gray-900',
   };
 
   const sizes = {
-    sm: 'h-9 px-3 text-sm',
-    default: 'h-10 px-6',
-    lg: 'h-12 px-8 text-lg',
+    sm: 'h-8 px-3 text-sm',
+    default: 'h-10 px-6 text-[15px]',
+    lg: 'h-12 px-8 text-base',
   };
 
   const baseClasses = $derived(
     cn(
-      'inline-flex items-center justify-center rounded-sm font-medium transition-all duration-150',
-      'focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:ring-offset-2',
+      'inline-flex items-center justify-center rounded-full font-bold transition-all duration-150',
+      'focus:outline-none',
       disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer',
       loading && 'cursor-wait',
       variants[variant],

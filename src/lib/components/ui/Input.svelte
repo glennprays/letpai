@@ -36,15 +36,16 @@
   }: Props = $props();
 
   const sizes = {
-    sm: 'h-9 px-3 text-sm',
-    default: 'h-10 px-4',
-    lg: 'h-12 py-3 px-5 text-lg',
+    sm: 'h-8 px-3 text-sm',
+    default: 'h-10 px-4 text-base',
+    lg: 'h-12 px-5 text-lg',
   };
 
   const baseClasses = cn(
-    'w-full border-2 rounded-sm font-medium transition-colors duration-150',
+    'w-full border-[1.5px] rounded-[12px] font-medium transition-colors duration-150',
     'focus:outline-none focus:border-[#FF6B6B]',
     'placeholder:text-gray-400',
+    'font-sans',
     disabled && 'opacity-50 cursor-not-allowed',
     error ? 'border-red-500' : 'border-gray-300',
     sizes[size],
