@@ -1,8 +1,8 @@
-import { writable } from 'svelte/store';
+import { writable, derived } from 'svelte/store';
 
-type ToastVariant = 'success' | 'error' | 'warning';
+export type ToastVariant = 'success' | 'error' | 'warning';
 
-interface Toast {
+export interface Toast {
   id: string;
   message: string;
   variant: ToastVariant;
