@@ -1,0 +1,60 @@
+@theme "default" {
+  --font-family-sans: "Space Grotesk", system-ui, sans-serif;
+  
+  /* Primary - Coral Red (action-oriented) */
+  --color-primary: #FF6B6B;
+  --color-primary-hover: #EE5A5A;
+  --color-primary-contrast: #CC4444;
+  
+  /* Secondary - Teal Blue (secondary actions) */
+  --color-secondary: #14B8A6;
+  --color-secondary-hover: #10A392;
+  
+  /* Accents */
+  --color-accent-purple: #8B5CF6;
+  --color-accent-yellow: #F59E0B;
+  
+  /* Status Colors (high contrast) */
+  --color-status-pending: #F59E0B;
+  --color-status-submitted: #3B82F6;
+  --color-status-paid: #10B981;
+  --color-status-rejected: #EF4444;
+  
+  /* Neutral (high contrast) */
+  --color-neutral-white: #FFFFFF;
+  --color-neutral-black: #000000;
+  --color-neutral-50: #F8FAFC;
+  --color-neutral-100: #F1F5F9;
+  --color-neutral-200: #E2E8F0;
+  --color-neutral-300: #CBD5E1;
+  --color-neutral-400: #94A3B8;
+  --color-neutral-500: #64748B;
+  --color-neutral-600: #475569;
+  --color-neutral-700: #334155;
+  --color-neutral-800: #1E293B;
+  --color-neutral-900: #0F172A;
+  
+  /* Spacing (8px base) */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+  --spacing-3xl: 64px;
+  
+  /* Border Radius (Brutalist) */
+  --radius-none: 0;
+  --radius-sm: 4px;
+  --radius-default: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+  
+  /* Shadows (Strategic) */
+  --shadow-none: none;
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-default: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  --shadow-bold: 4px 4px 0 0 rgba(0, 0, 0, 1);
+}

@@ -3,9 +3,8 @@
 @import "@fontsource/space-grotesk/600.css";
 @import "@fontsource/space-grotesk/700.css";
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@tailwindcss/postcss;
+@theme "./theme.css";
 
 :root {
   font-family: "Space Grotesk", system-ui, sans-serif;
