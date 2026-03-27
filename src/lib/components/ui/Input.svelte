@@ -101,7 +101,7 @@
     if (onblur) onblur();
   }
 
-  $: hasValue = value && value.length > 0;
+  const hasValue = $derived(value && value.length > 0);
 </script>
 
 <div class="input-wrapper">
