@@ -39,14 +39,16 @@
     lg: 'h-12 px-8 text-lg',
   };
 
-  const baseClasses = cn(
-    'inline-flex items-center justify-center rounded-sm font-medium transition-all duration-150',
-    'focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:ring-offset-2',
-    disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer',
-    loading && 'cursor-wait',
-    variants[variant],
-    sizes[size],
-    className
+  const baseClasses = $derived(
+    cn(
+      'inline-flex items-center justify-center rounded-sm font-medium transition-all duration-150',
+      'focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:ring-offset-2',
+      disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer',
+      loading && 'cursor-wait',
+      variants[variant],
+      sizes[size],
+      className
+    )
   );
 
   function handleClick(e: MouseEvent) {
