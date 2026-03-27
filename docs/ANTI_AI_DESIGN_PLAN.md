@@ -8,46 +8,46 @@
 
 ## Executive Summary
 
-This document outlines the **anti-AI slop** design philosophy and implementation plan for Letpai - a bill splitting app targeting youth (18-30) in Indonesia. The goal is to create a distinctive, memorable, and vibrant UI that rejects generic AI-generated aesthetics.
+This document outlines the **modern, polished design** philosophy and implementation plan for Letpai - a bill splitting app targeting youth (18-30) in Indonesia. The goal is to create a clean, approachable, and vibrant UI that feels contemporary and user-friendly.
 
 ---
 
 ## Design Vision
 
-### Anti-AI Slop Philosophy
+### Modern, Polished Design Philosophy
 
 **What We're AVOIDING:**
 - ❌ Generic gradients (purple-to-pink, teal-to-blue fades)
-- ❌ Soft drop shadows everywhere (only strategic use)
-- ❌ Rounded corners on everything (use angular edges strategically)
+- ❌ Excessive drop shadows everywhere
+- ❌ Ultra-sharp brutalist edges on everything
 - ❌ Corporate blue/green palettes (trust but boring)
 - ❌ Skeleton loaders (use real content placeholders)
 - ❌ AI-generated illustrations (use bold icons/typography instead)
-- ❌ Subtle animations (use intentional, snappy transitions)
-- ❌ Perfect symmetry (break the grid intentionally)
+- ❌ Overly subtle animations (make them purposeful)
+- ❌ Cluttered, busy layouts
 
 **What We're EMBRACING:**
-- ✅ **High contrast** - black/white with vibrant coral accents
-- ✅ **Bold typography** - Space Grotesk at large sizes for impact
-- ✅ **Angular edges** - sharp corners on cards, buttons (minimal border-radius: 4-8px)
-- ✅ **Geometric shapes** - circles, squares, triangles as design elements
-- ✅ **Strategic whitespace** - let elements breathe
-- ✅ **Intentional asymmetry** - break the grid for visual interest
-- ✅ **Punchy micro-interactions** - subtle but satisfying feedback
+- ✅ **Clean, high contrast** - white backgrounds with vibrant coral accents
+- ✅ **Modern typography** - Plus Jakarta Sans for a friendly, professional feel
+- ✅ **Rounded, approachable design** - soft corners (14-24px) for cards, pill-shaped buttons (100px)
+- ✅ **Subtle depth** - soft colored shadows with lift effects on hover
+- ✅ **Strategic whitespace** - let elements breathe with generous padding
+- ✅ **Modern grid layouts** - bento-style grids with balanced proportions
+- ✅ **Purposeful micro-interactions** - smooth lift and color transitions (150-200ms)
 - ✅ **Real content** - actual text placeholders, not gray boxes
 
 ### Design Decisions (User-Confirmed)
 
 | Aspect | Decision | Rationale |
 |--------|----------|-----------|
-| **Style** | Brutalist + Vibrant | Bold, high contrast, angular edges. Rejects generic 'startup' aesthetic. Think Spotify Wrapped energy. |
-| **Primary Color** | Coral Red (#FF6B6B) | Bold, attention-grabbing. Good for CTAs like 'Send Notifications', 'Approve Payment'. Feels urgent and action-oriented. |
-| **Typography** | Space Grotesk (everything) | Modern, geometric, balanced. Good for both headings and body. Creates nice hierarchy without being boring. |
-| **Components** | shadcn-svelte (customized) | Accessible primitives, customize with brutalist touches. Faster than building from scratch. |
-| **Icons** | Lucide | Modern, consistent, good variety. Clean line icons fit brutalist aesthetic. |
-| **Animations** | Subtle/minimal | Snappy, not distracting. Fast transitions (150-200ms). |
+| **Style** | Modern + Polished | Clean, approachable, rounded design with soft shadows. Contemporary feel that's user-friendly and trustworthy. |
+| **Primary Color** | Coral Red (#FF6B6B) | Bold, attention-grabbing. Good for CTAs like 'Send Notifications', 'Approve Payment'. Warm and inviting yet action-oriented. |
+| **Typography** | Plus Jakarta Sans (everything) | Modern, friendly, professional. Excellent readability with good character. Perfect for headings and body text. |
+| **Components** | shadcn-svelte (customized) | Accessible primitives, customize with modern rounded touches. Faster than building from scratch. |
+| **Icons** | Lucide | Modern, consistent, good variety. Clean line icons fit the polished aesthetic. |
+| **Animations** | Purposeful/smooth | Lift effects, color transitions, subtle scaling. Fast transitions (150-200ms). |
 | **Navigation** | Bottom nav only (mobile) | Mobile-first approach. No sidebar complexity. |
-| **Landing Page** | Minimal | Just "Get Started" CTA. Redirect to login if not authenticated. |
+| **Landing Page** | Comprehensive | Hero section, features grid, how it works, CTA banner, footer. Full landing experience. |
 | **Phase 1 Priority** | All-in | Design system + Auth + Dashboard + Create Session (complete flow). |
 
 ---
@@ -60,10 +60,10 @@ This document outlines the **anti-AI slop** design philosophy and implementation
 - **Styling:** Tailwind CSS v4 (utility-first)
 - **Components:** shadcn-svelte (accessible component primitives)
 - **Icons:** lucide-svelte
-- **State Management:** 
+- **State Management:**
   - TanStack Query (server state)
   - Svelte stores (global client state)
-- **Typography:** Space Grotesk (Google Fonts via @fontsource)
+- **Typography:** Plus Jakarta Sans (Google Fonts)
 
 ### Project Structure
 
@@ -114,7 +114,7 @@ letpai/
 │   │   └── app.css
 │   └── app.html
 ├── static/
-│   └── fonts/                    # Space Grotesk (optional local)
+  │   └── fonts/                    # Plus Jakarta Sans (optional local)
 ├── tailwind.config.js            # Tailwind configuration
 └── package.json
 ```
@@ -129,25 +129,32 @@ letpai/
 // src/lib/constants/design.ts
 
 export const colors = {
-  // Primary - Coral Red (action-oriented)
+  // Primary - Coral Red (action-oriented, warm and inviting)
   primary: {
     DEFAULT: '#FF6B6B',
-    hover: '#EE5A5A',
-    contrast: '#CC4444',
+    hover: '#FF5252',  // Slightly darker for hover
+    shadow: 'rgba(255, 107, 107, 0.35)',  // For colored shadows
   },
-  
-  // Secondary - Teal Blue (secondary actions)
+
+  // Secondary - Teal Blue (secondary actions, complementary)
   secondary: {
     DEFAULT: '#14B8A6',
     hover: '#10A392',
+    shadow: 'rgba(20, 184, 166, 0.1)',
   },
-  
+
+  // WhatsApp Special
+  whatsapp: {
+    DEFAULT: '#25D366',
+    hover: '#1EBE59',
+  },
+
   // Accents
   accent: {
     purple: '#8B5CF6',
     yellow: '#F59E0B',
   },
-  
+
   // Status Colors (high contrast)
   status: {
     pending: '#F59E0B',      // Yellow - attention
@@ -155,51 +162,81 @@ export const colors = {
     paid: '#10B981',         // Green - success
     rejected: '#EF4444',     // Red - needs action
   },
-  
-  // Neutral (high contrast)
-  neutral: {
+
+  // Text Colors (from landing page)
+  text: {
+    primary: '#111827',       // Near black - headings
+    secondary: '#6B7280',     // Medium gray - body
+    tertiary: '#9CA3AF',      // Light gray - labels, secondary
+    muted: '#334155',         // Dark gray - footer
+  },
+
+  // Background Colors
+  background: {
     white: '#FFFFFF',
-    black: '#000000',
-    gray: {
-      50: '#F8FAFC',
-      100: '#F1F5F9',
-      200: '#E2E8F0',
-      300: '#CBD5E1',
-      400: '#94A3B8',
-      500: '#64748B',
-      600: '#475569',
-      700: '#334155',
-      800: '#1E293B',
-      900: '#0F172A',
-    }
+    light: '#FAFAFA',        // Very light gray for sections
+    dark: '#0F172A',         // Dark blue/black for footer
+    black: '#111827',        // For CTA banner
+  },
+
+  // Border Colors
+  border: {
+    light: '#F0F0F0',        // Light gray for card borders
+    default: '#E5E7EB',
+    dark: '#1E293B',         // For footer separator
+  },
+
+  // Neutral (for reference)
+  neutral: {
+    50: '#F8FAFC',
+    100: '#F1F5F9',
+    200: '#E2E8F0',
+    300: '#CBD5E1',
+    400: '#94A3B8',
+    500: '#64748B',
+    600: '#475569',
+    700: '#334155',
+    800: '#1E293B',
+    900: '#0F172A',
   }
 };
 ```
 
 ### Typography
 
-**Font:** Space Grotesk (Google Fonts)
-- Weights: 400 (regular), 500 (medium), 600 (semibold), 700 (bold)
+**Font:** Plus Jakarta Sans (Google Fonts)
+- Weights: 400 (regular), 500 (medium), 600 (semibold), 700 (bold), 800 (extra-bold)
 - Fallbacks: system-ui, sans-serif
+- Import: `https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap`
 
 **Scale:**
 ```css
-/* Display - Large amounts, hero text */
-.display-1: 64px / 1.1    /* Total: Rp 500.000 */
-.display-2: 48px / 1.2    /* Session name */
+/* Display - Hero text */
+.display-hero: clamp(40px, 4.5vw, 62px) / 1.08  /* Main hero heading */
+.display-section: clamp(26px, 3vw, 38px) / 1.2  /* Section titles */
 
 /* Headings */
-.h1: 32px / 1.3         /* Page titles */
-.h2: 24px / 1.4         /* Section titles */
-.h3: 20px / 1.4         /* Card titles */
+.h1: clamp(22px, 2.8vw, 34px) / 1.2            /* Page titles, CTA banner */
+.h2: 20px / 1.4                                 /* Card titles, feature headings */
+.h3: 17px / 1.4                                 /* Small card headings */
 
 /* Body */
-.body: 16px / 1.5       /* Default body text */
-.body-sm: 14px / 1.5    /* Secondary text */
-.caption: 12px / 1.5    /* Labels, badges */
+.body: 17px / 1.7                                /* Hero subtext, body text */
+.body-sm: 15px / 1.65                            /* Feature descriptions */
+.body-xs: 14px / 1.6                             /* Secondary body text */
 
-/* Numbers */
-.mono: 16px / 1.4        /* Amounts, phone numbers (Space Grotesk tabular nums */
+/* Labels & UI */
+.caption: 13px / 1                                /* Small labels, hints */
+.label: 12px / 1                                 /* Badges, footers */
+.label-sm: 11px / 1                              /* Small labels, step numbers */
+
+/* Button Text */
+.btn-lg: 16px / 1                                /* Large buttons */
+.btn-default: 15px / 1                            /* Default buttons */
+.btn-sm: 14px / 1                                /* Small buttons */
+
+/* Nav Text */
+.nav: 14px / 1                                   /* Navigation links */
 ```
 
 ### Spacing System (8px base)
@@ -216,113 +253,170 @@ export const spacing = {
 };
 ```
 
-### Border Radius (Brutalist)
+### Border Radius (Modern, Rounded)
 
 ```typescript
 export const borderRadius = {
-  none: '0',        // Brutalist edges
-  sm: '4px',        // Minimal rounding
-  DEFAULT: '8px',   // Standard
-  lg: '12px',       // Cards (max we'll go)
-  xl: '16px',       // Never use (too soft)
-  full: '9999px',   // Badges only
+  none: '0',           // For special cases (rare)
+  sm: '4px',           // Minimal rounding (rare use)
+  icon: '14px',        // Icon bubbles, small elements
+  DEFAULT: '18px',     // Standard rounded corners
+  card: '20px',        // Cards, feature cards
+  lg: '24px',          // Large sections, containers
+  xl: '28px',          // Extra large containers
+  full: '100px',       // Buttons (pill shape), badges
 };
 ```
 
-**Rule:** Prefer `none` or `sm` for buttons, inputs. Use `default` or `lg` for cards only.
+**Rule:**
+- Buttons: `100px` (pill shape)
+- Cards: `20px` (default)
+- Icon bubbles: `14px`
+- Large sections: `28-32px`
+- Badges: `100px` (pill shape)
 
-### Shadows (Strategic)
+### Shadows (Modern, Soft)
 
 ```typescript
 export const shadows = {
   none: 'none',
-  sm: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
-  DEFAULT: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',  // Subtle depth
-  lg: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-  bold: '4px 4px 0 0 rgba(0, 0, 0, 1)',  // Brutalist offset shadow
+
+  // Button shadows (colored, with lift effect)
+  button: '0 4px 14px rgba(255, 107, 107, 0.35)',           // Primary button
+  buttonHover: '0 6px 20px rgba(255, 107, 107, 0.4)',      // Primary button hover
+  buttonSecondary: '0 4px 14px rgba(20, 184, 166, 0.2)',    // Secondary button
+
+  // Card shadows (subtle, with colored tints)
+  card: 'none',                                           // Default: no shadow, border only
+  cardHover: '0 8px 32px rgba(255, 107, 107, 0.1)',        // Card hover with coral tint
+  cardHoverSecondary: '0 8px 32px rgba(20, 184, 166, 0.1)', // Card hover with teal tint
+
+  // Icon bubbles (colored shadow)
+  iconBubble: '0 4px 12px rgba(255, 107, 107, 0.44)',       // Coral icon bubble
+
+  // Large cards/mockups
+  mockup: '0 20px 60px rgba(0, 0, 0, 0.08)',                // Phone mockup, large cards
 };
 ```
 
-**Rule:** Use `bold` shadow sparingly for emphasis. Default to `none` or `sm`.
+**Rule:**
+- Use colored shadows for buttons and hover states
+- Cards have no default shadow (border only)
+- Hover states get a lift effect with colored shadow
+- Large components get subtle black shadows
 
 ---
 
 ## Component Specifications
 
-### Button (Brutalist)
+### Button (Modern, Pill-Shaped)
 
 **Variants:**
-1. **Primary** - Coral red background, white text, sharp corners (4px radius)
-2. **Secondary** - Transparent, coral red border, coral red text
-3. **Ghost** - Transparent, no border, gray text
+1. **Primary** - Coral red background, white text, pill-shaped (100px radius), colored shadow
+2. **WhatsApp** - Green (#25D366) background, white text, pill-shaped, for WhatsApp actions
+3. **Secondary** - Transparent or white background, coral border, coral text
+4. **Ghost** - Transparent, no border, gray text
 
 **Sizes:**
-- `sm`: 36px height, 12px padding
+- `sm`: 32px height, 10px padding
 - `default`: 40px height, 16px padding
 - `lg`: 48px height, 24px padding
 
 **States:**
-- Hover: Slightly darker shade (10%)
+- Hover: Background darkens slightly (FF6B6B → FF5252), lift effect (translateY(-1px)), shadow increases
 - Active: Scale down slightly (0.98)
 - Disabled: 50% opacity, no pointer events
 - Loading: Spinner icon, disabled state
 
 **Example:**
 ```svelte
-<!-- Primary button -->
-<button class="bg-[#FF6B6B] hover:bg-[#EE5A5A] text-white 
-           rounded-sm px-4 py-2 font-medium 
-           transition-colors duration-150">
-  Send Notifications
+<!-- Primary button (coral, pill-shaped) -->
+<button class="bg-[#FF6B6B] hover:bg-[#FF5252] text-white
+           rounded-full px-7 py-3.5 font-bold
+           shadow-[0_4px_14px_rgba(255,107,107,0.35)]
+           hover:shadow-[0_6px_20px_rgba(255,107,107,0.4)]
+           hover:-translate-y-px
+           transition-all duration-150">
+  Get Started
 </button>
 
-<!-- Secondary button -->
-<button class="border-2 border-[#FF6B6B] text-[#FF6B6B] 
-           hover:bg-[#FF6B6B] hover:text-white
-           rounded-sm px-4 py-2 font-medium 
-           transition-all duration-150">
-  Cancel
+<!-- WhatsApp button (green, pill-shaped) -->
+<button class="bg-[#25D366] hover:bg-[#1EBE59] text-white
+           rounded-full px-4 py-3 font-bold
+           transition-colors duration-150">
+  Notify all via WhatsApp
 </button>
+
+<!-- Ghost button -->
+<a href="/about" class="text-gray-500 font-medium hover:text-gray-900
+              transition-colors duration-150">
+  About
+</a>
 ```
 
 ### Badge (Status)
 
 **Variants:**
-- `pending`: Yellow background (#F59E0B), dark text
-- `submitted`: Blue background (#3B82F6), white text
-- `paid`: Green background (#10B981), white text
-- `rejected`: Red background (#EF4444), white text
+- `pending`: Light yellow background (#FEF2F2), red text (#EF4444), or dark yellow for pending
+- `submitted`: Light green background (#DCFCE7), green text (#16A34A), or light blue
+- `paid`: Light green background (#DCFCE7), green text (#16A34A)
+- `rejected`: Light red background (#FEF2F2), red text (#EF4444)
 
 **Style:**
-- Border radius: `full` (pill shape)
-- Padding: 4px 12px
-- Font: Space Grotesk Medium, 12px
-- Uppercase text
+- Border radius: `full` (pill shape - 100px)
+- Padding: 3px 10px or 5px 12px (depending on context)
+- Font: Plus Jakarta Sans Bold, 11-12px
+- Uppercase text (for labels), sentence case (for status)
+- Background and text colors match (lighter bg, darker text)
 
 **Example:**
 ```svelte
-<span class="inline-flex items-center px-3 py-1 rounded-full 
-            text-xs font-medium uppercase
-            bg-[#10B981] text-white">
+<!-- Status badge (paid) -->
+<span class="px-[5px] py-[3px] rounded-full text-xs font-bold
+            bg-[#DCFCE7] text-[#16A34A]">
   Paid
+</span>
+
+<!-- Status badge (pending) -->
+<span class="px-[5px] py-[3px] rounded-full text-xs font-bold
+            bg-[#FEF2F2] text-[#EF4444]">
+  Pending
+</span>
+
+<!-- Label badge -->
+<span class="px-[5px] py-[3px] rounded-[100px] bg-white border-[1.5px] border-[#F0F0F0]
+            text-xs font-semibold text-gray-500">
+  Automatic messages
 </span>
 ```
 
 ### Card
 
 **Style:**
-- Background: White
-- Border: 2px solid gray-200 (visible border, not shadow)
-- Border radius: 12px (lg - max we'll go)
-- Padding: 24px (lg)
-- Hover: Border color changes to coral red (optional)
+- Background: White or gradient (for featured cards)
+- Border: 1.5px solid #F0F0F0 (visible light border, no default shadow)
+- Border radius: 20px (card) or 18px (small cards)
+- Padding: 28px (default) or 32px (large)
+- Hover: Border color changes to coral red, colored shadow, lift effect
+- Icon bubbles: 48px × 48px, 14px border-radius
 
 **Example:**
 ```svelte
-<div class="bg-white border-2 border-gray-200 rounded-lg p-6 
-           hover:border-[#FF6B6B] transition-colors duration-150">
-  <h3 class="text-lg font-semibold mb-2">Session Name</h3>
-  <p class="text-gray-600">Description...</p>
+<!-- Feature card -->
+<div class="bg-white border-[1.5px] border-[#f0f0f0] rounded-[20px] p-7
+           hover:border-[#ff6b6b] hover:shadow-[0_8px_32px_rgba(255,107,107,0.1)]
+           hover:-translate-y-[2px]
+           transition-all duration-200">
+  <div class="w-12 h-12 rounded-[14px] bg-[#FF6B6B] flex items-center justify-center mb-4">
+    <MessageCircle size={24} color="#fff" />
+  </div>
+  <h3 class="text-base font-bold text-gray-900 mb-2">Feature Title</h3>
+  <p class="text-sm text-gray-500 leading-[1.65]">Description...</p>
+</div>
+
+<!-- Large featured card with gradient -->
+<div class="bg-gradient-to-br from-[#FFF5F5] to-white rounded-[20px] p-8">
+  <!-- Content -->
 </div>
 ```
 
@@ -330,15 +424,16 @@ export const shadows = {
 
 **Style:**
 - Border: 2px solid gray-300
-- Border radius: 4px (sm - minimal)
+- Border radius: 8-12px (sm to default)
 - Padding: 12px 16px
-- Focus: Border coral red, no box-shadow (brutalist)
+- Focus: Border coral red, subtle colored shadow or no shadow (clean look)
 - Error: Border red-500
+- Font: Plus Jakarta Sans Medium
 
 **Example:**
 ```svelte
-<input type="text" 
-       class="w-full border-2 border-gray-300 rounded-sm 
+<input type="text"
+       class="w-full border-2 border-gray-300 rounded-[8px]
               px-4 py-3 font-medium
               focus:border-[#FF6B6B] focus:outline-none
               placeholder:text-gray-400
@@ -349,14 +444,16 @@ export const shadows = {
 ### Toast
 
 **Variants:**
-- `success`: Green background
-- `error`: Red background
-- `warning`: Yellow background
+- `success`: Light green background (#DCFCE7), green text (#16A34A)
+- `error`: Light red background (#FEF2F2), red text (#EF4444)
+- `warning`: Light yellow background (#FEF3C7), yellow text (#D97706)
 
 **Style:**
 - Position: Top center
-- Border radius: 4px (sm)
-- Animation: Slide down (150ms)
+- Border radius: 12px (lg)
+- Padding: 16px
+- Shadow: Subtle shadow
+- Animation: Slide down (200ms)
 - Auto-dismiss: 3 seconds
 
 ---
@@ -368,16 +465,17 @@ export const shadows = {
 **Bottom Nav (5 items):**
 1. **Home** - Dashboard icon
 2. **Sessions** - List icon
-3. **New** - Plus icon (coral red, larger)
+3. **New** - Plus icon (coral red, larger, pill-shaped or rounded)
 4. **Contacts** - Users icon
 5. **Profile** - User icon
 
 **Style:**
 - Height: 64px
 - Background: White
-- Border top: 2px solid gray-200
+- Border top: 1.5px solid #F0F0F0 (light gray)
 - Active: Coral red icon + label
 - Inactive: Gray icon + label
+- FAB (New button): Pill-shaped or rounded, coral red, elevated
 
 ### Dashboard
 
@@ -407,76 +505,105 @@ export const shadows = {
 
 **Layout:**
 ```
-┌─────────────────────┐
-│  Logo               │
-├─────────────────────┤
-│  Hero Section       │
-│  - Headline         │
-│  - Subtext          │
-│  - CTA Button       │
-├─────────────────────┤
-│  Features Grid      │
-│  ┌───────┬───────┐  │
-│  │ Icon  │ Icon  │  │
-│  │ Text  │ Text  │  │
-│  └───────┴───────┘  │
-│  ┌───────┬───────┐  │
-│  │ Icon  │ Icon  │  │
-│  │ Text  │ Text  │  │
-│  └───────┴───────┘  │
-└─────────────────────┘
+┌─────────────────────────────────┐
+│  Sticky Header (Logo + Nav)    │
+├─────────────────────────────────┤
+│  Hero Section                  │
+│  - Animated headline           │
+│  - Phone mockup card           │
+│  - CTA button (pill)           │
+├─────────────────────────────────┤
+│  Why Letpai Section            │
+│  - Section title               │
+│  - Bento grid (WhatsApp + 4)  │
+├─────────────────────────────────┤
+│  How It Works Section          │
+│  - Section title               │
+│  - 3 step cards (connected)   │
+├─────────────────────────────────┤
+│  CTA Banner                    │
+│  - Dark background             │
+│  - CTA button (pill)           │
+├─────────────────────────────────┤
+│  Footer                        │
+│  - Brand + links               │
+│  - Gradient top accent         │
+└─────────────────────────────────┘
 ```
 
 **Hero Section:**
-- Headline: "Split bills effortlessly with friends" (h1, bold)
-- Subtext: "WhatsApp notifications included. No app needed for participants."
-- CTA Button: "Get Started" (primary, coral red, brutalist style)
+- Headline: "Split bills effortlessly with friends" (animated word-by-word, gradient text on last word)
+- Subtext: "WhatsApp notifications included. No app needed for participants — just a link and they're done."
+- CTA Button: "Get Started" (primary, coral red, pill-shaped, with shadow)
+- Phone mockup: Interactive card showing session details with participants and WhatsApp button
 - Redirects: Authenticated → /dashboard, Not auth → /login
 
-**Features Grid (2x2):**
-- Feature 1: Icon (Smartphone) + "Create sessions in seconds"
-- Feature 2: Icon (MessageCircle) + "Automatic WhatsApp notifications"
-- Feature 3: Icon (Camera) + "Track payments with proof upload"
-- Feature 4: Icon (CheckCircle) + "Works for everyone (no app needed)"
+**Why Letpai Section (Bento Grid):**
+- Large card: WhatsApp Integration (coral icon bubble, feature description, tags)
+- Small cards: Create in Seconds, Proof Upload, No App Needed, Real-time Dashboard
+- Background: Light gray (#FAFAFA), rounded corners
+
+**How It Works Section:**
+- 3 step cards: Create Session → Send via WhatsApp → Track Payments
+- Connected with gradient line
+- Icon bubbles: Coral (step 1), Teal (steps 2-3)
+- Step numbers: Small, uppercase, gray
+
+**CTA Banner:**
+- Dark background (#111827)
+- Decorative circles (coral and teal tints)
+- Text: "Ready to split your first bill?"
+- CTA: "Get Started Free" (coral, pill-shaped, lift effect)
+
+**Footer:**
+- Dark blue background (#0F172A)
+- Gradient top accent line (coral to teal)
+- 4 columns: Brand, Product, Company, Legal
+- Clean, organized layout
 
 **Style:**
-- Background: White or light gray (#F8FAFC)
-- Typography: Space Grotesk (bold for headline, regular for body)
-- Icons: Lucide line icons (24px, coral red accent)
-- Buttons: Coral red primary, brutalist style (sharp corners, bold)
+- Background: White (#FFFFFF) or light gray (#FAFAFA) for sections
+- Typography: Plus Jakarta Sans (800 for headings, 500-700 for body)
+- Icons: Lucide line icons (20-26px, coral red or teal accent)
+- Buttons: Coral red primary, pill-shaped (100px), colored shadows, lift effect
+- Cards: White background, 1.5px light border, 20px rounded corners
+- Hover: Border color change, colored shadow, lift effect
 - Responsive: Mobile-first (stack on mobile, grid on tablet/desktop)
+- Max width: 1200px for content
 
 ### Session Card
 
 **Content:**
-- Session name (h3)
-- Total amount (display-2, bold, coral red)
-- Progress bar (green fill)
-- Status badge (top right)
-- Participant avatars (bottom)
-- "2/4 paid" text
+- Session name (h3 or h2, bold, gray-900)
+- Total amount (display style, bold, coral red or gray-900)
+- Progress bar (coral or green fill, rounded)
+- Status badge (top right, pill-shaped)
+- Participant avatars (circular, overlapping)
+- Payment status (e.g., "2/4 paid")
 
 **Style:**
-- Border: 2px solid gray-200
-- Border radius: 12px
-- Padding: 20px
-- Hover: Border coral red
+- Background: White
+- Border: 1.5px solid #F0F0F0 (light gray)
+- Border radius: 20px
+- Padding: 24px
+- Hover: Border color changes to coral red, colored shadow, lift effect
+- Shadow: None by default, appears on hover
 
 ---
 
 ## Animation Guidelines
 
 ### Principles
-- **Fast**: 150-200ms (snappy, not sluggish)
+- **Fast**: 150-200ms (smooth, not sluggish)
 - **Intentional**: Every animation serves a purpose
-- **Minimal**: Don't animate everything
+- **Subtle**: Enhance UX without being distracting
 
 ### Transitions
 ```css
 /* Default transition */
 transition-all duration-150
 
-/* Slower for modals */
+/* Slower for modals/cards */
 transition-all duration-200
 
 /* Fastest for hover states */
@@ -484,10 +611,11 @@ transition-colors duration-100
 ```
 
 ### Micro-interactions
-- **Button hover**: Background color shift (10% darker)
+- **Button hover**: Background darkens (#FF6B6B → #FF5252), lift up (-2px), shadow increases
 - **Button active**: Scale down (0.98)
-- **Card hover**: Border color change
-- **Input focus**: Border color change
+- **Card hover**: Border color to coral, colored shadow appears, lift up (-2px)
+- **Input focus**: Border color to coral
+- **Hero words**: Animate in (slide up + fade in, staggered delay)
 - **Toast enter**: Slide down from top
 - **Modal open**: Fade in + scale (0.95 → 1)
 
@@ -501,33 +629,36 @@ transition-colors duration-100
 
 **Tasks:**
 1. **Setup & Configuration**
-   - [ ] Install dependencies: shadcn-svelte, lucide-svelte, @fontsource/space-grotesk
-   - [ ] Configure Tailwind with Space Grotesk + design tokens
-   - [ ] Create design.ts constants file
-   - [ ] Setup app.css with Tailwind directives
+    - [ ] Install dependencies: shadcn-svelte, lucide-svelte
+    - [ ] Configure Tailwind with Plus Jakarta Sans + design tokens
+    - [ ] Create design.ts constants file
+    - [ ] Setup app.css with Tailwind v4 directives
 
 2. **Base Components** (Customize shadcn-svelte)
-   - [ ] Button (brutalist style: sharp corners, bold borders)
-   - [ ] Input (minimal border-radius, visible borders)
-   - [ ] Badge (pill-shaped status indicators)
-   - [ ] Card (bordered, not shadowed)
-   - [ ] Toast (top-center, snappy)
-   - [ ] Avatar (circular, geometric)
-   - [ ] Progress bar (geometric, bold colors)
+    - [ ] Button (pill-shaped, colored shadows, lift effect)
+    - [ ] Input (rounded, visible borders, clean focus)
+    - [ ] Badge (pill-shaped status indicators)
+    - [ ] Card (bordered, rounded, hover lift effect)
+    - [ ] Toast (top-center, smooth)
+    - [ ] Avatar (circular, modern)
+    - [ ] Progress bar (rounded, bold colors)
 
 3. **Layout Components**
-   - [ ] Bottom navigation (mobile)
-   - [ ] App shell (with bottom nav + auth check)
-   - [ ] Auth layout (minimal, centered)
+    - [ ] Bottom navigation (mobile)
+    - [ ] App shell (with bottom nav + auth check)
+    - [ ] Auth layout (minimal, centered)
 
 4. **Landing Page** ⭐
-   - [ ] Hero section with value prop ("Split bills effortlessly with friends")
-   - [ ] "Get Started" CTA button (coral red, brutalist style)
-   - [ ] Quick features section (3-4 highlights with Lucide icons)
-   - [ ] WhatsApp integration highlight
-   - [ ] Smart redirect logic (authenticated → dashboard, not auth → login)
-   - [ ] Minimal, fast-loading, brutalist styling
-   - [ ] Mobile-responsive layout
+    - [ ] Hero section with animated headline
+    - [ ] "Get Started" CTA button (coral red, pill-shaped, colored shadow)
+    - [ ] Phone mockup card with session preview
+    - [ ] Why Letpai section (bento grid)
+    - [ ] How It Works section (3 step cards with connector)
+    - [ ] CTA banner (dark background)
+    - [ ] Footer with gradient accent
+    - [ ] Smart redirect logic (authenticated → dashboard, not auth → login)
+    - [ ] Modern, polished styling
+    - [ ] Mobile-responsive layout
 
 5. **Auth Flow**
    - [ ] Login page (phone + password)
@@ -724,9 +855,9 @@ transition-colors duration-100
 ```
 type(scope): subject
 
-feat(auth): add login page with brutalist styling
-fix(button): correct hover state color
-style(card): use visible borders instead of shadows
+feat(auth): add login page with modern styling
+fix(button): correct hover state color and lift effect
+style(card): use visible borders and hover lift effect
 refactor(api): add error interceptor
 ```
 
@@ -735,12 +866,13 @@ refactor(api): add error interceptor
 ## Questions for Future Consideration
 
 1. **Dark Mode**: Save for Phase 5, but keep it in mind when designing components (use CSS variables)
-2. **Brutalist Elements**: 
-   - Thick borders (2px minimum)
-   - Minimal border-radius (4-8px max)
-   - Strategic use of offset shadows
-   - Geometric shapes as decorative elements
+2. **Modern Design Elements**:
+    - Soft, colored shadows with lift effects
+    - Rounded corners (14-24px for cards, 100px for buttons)
+    - Pill-shaped buttons and badges
+    - Subtle border (1.5px) on cards
 3. **FAB Color**: Coral red (primary action color)
+4. **Landing Page**: Redirect root to `/login` if not authenticated, `/dashboard` if authenticated
 4. **Landing Page**: Redirect root to `/login` if not authenticated, `/dashboard` if authenticated
 
 ---
@@ -764,17 +896,17 @@ refactor(api): add error interceptor
 ## Resources
 
 ### Design Inspiration
-- [Spotify Wrapped](https://wrapped.spotify.com) - Vibrant, bold, high contrast
+- [Linear App](https://linear.app) - Modern, clean, polished
 - [Stripe Dashboard](https://stripe.com) - Clean data visualization
-- [Vercel Dashboard](https://vercel.com) - Brutalist elements
-- [Linear App](https://linear.app) - Modern, geometric
+- [Vercel Dashboard](https://vercel.com) - Modern aesthetic
+- [Notion](https://notion.so) - Clean typography and spacing
 
 ### Component Libraries
 - [shadcn-svelte](https://www.shadcn-svelte.com/) - Base components
 - [Lucide Icons](https://lucide.dev/) - Icon reference
 
 ### Typography
-- [Space Grotesk](https://fonts.google.com/specimen/Space+Grotesk) - Google Fonts
+- [Plus Jakarta Sans](https://fonts.google.com/specimen/Plus+Jakarta+Sans) - Google Fonts
 
 ---
 

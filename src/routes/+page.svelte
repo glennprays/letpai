@@ -1,302 +1,622 @@
 <script lang="ts">
-  import { goto } from '$app/navigation';
-  import { user } from '$lib/stores/auth';
-  import Button from '$lib/components/ui/Button.svelte';
-  import { Smartphone, MessageCircle, Camera, CheckCircle } from 'lucide-svelte';
-  import { initAuth } from '$lib/stores/auth';
-  
-  // Check auth status on load
+  import { goto } from "$app/navigation";
+  import { user } from "$lib/stores/auth";
+  import Button from "$lib/components/ui/Button.svelte";
+  import {
+    Smartphone,
+    MessageCircle,
+    Camera,
+    CheckCircle,
+    ArrowRight,
+  } from "lucide-svelte";
+  import { initAuth } from "$lib/stores/auth";
+
   $effect(() => {
     if ($user.isAuthenticated) {
-      goto('/dashboard');
+      goto("/dashboard");
     }
   });
 
   function handleGetStarted() {
-    goto('/login');
+    goto("/login");
   }
 </script>
 
-<div class="min-h-screen bg-white flex flex-col">
-  <header class="px-4 py-6">
-    <div class="max-w-md mx-auto">
-      <h1 class="text-4xl font-bold text-gray-900">
+<div
+  class="min-h-screen bg-white flex flex-col"
+  style="font-family:'Plus Jakarta Sans',sans-serif;"
+>
+  <!-- ── HEADER / NAV ── -->
+  <header
+    style="position:sticky; top:0; z-index:50; background:rgba(255,255,255,0.9); backdrop-filter:blur(12px); border-bottom:1px solid #F3F4F6;"
+  >
+    <div
+      style="max-width:1200px; margin:0 auto; padding:0 24px; height:64px; display:flex; align-items:center; justify-content:space-between;"
+    >
+      <h1
+        style="font-size:22px; font-weight:800; color:#111827; margin:0; letter-spacing:-0.02em;"
+      >
         Letpai
       </h1>
+      <div style="display:flex; align-items:center; gap:32px;">
+        <a href="/about" class="nav-link">About</a>
+        <a href="/login" class="nav-link">Sign in</a>
+        <button
+          class="btn-coral"
+          style="padding:10px 22px; font-size:14px;"
+          onclick={handleGetStarted}
+        >
+          Get Started
+        </button>
+      </div>
     </div>
   </header>
 
   <main class="flex-1">
-    <div class="max-w-6xl mx-auto px-4">
-      <!-- Hero Section with Diagonal Split -->
-      <section class="py-12 md:py-16 relative overflow-hidden">
-        <!-- Diagonal split background -->
-        <div class="absolute inset-0 z-0">
-          <!-- Coral red top-left -->
-          <div class="absolute top-0 left-0 w-1/2 h-full bg-[#FF6B6B]" style="clip-path: polygon(0 0, 100% 0, 100% 100%, 100% 100%)"></div>
-          <!-- White bottom-right -->
-          <div class="absolute bottom-0 right-0 w-1/2 h-full bg-white" style="clip-path: polygon(0 100%, 100% 100%, 100% 0, 0 0)"></div>
-        </div>
+    <div style="max-width:1200px; margin:0 auto;">
+      <!-- ── HERO ── -->
+      <section
+        style="padding:80px 24px 72px; display:grid; grid-template-columns:1fr 1fr; gap:64px; align-items:center;"
+      >
+        <!-- Left: text -->
+        <div>
+          <h2
+            style="font-size:clamp(40px,4.5vw,62px); font-weight:800; line-height:1.08; letter-spacing:-0.03em; color:#111827; margin:0 0 24px;"
+          >
+            <span class="hero-word" style="animation-delay:0s;"
+              >Split bills</span
+            ><br />
+            <span class="hero-word" style="animation-delay:0.08s;"
+              >effortlessly</span
+            ><br />
+            <span
+              class="hero-word"
+              style="animation-delay:0.16s; color:#FF6B6B;">with friends.</span
+            >
+          </h2>
 
-        <!-- Content with floating circles -->
-        <div class="relative z-10 max-w-6xl mx-auto px-4">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-            <!-- Left Column: Text Content -->
-            <div class="space-y-6">
-              <h2 class="text-6xl font-bold text-gray-900 mb-4" style="font-size: 64px; line-height: 1.1;">
-                Split bills effortlessly<br />with friends
-              </h2>
-              
-              <p class="text-lg text-gray-600 mb-8">
-                WhatsApp notifications included. No app needed for participants.
-              </p>
-              
-              <Button
-                variant="primary"
-                size="lg"
-                onclick={handleGetStarted}
-                class="w-full max-w-xs mx-auto shadow-bold"
-              >
-                Get Started
-              </Button>
+          <p
+            style="font-size:17px; color:#6B7280; line-height:1.7; margin:0 0 36px; font-weight:400; max-width:400px;"
+          >
+            WhatsApp notifications included. No app needed for participants —
+            just a link and they're done.
+          </p>
 
-              <p class="text-sm text-gray-500 mt-4">
-                Ready to split your first bill?
-              </p>
-            </div>
-
-            <!-- Right Column: Visual Element -->
-            <div class="relative">
-              <!-- Floating circles decoration -->
-              <div class="absolute top-4 right-8 w-32 h-32 bg-[#14B8A6] rounded-full opacity-20"></div>
-              <div class="absolute bottom-12 right-4 w-20 h-20 bg-[#14B8A6] rounded-full opacity-30"></div>
-              <div class="absolute top-1/2 right-1/4 w-16 h-16 bg-[#14B8A6] rounded-full opacity-40"></div>
-              
-              <!-- Phone mockup or abstract graphic -->
-              <div class="relative mt-12">
-                <div class="w-full max-w-sm mx-auto border-4 border-gray-300 rounded-2xl p-8 bg-white">
-                  <div class="space-y-3">
-                    <div class="h-2 w-8 bg-gray-200 rounded-full mx-auto"></div>
-                    <div class="h-2 w-12 bg-gray-200 rounded-full mx-auto"></div>
-                    <div class="h-2 w-16 bg-gray-200 rounded-full mx-auto"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
+          <div
+            style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;"
+          >
+            <button class="btn-coral" onclick={handleGetStarted}>
+              Get Started <ArrowRight size={16} />
+            </button>
+            <span style="font-size:13px; color:#9CA3AF; font-weight:500;"
+              >Free to use · No sign-up for friends</span
+            >
           </div>
         </div>
-      </section>
 
-      <!-- Features Section: Bento Grid -->
-      <section class="py-16 bg-gray-50">
-        <div class="max-w-6xl mx-auto px-4">
-          <h3 class="text-2xl font-bold text-gray-900 mb-8 text-center">
-            Why Letpai?
-          </h3>
+        <!-- Right: phone mockup card -->
+        <div style="position:relative;">
+          <!-- Background blob -->
+          <div
+            style="position:absolute; inset:0; background:linear-gradient(135deg,#FF6B6B18,#14B8A618); border-radius:32px; transform:rotate(2deg);"
+          ></div>
 
-          <!-- Bento Grid -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <!-- Feature 1: Extra Large Card -->
-            <div class="md:col-span-2 row-span-2 bg-white border-2 border-gray-200 rounded-lg p-8 hover:border-[#FF6B6B] transition-all duration-150">
-              <div class="flex items-start gap-4 mb-4">
-                <div class="bg-[#14B8A6] p-3 rounded-full">
-                  <MessageCircle class="h-8 w-8 text-white" />
-                </div>
-                <div class="flex-1">
-                  <h4 class="text-xl font-bold text-gray-900 mb-2">
-                    WhatsApp Integration
-                  </h4>
-                  <p class="text-gray-600">
-                    Participants receive instant notifications with payment links. No app installation needed.
-                  </p>
-                </div>
+          <!-- Card -->
+          <div
+            style="position:relative; background:#fff; border-radius:24px; padding:0; border:1.5px solid #F0F0F0; box-shadow:0 20px 60px rgba(0,0,0,0.08); overflow:hidden;"
+          >
+            <!-- Card header -->
+            <div
+              style="background:linear-gradient(135deg,#FF6B6B,#ff5252); padding:20px 24px; display:flex; align-items:center; justify-content:space-between;"
+            >
+              <div>
+                <p
+                  style="font-size:11px; font-weight:600; color:rgba(255,255,255,0.7); margin:0 0 3px; letter-spacing:0.05em; text-transform:uppercase;"
+                >
+                  Active session
+                </p>
+                <p
+                  style="font-size:18px; font-weight:800; color:#fff; margin:0; letter-spacing:-0.02em;"
+                >
+                  Tokyo Dinner
+                </p>
               </div>
-              
-              <div class="border-t-2 border-gray-200 pt-4">
-                <p class="text-sm text-gray-500">
-                  Automatic messages · Payment tracking · One-tap access
+              <div style="text-align:right;">
+                <p
+                  style="font-size:11px; font-weight:600; color:rgba(255,255,255,0.7); margin:0 0 3px; letter-spacing:0.05em; text-transform:uppercase;"
+                >
+                  Total
+                </p>
+                <p
+                  style="font-size:22px; font-weight:800; color:#fff; margin:0;"
+                >
+                  $73.50
                 </p>
               </div>
             </div>
 
-            <!-- Feature 2: Small Card -->
-            <div class="bg-white border-2 border-gray-200 rounded-lg p-6 hover:border-[#FF6B6B] transition-all duration-150">
-              <div class="flex items-start gap-3 mb-3">
-                <div class="bg-[#FF6B6B] p-2.5 rounded-full">
-                  <Smartphone class="h-6 w-6 text-white" />
+            <!-- Participants -->
+            <div style="padding:8px 0;">
+              {#each [{ name: "Alex T.", initials: "A", amount: "$24.50", paid: true }, { name: "Priya M.", initials: "P", amount: "$24.50", paid: false }, { name: "Sam K.", initials: "S", amount: "$24.50", paid: false }] as person}
+                <div
+                  style="display:flex; align-items:center; justify-content:space-between; padding:12px 24px; border-bottom:1px solid #F9FAFB;"
+                >
+                  <div style="display:flex; align-items:center; gap:12px;">
+                    <div
+                      style="width:36px; height:36px; border-radius:50%; background:{person.paid
+                        ? '#DCFCE7'
+                        : '#F3F4F6'}; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; color:{person.paid
+                        ? '#16A34A'
+                        : '#6B7280'};"
+                    >
+                      {person.initials}
+                    </div>
+                    <span
+                      style="font-size:14px; font-weight:600; color:#111827;"
+                      >{person.name}</span
+                    >
+                  </div>
+                  <div style="display:flex; align-items:center; gap:10px;">
+                    <span
+                      style="font-size:15px; font-weight:700; color:#111827;"
+                      >{person.amount}</span
+                    >
+                    <span
+                      style="font-size:11px; font-weight:700; padding:3px 10px; border-radius:100px; background:{person.paid
+                        ? '#DCFCE7'
+                        : '#FEF2F2'}; color:{person.paid
+                        ? '#16A34A'
+                        : '#EF4444'};"
+                    >
+                      {person.paid ? "Paid" : "Pending"}
+                    </span>
+                  </div>
                 </div>
-                <div class="flex-1">
-                  <h4 class="text-lg font-bold text-gray-900 mb-1">
-                    Create in Seconds
-                  </h4>
-                  <p class="text-sm text-gray-600">
-                    Quick setup, add bills, done.
-                  </p>
-                </div>
-              </div>
+              {/each}
             </div>
 
-            <!-- Feature 3: Small Card -->
-            <div class="bg-white border-2 border-gray-200 rounded-lg p-6 hover:border-[#FF6B6B] transition-all duration-150">
-              <div class="flex items-start gap-3 mb-3">
-                <div class="bg-[#FF6B6B] p-2.5 rounded-full">
-                  <Camera class="h-6 w-6 text-white" />
-                </div>
-                <div class="flex-1">
-                  <h4 class="text-lg font-bold text-gray-900 mb-1">
-                    Proof Upload
-                  </h4>
-                  <p class="text-sm text-gray-600">
-                    Easy photo capture and submission.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <!-- Feature 4: Small Card -->
-            <div class="bg-white border-2 border-gray-200 rounded-lg p-6 hover:border-[#FF6B6B] transition-all duration-150">
-              <div class="flex items-start gap-3 mb-3">
-                <div class="bg-[#FF6B6B] p-2.5 rounded-full">
-                  <CheckCircle class="h-6 w-6 text-white" />
-                </div>
-                <div class="flex-1">
-                  <h4 class="text-lg font-bold text-gray-900 mb-1">
-                    No App Needed
-                  </h4>
-                  <p class="text-sm text-gray-600">
-                    Everyone can pay via link.
-                  </p>
-                </div>
-              </div>
+            <!-- WhatsApp button -->
+            <div style="padding:16px 24px;">
+              <button
+                style="width:100%; background:#25D366; color:#fff; border:none; border-radius:12px; padding:13px; font-family:'Plus Jakarta Sans',sans-serif; font-weight:700; font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; transition:background 0.15s;"
+                onmouseenter={(e) =>
+                  (e.currentTarget.style.background = "#1ebe59")}
+                onmouseleave={(e) =>
+                  (e.currentTarget.style.background = "#25D366")}
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  ><path
+                    d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"
+                  /><path
+                    d="M12 0C5.373 0 0 5.373 0 12c0 2.122.555 4.112 1.529 5.84L0 24l6.335-1.56C8.053 23.418 9.985 24 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.895 0-3.668-.52-5.184-1.424l-.371-.22-3.762.927.999-3.648-.242-.377C2.551 15.724 2 13.924 2 12 2 6.486 6.486 2 12 2s10 4.486 10 10-4.486 10-10 10z"
+                  /></svg
+                >
+                Notify all via WhatsApp
+              </button>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- How It Works Section -->
-      <section class="py-16 bg-white">
-        <div class="max-w-6xl mx-auto px-4">
-          <h3 class="text-2xl font-bold text-gray-900 mb-8 text-center">
+      <!-- ── WHY LETPAI ── -->
+      <section
+        style="padding:72px 24px; background:#FAFAFA; border-radius:32px; margin:0 16px 16px;"
+      >
+        <div style="text-align:center; margin-bottom:52px;">
+          <p
+            style="font-size:12px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:#9CA3AF; margin:0 0 12px;"
+          >
+            Why Letpai
+          </p>
+          <h3
+            style="font-size:clamp(26px,3vw,38px); font-weight:800; color:#111827; margin:0; letter-spacing:-0.02em;"
+          >
+            Built for the group chat era
+          </h3>
+        </div>
+
+        <!-- Bento grid — same 4-card structure as original, improved -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+          <!-- Big card: WhatsApp -->
+          <div
+            class="feature-card"
+            style="grid-column:span 2; background:linear-gradient(135deg,#FFF5F5,#fff); display:flex; gap:32px; align-items:flex-start;"
+          >
+            <div
+              class="icon-bubble"
+              style="background:#FF6B6B; flex-shrink:0; width:56px; height:56px; border-radius:18px;"
+            >
+              <MessageCircle size={26} color="#fff" />
+            </div>
+            <div>
+              <h4
+                style="font-size:20px; font-weight:800; color:#111827; margin:0 0 10px; letter-spacing:-0.02em;"
+              >
+                WhatsApp Integration
+              </h4>
+              <p
+                style="font-size:15px; color:#6B7280; margin:0 0 20px; line-height:1.65; max-width:520px;"
+              >
+                Participants receive instant notifications with personal payment
+                links. No app installation needed — they tap, pay, and you're
+                done.
+              </p>
+              <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                {#each ["Automatic messages", "Payment tracking", "One-tap access"] as tag}
+                  <span
+                    style="font-size:12px; font-weight:600; padding:5px 12px; border-radius:100px; background:#fff; border:1.5px solid #F0F0F0; color:#6B7280;"
+                    >{tag}</span
+                  >
+                {/each}
+              </div>
+            </div>
+          </div>
+
+          <!-- Small cards -->
+          <div class="feature-card">
+            <div class="icon-bubble" style="background:#14B8A6;">
+              <Smartphone size={22} color="#fff" />
+            </div>
+            <h4
+              style="font-size:17px; font-weight:800; color:#111827; margin:0 0 8px; letter-spacing:-0.01em;"
+            >
+              Create in Seconds
+            </h4>
+            <p
+              style="font-size:14px; color:#6B7280; margin:0; line-height:1.6;"
+            >
+              Quick setup — name the session, add bills and people, send. Done
+              in under a minute.
+            </p>
+          </div>
+
+          <div class="feature-card">
+            <div class="icon-bubble" style="background:#14B8A6;">
+              <Camera size={22} color="#fff" />
+            </div>
+            <h4
+              style="font-size:17px; font-weight:800; color:#111827; margin:0 0 8px; letter-spacing:-0.01em;"
+            >
+              Proof Upload
+            </h4>
+            <p
+              style="font-size:14px; color:#6B7280; margin:0; line-height:1.6;"
+            >
+              Easy photo capture and submission. No more "I already paid" —
+              you'll have proof on file.
+            </p>
+          </div>
+
+          <div class="feature-card">
+            <div class="icon-bubble" style="background:#FF6B6B;">
+              <CheckCircle size={22} color="#fff" />
+            </div>
+            <h4
+              style="font-size:17px; font-weight:800; color:#111827; margin:0 0 8px; letter-spacing:-0.01em;"
+            >
+              No App Needed
+            </h4>
+            <p
+              style="font-size:14px; color:#6B7280; margin:0; line-height:1.6;"
+            >
+              Friends pay via a link in their browser. No downloads, no
+              sign-ups, no friction.
+            </p>
+          </div>
+
+          <div class="feature-card">
+            <div class="icon-bubble" style="background:#FF6B6B;">
+              <ArrowRight size={22} color="#fff" />
+            </div>
+            <h4
+              style="font-size:17px; font-weight:800; color:#111827; margin:0 0 8px; letter-spacing:-0.01em;"
+            >
+              Real-time Dashboard
+            </h4>
+            <p
+              style="font-size:14px; color:#6B7280; margin:0; line-height:1.6;"
+            >
+              See who has paid, who is pending, and close the session when
+              everyone's settled up.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── HOW IT WORKS ── -->
+      <section style="padding:80px 24px;">
+        <div style="text-align:center; margin-bottom:52px;">
+          <p
+            style="font-size:12px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:#9CA3AF; margin:0 0 12px;"
+          >
+            Process
+          </p>
+          <h3
+            style="font-size:clamp(26px,3vw,38px); font-weight:800; color:#111827; margin:0; letter-spacing:-0.02em;"
+          >
             How It Works
           </h3>
+        </div>
 
-          <!-- 3 Horizontal Cards with Arrows -->
-          <div class="flex flex-col md:flex-row gap-8 items-center justify-center">
-            <!-- Step 1 -->
-            <div class="flex-1 max-w-sm">
-              <div class="bg-white border-2 border-gray-200 rounded-lg p-6 text-center relative">
-                <div class="absolute -top-3 -left-3 w-8 h-8 bg-[#FF6B6B] rounded-full flex items-center justify-center text-white font-bold text-sm">
-                  01
-                </div>
-                <div class="mb-4">
-                  <div class="bg-[#FF6B6B] p-3 rounded-full w-12 h-12 mx-auto mb-3">
-                    <Smartphone class="h-6 w-6 text-white" />
-                  </div>
-                </div>
-                <h4 class="text-lg font-bold text-gray-900 mb-2">
-                  Create Session
-                </h4>
-                <p class="text-sm text-gray-600">
-                  Add participants and bills
-                </p>
-              </div>
-            </div>
+        <!-- 3 step cards with connector line -->
+        <div
+          style="position:relative; display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px;"
+        >
+          <!-- Connector line behind cards -->
+          <div
+            style="position:absolute; top:38px; left:calc(33.3% - 24px); right:calc(33.3% - 24px); height:2px; background:linear-gradient(90deg,#FF6B6B,#14B8A6); border-radius:2px; z-index:0;"
+          ></div>
 
-            <!-- Arrow -->
-            <div class="hidden md:flex items-center justify-center">
-              <div class="bg-gray-200 rounded-full p-1">
-                <svg class="h-6 w-6 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <path d="M9 5l7-7 7v11a2 2 0 012-2h-2v-9a2 2 0 00-2z"></path>
-                </svg>
+          {#each [{ n: "01", icon: Smartphone, bg: "#FF6B6B", title: "Create Session", body: "Add participants and bills. Set equal or custom splits in seconds." }, { n: "02", icon: MessageCircle, bg: "#14B8A6", title: "Send via WhatsApp", body: "One click notifies everyone with their personal payment link." }, { n: "03", icon: Camera, bg: "#14B8A6", title: "Track Payments", body: "Real-time status updates as proof uploads come in. Close when settled." }] as step}
+            <div class="step-card" style="position:relative; z-index:1;">
+              <!-- Step dot -->
+              <div
+                style="width:44px; height:44px; border-radius:14px; background:{step.bg}; display:flex; align-items:center; justify-content:center; margin-bottom:20px; box-shadow:0 4px 12px {step.bg}44;"
+              >
+                <svelte:component this={step.icon} size={20} color="#fff" />
               </div>
+              <span class="step-number">{step.n}</span>
+              <h4
+                style="font-size:17px; font-weight:800; color:#111827; margin:0 0 10px; letter-spacing:-0.01em;"
+              >
+                {step.title}
+              </h4>
+              <p
+                style="font-size:14px; color:#6B7280; margin:0; line-height:1.65;"
+              >
+                {step.body}
+              </p>
             </div>
-
-            <!-- Step 2 -->
-            <div class="flex-1 max-w-sm">
-              <div class="bg-white border-2 border-gray-200 rounded-lg p-6 text-center relative">
-                <div class="absolute -top-3 -left-3 w-8 h-8 bg-[#14B8A6] rounded-full flex items-center justify-center text-white font-bold text-sm">
-                  02
-                </div>
-                <div class="mb-4">
-                  <div class="bg-[#14B8A6] p-3 rounded-full w-12 h-12 mx-auto mb-3">
-                    <MessageCircle class="h-6 w-6 text-white" />
-                  </div>
-                </div>
-                <h4 class="text-lg font-bold text-gray-900 mb-2">
-                  Send via WhatsApp
-                </h4>
-                <p class="text-sm text-gray-600">
-                  One-click notifications
-                </p>
-              </div>
-            </div>
-
-            <!-- Arrow -->
-            <div class="hidden md:flex items-center justify-center">
-              <div class="bg-gray-200 rounded-full p-1">
-                <svg class="h-6 w-6 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <path d="M9 5l7-7 7v11a2 2 0 012-2h-2v-9a2 2 0 00-2z"></path>
-                </svg>
-              </div>
-            </div>
-
-            <!-- Step 3 -->
-            <div class="flex-1 max-w-sm">
-              <div class="bg-white border-2 border-gray-200 rounded-lg p-6 text-center relative">
-                <div class="absolute -top-3 -left-3 w-8 h-8 bg-[#14B8A6] rounded-full flex items-center justify-center text-white font-bold text-sm">
-                  03
-                </div>
-                <div class="mb-4">
-                  <div class="bg-[#14B8A6] p-3 rounded-full w-12 h-12 mx-auto mb-3">
-                    <Camera class="h-6 w-6 text-white" />
-                  </div>
-                </div>
-                <h4 class="text-lg font-bold text-gray-900 mb-2">
-                  Track Payments
-                </h4>
-                <p class="text-sm text-gray-600">
-                  Real-time status updates
-                </p>
-              </div>
-            </div>
-          </div>
+          {/each}
         </div>
       </section>
 
-      <!-- Footer -->
-      <footer class="px-4 py-8 bg-gray-900 text-white">
-        <div class="max-w-6xl mx-auto">
-          <div class="flex flex-col md:flex-row items-center justify-between gap-4">
-            <!-- Logo and Tagline -->
-            <div>
-              <h2 class="text-2xl font-bold mb-1">
-                Letpai
-              </h2>
-              <p class="text-gray-400 text-sm">
-                Split bills, not friendships
-              </p>
-            </div>
+      <!-- ── CTA BANNER ── -->
+      <section style="padding:0 24px 80px;">
+        <div
+          style="background:#111827; border-radius:28px; padding:56px 52px; display:flex; align-items:center; justify-content:space-between; gap:32px; flex-wrap:wrap; position:relative; overflow:hidden;"
+        >
+          <!-- Decorative circles -->
+          <div
+            style="position:absolute; right:-48px; top:-48px; width:240px; height:240px; border-radius:50%; background:rgba(255,107,107,0.12);"
+          ></div>
+          <div
+            style="position:absolute; right:80px; bottom:-64px; width:180px; height:180px; border-radius:50%; background:rgba(20,184,166,0.1);"
+          ></div>
 
-            <!-- Links -->
-            <div class="flex items-center gap-6 text-sm">
-              <a href="/about" class="text-gray-300 hover:text-white transition-colors">
-                About
-              </a>
-              <a href="/privacy" class="text-gray-300 hover:text-white transition-colors">
-                Privacy
-              </a>
-              <a href="/terms" class="text-gray-300 hover:text-white transition-colors">
-                Terms
-              </a>
-            </div>
+          <div style="position:relative; z-index:1;">
+            <h3
+              style="font-size:clamp(22px,2.8vw,34px); font-weight:800; color:#fff; margin:0 0 10px; letter-spacing:-0.02em; line-height:1.2;"
+            >
+              Ready to split your first bill?
+            </h3>
+            <p style="font-size:15px; color:#6B7280; margin:0;">
+              Free forever for groups. No credit card needed.
+            </p>
           </div>
 
-          <!-- Copyright -->
-          <div class="border-t-2 border-gray-700 mt-6 pt-4 text-center text-xs text-gray-400">
-            <p>© 2026 Letpai. All rights reserved.</p>
-          </div>
+          <button
+            class="btn-coral"
+            style="position:relative; z-index:1; white-space:nowrap; font-size:16px; padding:15px 32px;"
+            onclick={handleGetStarted}
+          >
+            Get Started Free <ArrowRight size={16} />
+          </button>
         </div>
-      </footer>
+      </section>
     </div>
   </main>
+
+  <!-- ── FOOTER ── -->
+  <footer style="background:#0F172A;">
+    <!-- Top accent line -->
+    <div
+      style="height:3px; background:linear-gradient(90deg,#FF6B6B,#14B8A6);"
+    ></div>
+
+    <div style="max-width:1200px; margin:0 auto; padding:56px 24px 0;">
+      <!-- Main footer grid -->
+      <div
+        style="display:grid; grid-template-columns:2fr 1fr 1fr 1fr; gap:48px; padding-bottom:48px; border-bottom:1px solid #1E293B;"
+      >
+        <!-- Brand column -->
+        <div>
+          <h2
+            style="font-size:22px; font-weight:800; color:#fff; margin:0 0 12px; letter-spacing:-0.02em;"
+          >
+            Letpai
+          </h2>
+          <p
+            style="font-size:14px; color:#64748B; line-height:1.7; margin:0 0 24px; max-width:240px;"
+          >
+            Split bills, not friendships. WhatsApp-native payments for your
+            whole group.
+          </p>
+        </div>
+
+        <!-- Product links -->
+        <div>
+          <p class="footer-heading">Product</p>
+          <nav style="display:flex; flex-direction:column; gap:12px;">
+            {#each ["How it works", "Features", "Pricing", "Changelog"] as l}
+              <a href="/" class="footer-link">{l}</a>
+            {/each}
+          </nav>
+        </div>
+
+        <!-- Company links -->
+        <div>
+          <p class="footer-heading">Company</p>
+          <nav style="display:flex; flex-direction:column; gap:12px;">
+            {#each ["About", "Blog", "Careers", "Contact"] as l}
+              <a href="/" class="footer-link">{l}</a>
+            {/each}
+          </nav>
+        </div>
+
+        <!-- Legal links -->
+        <div>
+          <p class="footer-heading">Legal</p>
+          <nav style="display:flex; flex-direction:column; gap:12px;">
+            {#each ["Privacy Policy", "Terms of Service", "Cookie Policy"] as l}
+              <a href="/" class="footer-link">{l}</a>
+            {/each}
+          </nav>
+        </div>
+      </div>
+
+      <!-- Bottom bar -->
+      <div
+        style="padding:20px 0; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;"
+      >
+        <p style="font-size:13px; color:#334155; margin:0;">
+          &copy; 2026 Letpai. All rights reserved.
+        </p>
+      </div>
+    </div>
+  </footer>
 </div>
+
+<style>
+  /* ── Google Fonts: same family feel, just swap to a slightly more characterful sans ── */
+  @import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap");
+
+  :global(body) {
+    font-family: "Plus Jakarta Sans", sans-serif;
+    background: #ffffff;
+    margin: 0;
+  }
+
+  /* Hero heading animation */
+  .hero-word {
+    display: inline-block;
+    opacity: 0;
+    transform: translateY(24px);
+    animation: wordRise 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+  @keyframes wordRise {
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Nav */
+  .nav-link {
+    font-size: 14px;
+    font-weight: 500;
+    color: #4b5563;
+    text-decoration: none;
+    transition: color 0.15s;
+  }
+  .nav-link:hover {
+    color: #111827;
+  }
+
+  /* Primary CTA */
+  .btn-coral {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #ff6b6b;
+    color: #fff;
+    font-family: "Plus Jakarta Sans", sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    padding: 13px 28px;
+    border-radius: 100px;
+    border: none;
+    cursor: pointer;
+    transition:
+      background 0.15s,
+      transform 0.12s,
+      box-shadow 0.15s;
+    box-shadow: 0 4px 14px rgba(255, 107, 107, 0.35);
+  }
+  .btn-coral:hover {
+    background: #ff5252;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+  }
+
+  /* Feature card */
+  .feature-card {
+    background: #fff;
+    border: 1.5px solid #f0f0f0;
+    border-radius: 20px;
+    padding: 28px;
+    transition:
+      border-color 0.2s,
+      box-shadow 0.2s,
+      transform 0.2s;
+  }
+  .feature-card:hover {
+    border-color: #ff6b6b;
+    box-shadow: 0 8px 32px rgba(255, 107, 107, 0.1);
+    transform: translateY(-2px);
+  }
+
+  /* Icon bubble */
+  .icon-bubble {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+  }
+
+  /* Step card */
+  .step-card {
+    background: #fff;
+    border: 1.5px solid #f0f0f0;
+    border-radius: 20px;
+    padding: 32px 28px;
+    transition:
+      border-color 0.2s,
+      box-shadow 0.2s,
+      transform 0.2s;
+  }
+  .step-card:hover {
+    border-color: #14b8a6;
+    box-shadow: 0 8px 32px rgba(20, 184, 166, 0.1);
+    transform: translateY(-2px);
+  }
+
+  .step-number {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #9ca3af;
+    margin-bottom: 16px;
+    display: block;
+  }
+
+  /* Footer */
+  .footer-link {
+    font-size: 14px;
+    color: #9ca3af;
+    text-decoration: none;
+    transition: color 0.15s;
+    display: block;
+    line-height: 1;
+  }
+  .footer-link:hover {
+    color: #f9fafb;
+  }
+
+  .footer-heading {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #4b5563;
+    margin: 0 0 16px;
+  }
+</style>
