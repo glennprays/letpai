@@ -36,9 +36,18 @@ export const auth = writable<AuthState>(initialState);
 export const isAuthenticated = derived(auth, ($auth) => $auth.isAuthenticated);
 export const user = derived(auth, ($auth) => $auth.user);
 
-export function setToken(token: string) {
+export function setToken(token: string, cookieSetter?: (name: string, value: string, options?: Record<string, unknown>) => void) {
   if (typeof window !== 'undefined') {
     localStorage.setItem('token', token);
+  }
+  if (cookieSetter) {
+    cookieSetter('token', token, {
+      path: '/',
+      httpOnly: false, // Allow client-side access
+      secure: import.meta.env.PROD,
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 30 // 30 days
+    });
   }
   auth.update(state => ({ ...state, token, isAuthenticated: true }));
 }
@@ -50,21 +59,30 @@ export function setUser(user: User) {
   auth.update(state => ({ ...state, user }));
 }
 
-export function logout() {
+export function logout(cookieDeleter?: (name: string, options?: Record<string, unknown>) => void) {
   if (typeof window !== 'undefined') {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
   }
+  if (cookieDeleter) {
+    cookieDeleter('token', { path: '/' });
+  }
   auth.set({ token: null, user: null, isAuthenticated: false });
 }
 
-export function initAuth() {
+export function initAuth(cookieToken?: string | null) {
   if (typeof window === 'undefined') return;
-  
-  const token = localStorage.getItem('token');
+
+  // Prefer cookie token over localStorage for SSR sync
+  const token = cookieToken || localStorage.getItem('token');
   const userStr = localStorage.getItem('user');
   const user = userStr ? JSON.parse(userStr) : null;
-  
+
+  // If we have a cookie token but no localStorage token, sync it
+  if (cookieToken && !localStorage.getItem('token')) {
+    localStorage.setItem('token', cookieToken);
+  }
+
   auth.set({
     token,
     user,
