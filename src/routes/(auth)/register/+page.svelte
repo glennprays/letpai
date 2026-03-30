@@ -1,9 +1,10 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
-  import Button from '$lib/components/ui/Button.svelte';
-  import Input from '$lib/components/ui/Input.svelte';
+  import { Button } from '$lib/components/ui/Button.svelte';
+  import { Input } from '$lib/components/ui/Input.svelte';
   import { toast } from '$lib/stores/toast';
   import { register, verifyOTP } from '$lib/services/auth';
+  import { setToken, setUser } from '$lib/stores/auth';
   import { validatePhone, validatePassword, validateOTP } from '$lib/utils/validation';
   import { formatPhoneNumber } from '$lib/utils/format';
   import { UserPlus, Mail, Shield, ArrowRight, CheckCircle2, Clock, RotateCw } from 'lucide-svelte';
@@ -53,14 +54,17 @@
     }
 
     try {
-      const response = await register({ whatsapp_number, password: formData.password });
+      const response = await register({
+        whatsapp_number,
+        password: formData.password,
+        full_name: formData.full_name.trim()
+      });
 
       if (response.success) {
-        otpSent = true;
         currentStep = 2;
         toast.success('Account created! Please verify your OTP.');
       } else {
-        toast.error('Registration failed. Please try again.');
+        toast.error(response.error?.message || 'Registration failed. Please try again.');
       }
     } catch (error) {
       toast.error('An error occurred. Please try again.');
@@ -81,10 +85,13 @@
       const response = await verifyOTP({ whatsapp_number, otp: formData.otp });
 
       if (response.success) {
-        toast.success('Registration successful!');
-        goto('/login');
+        // Store token and user for auto-login
+        setToken(response.token);
+        setUser(response.user);
+        toast.success('Registration successful! Welcome to Letpai!');
+        goto('/dashboard');
       } else {
-        toast.error('Invalid OTP. Please try again.');
+        toast.error(response.error?.message || 'Invalid OTP. Please try again.');
       }
     } catch (error) {
       toast.error('An error occurred. Please try again.');
@@ -99,10 +106,13 @@
       const response = await register({
         whatsapp_number,
         password: formData.password,
+        full_name: formData.full_name.trim()
       });
 
       if (response.success) {
         toast.success('OTP sent successfully!');
+      } else {
+        toast.error(response.error?.message || 'Failed to resend OTP');
       }
     } catch (error) {
       toast.error('Failed to resend OTP');
