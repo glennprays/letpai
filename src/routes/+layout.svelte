@@ -25,22 +25,32 @@
 	});
 
 	// Determine navbar variant based on route and auth state
-	let currentVariant = $state('full');
-
-	$effect(() => {
+	// Use $derived to ensure reactivity
+	const navbarVariant = $derived.by(() => {
 		const pathname = $page.url.pathname;
+		const isAuthenticated = data.isAuthenticated;
+		const hasToken = data.token;
+
+		console.log('🔍 Navbar variant calculation:', {
+			pathname,
+			isAuthenticated,
+			hasToken
+		});
 
 		// Auth pages get minimal navbar
 		if (pathname.startsWith('/login') || pathname.startsWith('/register')) {
-			currentVariant = 'auth';
+			console.log('✅ Variant: auth');
+			return 'auth';
 		}
 		// Protected pages get logged-in navbar if authenticated
-		else if (data.isAuthenticated && data.token) {
-			currentVariant = 'loggedIn';
+		else if (isAuthenticated && hasToken) {
+			console.log('✅ Variant: loggedIn');
+			return 'loggedIn';
 		}
 		// Default to full navbar
 		else {
-			currentVariant = 'full';
+			console.log('✅ Variant: full');
+			return 'full';
 		}
 	});
 </script>
@@ -49,6 +59,6 @@
 	<link rel="icon" href={favicon} />
 </svelte:head>
 
-<Navbar variant={currentVariant} />
+<Navbar variant={navbarVariant} />
 
 {@render children()}
