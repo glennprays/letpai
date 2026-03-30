@@ -29,15 +29,13 @@
 
 	$effect(() => {
 		const pathname = $page.url.pathname;
-		const isAuthenticated = data.isAuthenticated || $auth.isAuthenticated;
-		const hasToken = data.token || $auth.token;
 
 		// Auth pages get minimal navbar
 		if (pathname.startsWith('/login') || pathname.startsWith('/register')) {
 			currentVariant = 'auth';
 		}
 		// Protected pages get logged-in navbar if authenticated
-		else if (isAuthenticated && hasToken) {
+		else if (data.isAuthenticated && data.token) {
 			currentVariant = 'loggedIn';
 		}
 		// Default to full navbar
