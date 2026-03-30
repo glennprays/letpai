@@ -1,10 +1,10 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
-  import Button from '$lib/components/ui/Button.svelte';
-  import Input from '$lib/components/ui/Input.svelte';
+  import { page } from '$app/stores';
+  import { Button } from '$lib/components/ui/Button.svelte';
+  import { Input } from '$lib/components/ui/Input.svelte';
   import { toast } from '$lib/stores/toast';
   import { login } from '$lib/services/auth';
-  import { setUser, setToken } from '$lib/stores/auth';
   import { validatePhone, validatePassword } from '$lib/utils/validation';
   import { formatPhoneNumber } from '$lib/utils/format';
   import { Lock, ArrowRight } from 'lucide-svelte';
@@ -22,6 +22,12 @@
     country_code: '62',
     whatsapp_number: '',
     password: '',
+  });
+
+  // Get return URL from query params
+  const returnURL = $derived(() => {
+    const returnParam = $page.url.searchParams.get('return');
+    return returnParam ? decodeURIComponent(returnParam) : '/dashboard';
   });
 </script>
 
@@ -63,12 +69,11 @@
         const response = await login({ whatsapp_number, password });
 
         if (response.success) {
-          setToken(response.token);
-          setUser(response.user);
+          // setToken and setUser are already called in the login function
           toast.success('Login berhasil!');
-          goto('/dashboard');
+          goto(returnURL(), { replaceState: true });
         } else {
-          toast.error('Login gagal. Silakan coba lagi.');
+          toast.error(response.error?.message || 'Login gagal. Silakan coba lagi.');
         }
       } catch (error) {
         toast.error('Terjadi kesalahan. Silakan coba lagi.');
@@ -119,6 +124,7 @@
         type="password"
         name="password"
         placeholder="Masukkan password"
+        bind:value={formData.password}
         required
         showClear
         id="password"
