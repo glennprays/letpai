@@ -319,5 +319,21 @@
     .login-subtitle {
       font-size: 14px;
     }
+
+    .country-selector {
+      min-width: 80px;
+      padding: 12px 6px;
+      font-size: 13px;
+    }
+  }
+
+  @media (max-width: 375px) {
+    .login-container {
+      gap: 20px;
+    }
+
+    .login-form {
+      gap: 16px;
+    }
   }
 </style>

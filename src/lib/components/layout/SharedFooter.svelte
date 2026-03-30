@@ -38,17 +38,8 @@
       padding: 56px 24px 0;
     "
   >
-    <!-- Main footer grid -->
-    <div
-      style="
-        display: grid;
-        grid-template-columns: 2fr 1fr 1fr 1fr;
-        gap: 48px;
-        padding-bottom: 48px;
-        border-bottom: 1px solid #1E293B;
-        position: relative;
-      "
-    >
+  <!-- Main footer grid -->
+  <div class="footer-grid">
       <!-- Decorative circles -->
       <div
         style="
@@ -245,18 +236,7 @@
     </div>
 
     <!-- Bottom bar -->
-    <div
-      style="
-        padding: 20px 0;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        flex-wrap: wrap;
-        gap: 12px;
-        position: relative;
-        z-index: 1;
-      "
-    >
+    <div class="footer-bottom">
       <p style="font-size: 13px; color: #334155; margin: 0;">
         © 2026 Letpai. All rights reserved.
       </p>
@@ -265,6 +245,26 @@
 </footer>
 
 <style>
+  .footer-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 48px;
+    padding-bottom: 48px;
+    border-bottom: 1px solid #1E293B;
+    position: relative;
+  }
+
+  .footer-bottom {
+    padding: 20px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    position: relative;
+    z-index: 1;
+  }
+
   @keyframes pulse {
     0%,
     100% {
@@ -272,6 +272,27 @@
     }
     50% {
       opacity: 0.5;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .footer-grid {
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .footer-grid {
+      grid-template-columns: 1fr;
+      gap: 32px;
+      padding-bottom: 32px;
+    }
+
+    .footer-bottom {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
     }
   }
 </style>

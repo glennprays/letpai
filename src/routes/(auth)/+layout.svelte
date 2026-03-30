@@ -137,8 +137,45 @@
   }
 
   @media (max-width: 640px) {
+    .auth-main {
+      padding: 16px;
+      align-items: flex-start;
+      padding-top: 24px;
+    }
+
     .auth-card {
-      padding: 32px 24px;
+      padding: 28px 20px;
+      border-radius: 20px;
+    }
+
+    .orb-1 {
+      width: 200px;
+      height: 200px;
+    }
+
+    .orb-2 {
+      width: 180px;
+      height: 180px;
+    }
+
+    .orb-3 {
+      width: 150px;
+      height: 150px;
+    }
+
+    .orb-4 {
+      width: 120px;
+      height: 120px;
+    }
+  }
+
+  @media (max-width: 375px) {
+    .auth-main {
+      padding: 12px;
+    }
+
+    .auth-card {
+      padding: 24px 16px;
     }
   }
 </style>

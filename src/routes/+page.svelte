@@ -34,13 +34,11 @@
   <main class="flex-1">
     <div style="max-width:1200px; margin:0 auto;">
       <!-- ── HERO ── -->
-      <section
-        style="padding:80px 24px 72px; display:grid; grid-template-columns:1fr 1fr; gap:64px; align-items:center;"
-      >
+      <section class="hero-section">
         <!-- Left: text -->
         <div>
           <h2
-            style="font-size:clamp(40px,4.5vw,62px); font-weight:800; line-height:1.08; letter-spacing:-0.03em; color:#111827; margin:0 0 24px;"
+            style="font-size:clamp(32px,4.5vw,62px); font-weight:800; line-height:1.08; letter-spacing:-0.03em; color:#111827; margin:0 0 24px;"
           >
             <span class="hero-word" style="animation-delay:0s;"
               >Split bills</span
@@ -74,7 +72,7 @@
         </div>
 
         <!-- Right: phone mockup card -->
-        <div style="position:relative;">
+        <div class="hero-mockup-wrapper">
           <!-- Background blob -->
           <div
             style="position:absolute; inset:0; background:linear-gradient(135deg,#FF6B6B18,#14B8A618); border-radius:32px; transform:rotate(2deg);"
@@ -182,9 +180,7 @@
       </section>
 
       <!-- ── WHY LETPAI ── -->
-      <section
-        style="padding:72px 24px; background:#FAFAFA; border-radius:32px; margin:0 16px 16px;"
-      >
+      <section class="why-section">
         <div style="text-align:center; margin-bottom:52px;">
           <p
             style="font-size:12px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:#9CA3AF; margin:0 0 12px;"
@@ -198,8 +194,8 @@
           </h3>
         </div>
 
-        <!-- Bento grid — same 4-card structure as original, improved -->
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+        <!-- Bento grid -->
+        <div class="bento-grid">
           <!-- Big card: WhatsApp -->
           <div
             class="feature-card"
@@ -307,7 +303,7 @@
       </section>
 
       <!-- ── HOW IT WORKS ── -->
-      <section style="padding:80px 24px;">
+      <section class="how-section">
         <div style="text-align:center; margin-bottom:52px;">
           <p
             style="font-size:12px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:#9CA3AF; margin:0 0 12px;"
@@ -321,14 +317,10 @@
           </h3>
         </div>
 
-        <!-- 3 step cards with connector line -->
-        <div
-          style="position:relative; display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px;"
-        >
-          <!-- Connector line behind cards -->
-          <div
-            style="position:absolute; top:38px; left:calc(33.3% - 24px); right:calc(33.3% - 24px); height:2px; background:linear-gradient(90deg,#FF6B6B,#14B8A6); border-radius:2px; z-index:0;"
-          ></div>
+        <!-- 3 step cards -->
+        <div class="steps-grid">
+          <!-- Connector line (desktop only) -->
+          <div class="steps-connector"></div>
 
           {#each [{ n: "01", icon: Smartphone, bg: "#FF6B6B", title: "Create Session", body: "Add participants and bills. Set equal or custom splits in seconds." }, { n: "02", icon: MessageCircle, bg: "#14B8A6", title: "Send via WhatsApp", body: "One click notifies everyone with their personal payment link." }, { n: "03", icon: Camera, bg: "#14B8A6", title: "Track Payments", body: "Real-time status updates as proof uploads come in. Close when settled." }] as step}
             <div class="step-card" style="position:relative; z-index:1;">
@@ -355,10 +347,8 @@
       </section>
 
       <!-- ── CTA BANNER ── -->
-      <section style="padding:0 24px 80px;">
-        <div
-          style="background:#111827; border-radius:28px; padding:56px 52px; display:flex; align-items:center; justify-content:space-between; gap:32px; flex-wrap:wrap; position:relative; overflow:hidden;"
-        >
+      <section class="cta-section">
+        <div class="cta-banner">
           <!-- Decorative circles -->
           <div
             style="position:absolute; right:-48px; top:-48px; width:240px; height:240px; border-radius:50%; background:rgba(255,107,107,0.12);"
@@ -509,5 +499,151 @@
     color: #9ca3af;
     margin-bottom: 16px;
     display: block;
+  }
+
+  /* ── Responsive ── */
+
+  .hero-section {
+    padding: 48px 24px 40px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 64px;
+    align-items: center;
+  }
+
+  .hero-mockup-wrapper {
+    position: relative;
+  }
+
+  .why-section {
+    padding: 56px 24px;
+    background: #FAFAFA;
+    border-radius: 32px;
+    margin: 0 16px 16px;
+  }
+
+  .bento-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .how-section {
+    padding: 64px 24px;
+  }
+
+  .steps-grid {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 20px;
+  }
+
+  .steps-connector {
+    position: absolute;
+    top: 38px;
+    left: calc(33.3% - 24px);
+    right: calc(33.3% - 24px);
+    height: 2px;
+    background: linear-gradient(90deg, #FF6B6B, #14B8A6);
+    border-radius: 2px;
+    z-index: 0;
+  }
+
+  .cta-section {
+    padding: 0 24px 64px;
+  }
+
+  .cta-banner {
+    background: #111827;
+    border-radius: 28px;
+    padding: 48px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    flex-wrap: wrap;
+    position: relative;
+    overflow: hidden;
+  }
+
+  @media (max-width: 768px) {
+    .hero-section {
+      grid-template-columns: 1fr;
+      gap: 40px;
+      padding: 32px 20px 24px;
+    }
+
+    .hero-mockup-wrapper {
+      max-width: 400px;
+      margin: 0 auto;
+    }
+
+    .why-section {
+      padding: 40px 16px;
+      border-radius: 24px;
+      margin: 0 12px 12px;
+    }
+
+    .bento-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .how-section {
+      padding: 40px 20px;
+    }
+
+    .steps-grid {
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+
+    .steps-connector {
+      display: none;
+    }
+
+    .cta-section {
+      padding: 0 16px 40px;
+    }
+
+    .cta-banner {
+      padding: 32px 24px;
+      border-radius: 20px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .hero-section {
+      padding: 24px 16px 16px;
+      gap: 32px;
+    }
+
+    .why-section {
+      padding: 32px 12px;
+      border-radius: 20px;
+    }
+
+    .bento-grid {
+      gap: 12px;
+    }
+
+    .feature-card {
+      padding: 20px;
+    }
+
+    .step-card {
+      padding: 24px 20px;
+    }
+
+    .cta-banner {
+      padding: 24px 20px;
+      flex-direction: column;
+      text-align: center;
+    }
+
+    .cta-banner .btn-coral {
+      width: 100%;
+      justify-content: center;
+    }
   }
 </style>

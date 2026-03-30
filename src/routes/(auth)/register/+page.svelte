@@ -634,8 +634,44 @@
       height: 48px;
     }
 
-    .button-group {
-      flex-direction: column;
+    .otp-input {
+      width: 40px;
+      height: 48px;
+      font-size: 20px;
+    }
+
+    .otp-container {
+      gap: 6px;
+    }
+
+    .country-selector {
+      min-width: 80px;
+      padding: 12px 6px;
+      font-size: 13px;
+    }
+
+    .step-title h2 {
+      font-size: 18px;
+    }
+  }
+
+  @media (max-width: 375px) {
+    .register-container {
+      gap: 20px;
+    }
+
+    .step-content {
+      gap: 16px;
+    }
+
+    .otp-input {
+      width: 36px;
+      height: 44px;
+      font-size: 18px;
+    }
+
+    .otp-container {
+      gap: 4px;
     }
   }
 </style>
