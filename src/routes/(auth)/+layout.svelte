@@ -1,12 +1,9 @@
 <script lang="ts">
-  import Navbar from '$lib/components/layout/Navbar.svelte';
   import SharedFooter from '$lib/components/layout/SharedFooter.svelte';
   let { children } = $props();
 </script>
 
 <div class="auth-layout">
-  <Navbar variant="auth" />
-
   <!-- Decorative background -->
   <div class="decorative-background">
     <div class="gradient-orb orb-1"></div>
