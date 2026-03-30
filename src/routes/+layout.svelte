@@ -23,7 +23,6 @@
 			token: data.token,
 			user: data.user
 		};
-		console.log('📊 Auth data updated:', authData);
 	});
 
 	// Initialize auth store from server-provided data
@@ -42,29 +41,19 @@
 	});
 
 	// Determine navbar variant based on route and auth state
-	// Use $derived to ensure reactivity
 	const navbarVariant = $derived.by(() => {
 		const pathname = $page.url.pathname;
 
-		console.log('🔍 Navbar variant calculation:', {
-			pathname,
-			isAuthenticated: authData.isAuthenticated,
-			hasToken: authData.token
-		});
-
 		// Auth pages get minimal navbar
 		if (pathname.startsWith('/login') || pathname.startsWith('/register')) {
-			console.log('✅ Variant: auth');
 			return 'auth';
 		}
 		// Protected pages get logged-in navbar if authenticated
 		else if (authData.isAuthenticated && authData.token) {
-			console.log('✅ Variant: loggedIn');
 			return 'loggedIn';
 		}
 		// Default to full navbar
 		else {
-			console.log('✅ Variant: full');
 			return 'full';
 		}
 	});
