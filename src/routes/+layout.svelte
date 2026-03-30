@@ -4,24 +4,23 @@
 	import Navbar from '$lib/components/layout/Navbar.svelte';
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
-	import { auth } from '$lib/stores/auth';
+	import { auth, initAuth } from '$lib/stores/auth';
+	import type { LayoutData } from './$types';
 
-	let { children } = $props();
+	let { children, data }: { children: any; data: LayoutData } = $props();
 
-	// Initialize auth on mount (client-side only)
+	// Initialize auth store from server-provided data
 	onMount(() => {
-		if (typeof window !== 'undefined') {
-			const token = localStorage.getItem('token');
-			const userStr = localStorage.getItem('user');
-			const user = userStr ? JSON.parse(userStr) : null;
-
-			console.log('Root layout onMount - token:', !!token, 'user:', !!user);
-
+		// Use server-provided auth state if available, otherwise check localStorage
+		if (data.isAuthenticated) {
 			auth.set({
-				token,
-				user,
-				isAuthenticated: !!token
+				token: data.token,
+				user: data.user,
+				isAuthenticated: true
 			});
+		} else {
+			// Fallback to localStorage for client-only navigation
+			initAuth();
 		}
 	});
 
@@ -29,14 +28,11 @@
 	let currentVariant = $state('full');
 
 	$effect(() => {
-		// Track both page URL and auth state
 		const pathname = $page.url.pathname;
-		const isAuthenticated = $auth.isAuthenticated;
-		const hasToken = !!$auth.token;
+		const isAuthenticated = data.isAuthenticated || $auth.isAuthenticated;
+		const hasToken = data.token || $auth.token;
 
-		console.log('navbarVariant calc - pathname:', pathname, 'isAuth:', isAuthenticated, 'token:', hasToken);
-
-		// Auth pages get minimal navbar (only for login/register)
+		// Auth pages get minimal navbar
 		if (pathname.startsWith('/login') || pathname.startsWith('/register')) {
 			currentVariant = 'auth';
 		}

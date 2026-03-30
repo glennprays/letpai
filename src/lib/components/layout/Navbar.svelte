@@ -32,11 +32,6 @@
       userMenuOpen = false;
     }
   }
-
-  // Debug: log when variant changes
-  $effect(() => {
-    console.log('Navbar variant:', variant, 'pathname:', $page.url.pathname);
-  });
 </script>
 
 <svelte:window onclick={handleClickOutside} />

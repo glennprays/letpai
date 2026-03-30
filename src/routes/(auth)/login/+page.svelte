@@ -1,13 +1,19 @@
 <script lang="ts">
-  import { goto } from '$app/navigation';
+  import { enhance } from '$app/forms';
   import { page } from '$app/stores';
   import Button from '$lib/components/ui/Button.svelte';
   import Input from '$lib/components/ui/Input.svelte';
-  import { toast } from '$lib/stores/toast';
-  import { login } from '$lib/services/auth';
   import { validatePhone, validatePassword } from '$lib/utils/validation';
   import { formatPhoneNumber } from '$lib/utils/format';
   import { Lock, ArrowRight } from 'lucide-svelte';
+  import type { ActionData } from './$types';
+
+  interface Props {
+    data: { isAuthenticated: boolean };
+    form?: ActionData;
+  }
+
+  let { data, form }: Props = $props();
 
   const countryCodes = [
     { code: '62', label: 'ID (Indonesia)', short: 'ID' },
@@ -27,7 +33,12 @@
   // Get return URL from query params
   const returnURL = $derived(() => {
     const returnParam = $page.url.searchParams.get('return');
-    return returnParam ? decodeURIComponent(returnParam) : '/dashboard';
+    return returnParam ? returnParam : '/dashboard';
+  });
+
+  let clientErrors = $state({
+    whatsapp_number: '',
+    password: ''
   });
 </script>
 
@@ -42,42 +53,35 @@
     </p>
   </div>
 
+  <!-- Server error message -->
+  {#if form?.message}
+    <div class="error-banner">
+      {form.message}
+    </div>
+  {/if}
+
   <!-- Form -->
   <form
+    method="POST"
     class="login-form"
-    onsubmit={async (e) => {
-      e.preventDefault();
+    use:enhance={({ formData, cancel }) => {
+      const whatsapp_number = formData.get('whatsapp_number') as string;
+      const password = formData.get('password') as string;
 
-      const whatsapp_number = formData.country_code + formatPhoneNumber(formData.whatsapp_number);
-      const password = formData.password;
-
-      // Validation
+      // Client-side validation
       const phoneValidation = validatePhone(whatsapp_number);
       const passwordValidation = validatePassword(password);
 
       if (!phoneValidation.valid) {
-        toast.error(phoneValidation.error || 'Nomor WhatsApp tidak valid');
-        return;
-      }
-
-      if (!passwordValidation.valid) {
-        toast.error(passwordValidation.error || 'Password tidak valid');
-        return;
-      }
-
-      try {
-        const response = await login({ whatsapp_number, password });
-
-        if (response.success) {
-          // setToken and setUser are already called in the login function
-          toast.success('Login berhasil!');
-          goto(returnURL(), { replaceState: true });
-        } else {
-          toast.error(response.error?.message || 'Login gagal. Silakan coba lagi.');
-        }
-      } catch (error) {
-        toast.error('Terjadi kesalahan. Silakan coba lagi.');
-        console.error(error);
+        clientErrors.whatsapp_number = phoneValidation.error || 'Invalid phone number';
+        cancel();
+      } else if (!passwordValidation.valid) {
+        clientErrors.password = passwordValidation.error || 'Invalid password';
+        cancel();
+      } else {
+        clientErrors = { whatsapp_number: '', password: '' };
+        // Add return URL to form data
+        formData.set('return', returnURL());
       }
     }}
   >
@@ -101,9 +105,15 @@
           style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; font-weight: 500; color: #374151; background: white;"
         />
       </div>
-      <p style="font-size: 12px; color: #9CA3AF; margin-top: 6px; line-height: 1.5;">
-        We'll send you a WhatsApp notification if needed
-      </p>
+      {#if clientErrors.whatsapp_number}
+        <p style="font-size: 12px; color: #EF4444; margin-top: 4px;">
+          {clientErrors.whatsapp_number}
+        </p>
+      {:else}
+        <p style="font-size: 12px; color: #9CA3AF; margin-top: 6px; line-height: 1.5;">
+          We'll send you a WhatsApp notification if needed
+        </p>
+      {/if}
     </div>
 
     <div class="form-group animate-in" style="animation-delay: 0.32s;">
@@ -129,7 +139,16 @@
         showClear
         id="password"
       />
+      {#if clientErrors.password}
+        <p style="font-size: 12px; color: #EF4444; margin-top: 4px;">
+          {clientErrors.password}
+        </p>
+      {/if}
     </div>
+
+    <!-- Hidden field for country code -->
+    <input type="hidden" name="country_code" value={formData.country_code} />
+    <input type="hidden" name="whatsapp_number" value={formData.country_code + formatPhoneNumber(formData.whatsapp_number)} />
 
     <div class="form-group animate-in" style="animation-delay: 0.4s;">
       <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 14px; color: #6B7280;">
@@ -212,6 +231,17 @@
     display: flex;
     flex-direction: column;
     gap: 24px;
+  }
+
+  .error-banner {
+    padding: 12px 16px;
+    background: #FEF2F2;
+    border: 1px solid #FECACA;
+    border-radius: 12px;
+    color: #DC2626;
+    font-size: 14px;
+    font-weight: 500;
+    text-align: center;
   }
 
   .login-header {
