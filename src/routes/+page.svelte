@@ -2,7 +2,6 @@
   import { goto } from "$app/navigation";
   import { user } from "$lib/stores/auth";
   import Button from "$lib/components/ui/Button.svelte";
-  import Navbar from "$lib/components/layout/Navbar.svelte";
   import SharedFooter from "$lib/components/layout/SharedFooter.svelte";
   import {
     Smartphone,
@@ -28,11 +27,8 @@
   class="min-h-screen bg-white flex flex-col"
   style="font-family:'Plus Jakarta Sans',sans-serif;"
 >
-  <!-- ── HEADER / NAV ── -->
-  <Navbar variant="full" />
-
   <main class="flex-1">
-    <div style="max-width:1200px; margin:0 auto;">
+    <div style="max-width:1200px; margin:0 auto; padding-top: 64px;">
       <!-- ── HERO ── -->
       <section class="hero-section">
         <!-- Left: text -->
