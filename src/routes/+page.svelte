@@ -2,6 +2,8 @@
   import { goto } from "$app/navigation";
   import { user } from "$lib/stores/auth";
   import Button from "$lib/components/ui/Button.svelte";
+  import Navbar from "$lib/components/layout/Navbar.svelte";
+  import SharedFooter from "$lib/components/layout/SharedFooter.svelte";
   import {
     Smartphone,
     MessageCircle,
@@ -27,30 +29,7 @@
   style="font-family:'Plus Jakarta Sans',sans-serif;"
 >
   <!-- ── HEADER / NAV ── -->
-  <header
-    style="position:sticky; top:0; z-index:50; background:rgba(255,255,255,0.9); backdrop-filter:blur(12px); border-bottom:1px solid #F3F4F6;"
-  >
-    <div
-      style="max-width:1200px; margin:0 auto; padding:0 24px; height:64px; display:flex; align-items:center; justify-content:space-between;"
-    >
-      <h1
-        style="font-size:22px; font-weight:800; color:#111827; margin:0; letter-spacing:-0.02em;"
-      >
-        Letpai
-      </h1>
-      <div style="display:flex; align-items:center; gap:32px;">
-        <a href="/about" class="nav-link">About</a>
-        <a href="/login" class="nav-link">Sign in</a>
-        <button
-          class="btn-coral"
-          style="padding:10px 22px; font-size:14px;"
-          onclick={handleGetStarted}
-        >
-          Get Started
-        </button>
-      </div>
-    </div>
-  </header>
+  <Navbar variant="full" />
 
   <main class="flex-1">
     <div style="max-width:1200px; margin:0 auto;">
@@ -411,74 +390,8 @@
     </div>
   </main>
 
-  <!-- ── FOOTER ── -->
-  <footer style="background:#0F172A;">
-    <!-- Top accent line -->
-    <div
-      style="height:3px; background:linear-gradient(90deg,#FF6B6B,#14B8A6);"
-    ></div>
-
-    <div style="max-width:1200px; margin:0 auto; padding:56px 24px 0;">
-      <!-- Main footer grid -->
-      <div
-        style="display:grid; grid-template-columns:2fr 1fr 1fr 1fr; gap:48px; padding-bottom:48px; border-bottom:1px solid #1E293B;"
-      >
-        <!-- Brand column -->
-        <div>
-          <h2
-            style="font-size:22px; font-weight:800; color:#fff; margin:0 0 12px; letter-spacing:-0.02em;"
-          >
-            Letpai
-          </h2>
-          <p
-            style="font-size:14px; color:#64748B; line-height:1.7; margin:0 0 24px; max-width:240px;"
-          >
-            Split bills, not friendships. WhatsApp-native payments for your
-            whole group.
-          </p>
-        </div>
-
-        <!-- Product links -->
-        <div>
-          <p class="footer-heading">Product</p>
-          <nav style="display:flex; flex-direction:column; gap:12px;">
-            {#each ["How it works", "Features", "Pricing", "Changelog"] as l}
-              <a href="/" class="footer-link">{l}</a>
-            {/each}
-          </nav>
-        </div>
-
-        <!-- Company links -->
-        <div>
-          <p class="footer-heading">Company</p>
-          <nav style="display:flex; flex-direction:column; gap:12px;">
-            {#each ["About", "Blog", "Careers", "Contact"] as l}
-              <a href="/" class="footer-link">{l}</a>
-            {/each}
-          </nav>
-        </div>
-
-        <!-- Legal links -->
-        <div>
-          <p class="footer-heading">Legal</p>
-          <nav style="display:flex; flex-direction:column; gap:12px;">
-            {#each ["Privacy Policy", "Terms of Service", "Cookie Policy"] as l}
-              <a href="/" class="footer-link">{l}</a>
-            {/each}
-          </nav>
-        </div>
-      </div>
-
-      <!-- Bottom bar -->
-      <div
-        style="padding:20px 0; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;"
-      >
-        <p style="font-size:13px; color:#334155; margin:0;">
-          &copy; 2026 Letpai. All rights reserved.
-        </p>
-      </div>
-    </div>
-  </footer>
+  <!-- Footer -->
+  <SharedFooter />
 </div>
 
 <style>
@@ -596,27 +509,5 @@
     color: #9ca3af;
     margin-bottom: 16px;
     display: block;
-  }
-
-  /* Footer */
-  .footer-link {
-    font-size: 14px;
-    color: #9ca3af;
-    text-decoration: none;
-    transition: color 0.15s;
-    display: block;
-    line-height: 1;
-  }
-  .footer-link:hover {
-    color: #f9fafb;
-  }
-
-  .footer-heading {
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: #4b5563;
-    margin: 0 0 16px;
   }
 </style>

@@ -1,11 +1,11 @@
 <script lang="ts">
-  import AuthHeader from '$lib/components/layout/AuthHeader.svelte';
+  import Navbar from '$lib/components/layout/Navbar.svelte';
   import SharedFooter from '$lib/components/layout/SharedFooter.svelte';
   let { children } = $props();
 </script>
 
 <div class="auth-layout">
-  <AuthHeader />
+  <Navbar variant="auth" />
 
   <!-- Decorative background -->
   <div class="decorative-background">

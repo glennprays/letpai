@@ -2,51 +2,39 @@
   import { goto } from '$app/navigation';
   import Button from '$lib/components/ui/Button.svelte';
   import Input from '$lib/components/ui/Input.svelte';
-  import SocialLoginButton from '$lib/components/ui/SocialLoginButton.svelte';
-  import ProgressStepper from '$lib/components/ui/ProgressStepper.svelte';
   import { toast } from '$lib/stores/toast';
   import { register, verifyOTP } from '$lib/services/auth';
   import { validatePhone, validatePassword, validateOTP } from '$lib/utils/validation';
   import { formatPhoneNumber } from '$lib/utils/format';
   import { UserPlus, Mail, Shield, ArrowRight, CheckCircle2, Clock, RotateCw } from 'lucide-svelte';
 
+  const countryCodes = [
+    { code: '62', label: 'ID (Indonesia)', short: 'ID' },
+    { code: '1', label: 'US (USA)', short: 'US' },
+    { code: '44', label: 'GB (UK)', short: 'GB' },
+    { code: '61', label: 'AU (Australia)', short: 'AU' },
+    { code: '65', label: 'SG (Singapore)', short: 'SG' },
+    { code: '60', label: 'MY (Malaysia)', short: 'MY' },
+  ];
+
   let currentStep = $state(1);
   let formData = $state({
+    country_code: '62',
     whatsapp_number: '',
+    full_name: '',
     password: '',
     confirmPassword: '',
-    full_name: '',
-    email: '',
     otp: '',
   });
 
-  let otpSent = $state(false);
-  let countdown = $state(60);
-  let countdownInterval = $state<NodeJS.Timeout | null>(null);
-
   const steps = [
     { id: 1, label: 'Account Info' },
-    { id: 2, label: 'Personal Info' },
-    { id: 3, label: 'Verify OTP' },
+    { id: 2, label: 'Verify OTP' },
   ];
 
-  function startCountdown() {
-    otpSent = true;
-    countdown = 60;
-
-    if (countdownInterval) clearInterval(countdownInterval);
-
-    countdownInterval = setInterval(() => {
-      countdown--;
-      if (countdown <= 0) {
-        clearInterval(countdownInterval!);
-        countdownInterval = null;
-      }
-    }, 1000);
-  }
-
   async function handleStep1Submit() {
-    const phoneValidation = validatePhone(formData.whatsapp_number);
+    const whatsapp_number = formData.country_code + formatPhoneNumber(formData.whatsapp_number);
+    const phoneValidation = validatePhone(whatsapp_number);
     const passwordValidation = validatePassword(formData.password);
 
     if (!phoneValidation.valid) {
@@ -65,12 +53,12 @@
     }
 
     try {
-      const response = await register({ whatsapp_number: formData.whatsapp_number, password: formData.password });
+      const response = await register({ whatsapp_number, password: formData.password });
 
       if (response.success) {
-        startCountdown();
+        otpSent = true;
         currentStep = 2;
-        toast.success('Account created! Let\'s add some details.');
+        toast.success('Account created! Please verify your OTP.');
       } else {
         toast.error('Registration failed. Please try again.');
       }
@@ -80,12 +68,8 @@
     }
   }
 
-  async function handleStep2Submit() {
-    // Email is optional, so no strict validation
-    currentStep = 3;
-  }
-
   async function handleOTPSubmit() {
+    const whatsapp_number = formData.country_code + formatPhoneNumber(formData.whatsapp_number);
     const otpValidation = validateOTP(formData.otp);
 
     if (!otpValidation.valid) {
@@ -94,7 +78,7 @@
     }
 
     try {
-      const response = await verifyOTP({ whatsapp_number: formData.whatsapp_number, otp: formData.otp });
+      const response = await verifyOTP({ whatsapp_number, otp: formData.otp });
 
       if (response.success) {
         toast.success('Registration successful!');
@@ -109,16 +93,15 @@
   }
 
   async function resendOTP() {
-    if (countdown > 0) return;
+    const whatsapp_number = formData.country_code + formatPhoneNumber(formData.whatsapp_number);
 
     try {
       const response = await register({
-        whatsapp_number: formData.whatsapp_number,
+        whatsapp_number,
         password: formData.password,
       });
 
       if (response.success) {
-        startCountdown();
         toast.success('OTP sent successfully!');
       }
     } catch (error) {
@@ -133,11 +116,7 @@
     }
   }
 
-  function getStepsProgress() {
-    return Math.round(((currentStep - 1) / (steps.length - 1)) * 100);
-  }
-
-  $: passwordStrength = calculatePasswordStrength(formData.password);
+  const passwordStrength = $derived(calculatePasswordStrength(formData.password));
 
   function calculatePasswordStrength(password: string): { score: number; label: string; color: string } {
     if (!password) return { score: 0, label: 'Enter password', color: '#9CA3AF' };
@@ -157,12 +136,9 @@
 </script>
 
 <div class="register-container">
-  <!-- Progress stepper -->
-  <ProgressStepper steps={steps} currentStep={currentStep} />
-
   <!-- Progress bar -->
   <div class="progress-bar-container">
-    <div class="progress-bar" style="width: {getStepsProgress()}%"></div>
+    <div class="progress-bar" style="width: {currentStep === 1 ? '50%' : '100%'}"></div>
   </div>
 
   <!-- Step 1: Account Info -->
@@ -176,18 +152,44 @@
           <h2>Create Account</h2>
           <p>Let's get you started with your account details</p>
         </div>
+       </div>
+
+      <div class="form-group">
+        <label style="font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 6px; display: block;">
+          Full Name
+        </label>
+        <input
+          type="text"
+          bind:value={formData.full_name}
+          class="text-input"
+          placeholder="John Doe"
+          required
+          style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; font-weight: 500; color: #374151; background: white;"
+        />
       </div>
 
       <div class="form-group">
-        <Input
-          type="tel"
-          label="WhatsApp Number"
-          placeholder="62xxxxxxxxxx"
-          bind:value={formData.whatsapp_number}
-          required
-          helperText="We'll send you a WhatsApp notification for verification"
-          leftIcon={UserPlus}
-        />
+        <label style="font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 6px; display: block;">
+          WhatsApp Number
+        </label>
+        <div class="phone-input-group">
+          <select class="country-selector" bind:value={formData.country_code}>
+            {#each countryCodes as country}
+              <option value={country.code}>{country.short} (+{country.code})</option>
+            {/each}
+          </select>
+          <input
+            type="tel"
+            bind:value={formData.whatsapp_number}
+            class="phone-input"
+            placeholder="8123456789"
+            required
+            style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; font-weight: 500; color: #374151; background: white;"
+          />
+        </div>
+        <p style="font-size: 12px; color: #9CA3AF; margin-top: 6px; line-height: 1.5;">
+          We'll send you a WhatsApp notification for verification
+        </p>
       </div>
 
       <div class="form-group">
@@ -236,54 +238,8 @@
     </div>
   {/if}
 
-  <!-- Step 2: Personal Info -->
+  <!-- Step 2: Verify OTP -->
   {#if currentStep === 2}
-    <div class="step-content animate-in">
-      <div class="step-header">
-        <div class="step-icon-circle">
-          <Mail size={28} style="color: #14B8A6;" />
-        </div>
-        <div class="step-title">
-          <h2>Personal Info</h2>
-          <p>Tell us a bit about yourself (optional)</p>
-        </div>
-      </div>
-
-      <div class="form-group">
-        <Input
-          type="text"
-          label="Full Name"
-          placeholder="John Doe"
-          bind:value={formData.full_name}
-          helperText="This helps us personalize your experience"
-          leftIcon={UserPlus}
-        />
-      </div>
-
-      <div class="form-group">
-        <Input
-          type="email"
-          label="Email Address (Optional)"
-          placeholder="john@example.com"
-          bind:value={formData.email}
-          helperText="For account recovery and updates"
-          leftIcon={Mail}
-        />
-      </div>
-
-      <div class="button-group">
-        <Button onclick={handleBack} variant="secondary" size="default">
-          Back
-        </Button>
-        <Button onclick={handleStep2Submit} variant="primary" size="default" rightIcon={ArrowRight}>
-          Continue
-        </Button>
-      </div>
-    </div>
-  {/if}
-
-  <!-- Step 3: Verify OTP -->
-  {#if currentStep === 3}
     <div class="step-content animate-in">
       <div class="step-header">
         <div class="step-icon-circle">
@@ -298,7 +254,7 @@
       <!-- Phone display -->
       <div class="phone-display">
         <Shield size={16} style="color: #FF6B6B;" />
-        <span>{formData.whatsapp_number}</span>
+        <span>{formData.country_code}{formData.whatsapp_number}</span>
       </div>
 
       <!-- OTP Input -->
@@ -329,18 +285,16 @@
         {/each}
       </div>
 
-      <!-- Timer -->
-      {#if countdown > 0}
-        <div class="timer-display">
-          <Clock size={16} style="color: #6B7280;" />
-          <span>Resend in {countdown}s</span>
-        </div>
-      {:else}
-        <button class="resend-button" onclick={resendOTP}>
-          <RotateCw size={16} style="color: #FF6B6B;" />
-          Resend OTP
-        </button>
-      {/if}
+      <!-- Timer info -->
+      <div class="timer-info">
+        <Clock size={16} style="color: #6B7280;" />
+        <span>OTP is active for 2 minutes</span>
+      </div>
+
+      <button class="resend-button" onclick={resendOTP}>
+        <RotateCw size={16} style="color: #FF6B6B;" />
+        Resend OTP
+      </button>
 
       <Button onclick={handleOTPSubmit} variant="primary" size="default" class="submit-button" rightIcon={ArrowRight}>
         Verify & Create Account
@@ -351,16 +305,6 @@
       </button>
     </div>
   {/if}
-
-  <!-- Divider -->
-  <div class="divider">
-    <span>or continue with</span>
-  </div>
-
-  <!-- Social login -->
-  <div class="social-login">
-    <SocialLoginButton provider="google" onclick={() => console.log('Google login')} />
-  </div>
 
   <!-- Bottom link -->
   <div class="register-footer">
@@ -472,6 +416,64 @@
     gap: 4px;
   }
 
+  .phone-input-group {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+  }
+
+  .country-selector {
+    width: auto;
+    min-width: 90px;
+    padding: 12px 8px;
+    border: 2px solid #D1D5DB;
+    border-right: none;
+    border-radius: 8px 0 0 8px;
+    background: #F9FAFB;
+    font: 14px 'Plus Jakarta Sans', sans-serif;
+    color: #374151;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+
+  .phone-input {
+    flex: 1;
+    padding: 12px 16px;
+    border: 2px solid #D1D5DB;
+    border-left: none;
+    border-radius: 0 8px 8px 0;
+    font: 14px 'Plus Jakarta Sans', sans-serif;
+    color: #374151;
+    background: white;
+    transition: border-color 0.15s;
+  }
+
+  .country-selector:focus,
+  .phone-input:focus {
+    outline: none;
+    border-color: #FF6B6B;
+  }
+
+  .country-selector:focus + .phone-input {
+    border-color: #FF6B6B;
+  }
+
+  .text-input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #D1D5DB;
+    border-radius: 12px;
+    font: 14px 'Plus Jakarta Sans', sans-serif;
+    color: #374151;
+    background: white;
+    transition: border-color 0.15s;
+  }
+
+  .text-input:focus {
+    outline: none;
+    border-color: #FF6B6B;
+  }
+
   .password-strength {
     display: flex;
     align-items: center;
@@ -543,7 +545,7 @@
     }
   }
 
-  .timer-display,
+  .timer-info,
   .resend-button {
     display: flex;
     align-items: center;
@@ -556,9 +558,10 @@
     border-radius: 12px;
   }
 
-  .timer-display {
+  .timer-info {
     color: #6B7280;
     background: #FAFAFA;
+    width: 100%;
   }
 
   .resend-button {
@@ -580,16 +583,6 @@
     font-size: 16px;
   }
 
-  .button-group {
-    display: flex;
-    gap: 12px;
-    margin-top: 8px;
-  }
-
-  .button-group button {
-    flex: 1;
-  }
-
   .back-button {
     background: none;
     border: none;
@@ -604,35 +597,6 @@
 
   .back-button:hover {
     color: #111827;
-  }
-
-  .divider {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin: 8px 0;
-  }
-
-  .divider::before,
-  .divider::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: #F0F0F0;
-  }
-
-  .divider span {
-    font-size: 13px;
-    font-weight: 600;
-    color: #9CA3AF;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-
-  .social-login {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
   }
 
   .register-footer {

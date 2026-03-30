@@ -8,15 +8,26 @@
   import { formatPhoneNumber } from '$lib/utils/format';
   import { Lock, ArrowRight, CheckCircle2, Mail, Clock, RotateCw } from 'lucide-svelte';
 
+  const countryCodes = [
+    { code: '62', label: 'ID (Indonesia)', short: 'ID' },
+    { code: '1', label: 'US (USA)', short: 'US' },
+    { code: '44', label: 'GB (UK)', short: 'GB' },
+    { code: '61', label: 'AU (Australia)', short: 'AU' },
+    { code: '65', label: 'SG (Singapore)', short: 'SG' },
+    { code: '60', label: 'MY (Malaysia)', short: 'MY' },
+  ];
+
   let step = $state(1); // 1: enter phone, 2: success
-  let whatsapp_number = $state('');
+  let formData = $state({
+    country_code: '62',
+    whatsapp_number: '',
+  });
   let isSubmitted = $state(false);
-  let countdown = $state(60);
-  let countdownInterval = $state<NodeJS.Timeout | null>(null);
 
   async function handleSubmit(e: Event) {
     e.preventDefault();
 
+    const whatsapp_number = formData.country_code + formatPhoneNumber(formData.whatsapp_number);
     const phoneValidation = validatePhone(whatsapp_number);
 
     if (!phoneValidation.valid) {
@@ -25,12 +36,11 @@
     }
 
     try {
-      const response = await sendResetLink({ whatsapp_number: formatPhoneNumber(whatsapp_number) });
+      const response = await sendResetLink({ whatsapp_number });
 
       if (response.success) {
         isSubmitted = true;
         step = 2;
-        startCountdown();
         toast.success('Reset link sent successfully!');
       } else {
         toast.error('Failed to send reset link');
@@ -41,28 +51,13 @@
     }
   }
 
-  function startCountdown() {
-    countdown = 60;
-
-    if (countdownInterval) clearInterval(countdownInterval);
-
-    countdownInterval = setInterval(() => {
-      countdown--;
-      if (countdown <= 0) {
-        clearInterval(countdownInterval!);
-        countdownInterval = null;
-      }
-    }, 1000);
-  }
-
   async function handleResend() {
-    if (countdown > 0) return;
+    const whatsapp_number = formData.country_code + formatPhoneNumber(formData.whatsapp_number);
 
     try {
-      const response = await sendResetLink({ whatsapp_number: formatPhoneNumber(whatsapp_number) });
+      const response = await sendResetLink({ whatsapp_number });
 
       if (response.success) {
-        startCountdown();
         toast.success('Reset link sent again!');
       }
     } catch (error) {
@@ -92,15 +87,27 @@
       <!-- Form -->
       <form onsubmit={handleSubmit}>
         <div class="form-group animate-in" style="animation-delay: 0.24s;">
-          <Input
-            type="tel"
-            label="WhatsApp Number"
-            placeholder="62xxxxxxxxxx"
-            bind:value={whatsapp_number}
-            required
-            leftIcon={Lock}
-            helperText="We'll send the reset link to your WhatsApp"
-          />
+          <label style="font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 6px; display: block;">
+            WhatsApp Number
+          </label>
+          <div class="phone-input-group">
+            <select class="country-selector" bind:value={formData.country_code}>
+              {#each countryCodes as country}
+                <option value={country.code}>{country.short} (+{country.code})</option>
+              {/each}
+            </select>
+            <input
+              type="tel"
+              bind:value={formData.whatsapp_number}
+              class="phone-input"
+              placeholder="8123456789"
+              required
+              style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; font-weight: 500; color: #374151; background: white;"
+            />
+          </div>
+          <p style="font-size: 12px; color: #9CA3AF; margin-top: 6px; line-height: 1.5;">
+            We'll send reset link to your WhatsApp
+          </p>
         </div>
 
         <div class="button-group animate-in" style="animation-delay: 0.32s;">
@@ -136,7 +143,7 @@
         <p>We've sent a password reset link to</p>
         <div class="phone-display">
           <Mail size={16} style="color: #FF6B6B;" />
-          <span>{whatsapp_number}</span>
+          <span>{formData.country_code}{formData.whatsapp_number}</span>
         </div>
       </div>
 
@@ -152,18 +159,16 @@
         </div>
       </div>
 
-      <!-- Timer -->
-      {#if countdown > 0}
-        <div class="timer-display">
-          <Clock size={16} style="color: #6B7280;" />
-          <span>Resend in {Math.floor(countdown / 60)}:{String(countdown % 60).padStart(2, '0')}</span>
-        </div>
-      {:else}
-        <button class="resend-button" onclick={handleResend}>
-          <RotateCw size={16} style="color: #FF6B6B;" />
-          Resend Reset Link
-        </button>
-      {/if}
+      <!-- Timer info -->
+      <div class="timer-info">
+        <Clock size={16} style="color: #6B7280;" />
+        <span>Reset link is active for 2 minutes</span>
+      </div>
+
+      <button class="resend-button" onclick={handleResend}>
+        <RotateCw size={16} style="color: #FF6B6B;" />
+        Resend Reset Link
+      </button>
 
       <Button variant="primary" size="default" onclick={() => goto('/login')} class="submit-button" rightIcon={ArrowRight}>
         Back to Login
@@ -279,6 +284,48 @@
     flex-direction: column;
   }
 
+  .phone-input-group {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+  }
+
+  .country-selector {
+    width: auto;
+    min-width: 90px;
+    padding: 12px 8px;
+    border: 2px solid #D1D5DB;
+    border-right: none;
+    border-radius: 8px 0 0 8px;
+    background: #F9FAFB;
+    font: 14px 'Plus Jakarta Sans', sans-serif;
+    color: #374151;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+
+  .phone-input {
+    flex: 1;
+    padding: 12px 16px;
+    border: 2px solid #D1D5DB;
+    border-left: none;
+    border-radius: 0 8px 8px 0;
+    font: 14px 'Plus Jakarta Sans', sans-serif;
+    color: #374151;
+    background: white;
+    transition: border-color 0.15s;
+  }
+
+  .country-selector:focus,
+  .phone-input:focus {
+    outline: none;
+    border-color: #FF6B6B;
+  }
+
+  .country-selector:focus + .phone-input {
+    border-color: #FF6B6B;
+  }
+
   .button-group {
     display: flex;
     gap: 12px;
@@ -306,7 +353,7 @@
     color: #374151;
   }
 
-  .timer-display,
+  .timer-info,
   .resend-button {
     display: flex;
     align-items: center;
@@ -318,9 +365,10 @@
     border-radius: 12px;
   }
 
-  .timer-display {
+  .timer-info {
     color: #6B7280;
     background: #FAFAFA;
+    width: 100%;
   }
 
   .resend-button {

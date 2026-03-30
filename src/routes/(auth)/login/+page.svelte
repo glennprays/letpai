@@ -2,23 +2,30 @@
   import { goto } from '$app/navigation';
   import Button from '$lib/components/ui/Button.svelte';
   import Input from '$lib/components/ui/Input.svelte';
-  import SocialLoginButton from '$lib/components/ui/SocialLoginButton.svelte';
   import { toast } from '$lib/stores/toast';
   import { login } from '$lib/services/auth';
   import { setUser, setToken } from '$lib/stores/auth';
   import { validatePhone, validatePassword } from '$lib/utils/validation';
   import { formatPhoneNumber } from '$lib/utils/format';
-  import { Shield, Lock, ArrowRight } from 'lucide-svelte';
+  import { Lock, ArrowRight } from 'lucide-svelte';
+
+  const countryCodes = [
+    { code: '62', label: 'ID (Indonesia)', short: 'ID' },
+    { code: '1', label: 'US (USA)', short: 'US' },
+    { code: '44', label: 'GB (UK)', short: 'GB' },
+    { code: '61', label: 'AU (Australia)', short: 'AU' },
+    { code: '65', label: 'SG (Singapore)', short: 'SG' },
+    { code: '60', label: 'MY (Malaysia)', short: 'MY' },
+  ];
+
+  let formData = $state({
+    country_code: '62',
+    whatsapp_number: '',
+    password: '',
+  });
 </script>
 
 <div class="login-container">
-  <!-- Header illustration -->
-  <div class="login-illustration">
-    <div class="icon-circle">
-      <Shield size={32} style="color: #FF6B6B;" />
-    </div>
-  </div>
-
   <!-- Title and subtitle -->
   <div class="login-header">
     <h1 class="login-title animate-in" style="animation-delay: 0.08s;">
@@ -35,9 +42,8 @@
     onsubmit={async (e) => {
       e.preventDefault();
 
-      const formData = new FormData(e.currentTarget);
-      const whatsapp_number = formatPhoneNumber(formData.get('whatsapp_number') || '');
-      const password = formData.get('password') || '';
+      const whatsapp_number = formData.country_code + formatPhoneNumber(formData.whatsapp_number);
+      const password = formData.password;
 
       // Validation
       const phoneValidation = validatePhone(whatsapp_number);
@@ -71,15 +77,28 @@
     }}
   >
     <div class="form-group animate-in" style="animation-delay: 0.24s;">
-      <Input
-        type="tel"
-        name="whatsapp_number"
-        label="Nomor WhatsApp"
-        placeholder="62xxxxxxxxxx"
-        required
-        leftIcon={Lock}
-        helperText="We'll send you a WhatsApp notification if needed"
-      />
+      <label style="font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 6px; display: block;">
+        Nomor WhatsApp
+      </label>
+        <div class="phone-input-group">
+          <select class="country-selector" bind:value={formData.country_code}>
+            {#each countryCodes as country}
+              <option value={country.code}>{country.short} (+{country.code})</option>
+            {/each}
+          </select>
+        <input
+          type="tel"
+          name="whatsapp_number"
+          bind:value={formData.whatsapp_number}
+          class="phone-input"
+          placeholder="8123456789"
+          required
+          style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; font-weight: 500; color: #374151; background: white;"
+        />
+      </div>
+      <p style="font-size: 12px; color: #9CA3AF; margin-top: 6px; line-height: 1.5;">
+        We'll send you a WhatsApp notification if needed
+      </p>
     </div>
 
     <div class="form-group animate-in" style="animation-delay: 0.32s;">
@@ -125,16 +144,6 @@
       </Button>
     </div>
   </form>
-
-  <!-- Divider -->
-  <div class="divider animate-in" style="animation-delay: 0.56s;">
-    <span>or continue with</span>
-  </div>
-
-  <!-- Social login -->
-  <div class="social-login animate-in" style="animation-delay: 0.64s;">
-    <SocialLoginButton provider="google" onclick={() => console.log('Google login')} />
-  </div>
 
   <!-- Bottom links -->
   <div class="login-footer animate-in" style="animation-delay: 0.72s;">
@@ -199,24 +208,6 @@
     gap: 24px;
   }
 
-  .login-illustration {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 8px;
-  }
-
-  .icon-circle {
-    width: 64px;
-    height: 64px;
-    border-radius: 20px;
-    background: linear-gradient(135deg, #FFF5F5, #FFF);
-    border: 1.5px solid #FFE5E5;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 8px 24px rgba(255, 107, 107, 0.15);
-  }
-
   .login-header {
     text-align: center;
     margin-bottom: 8px;
@@ -248,39 +239,52 @@
     flex-direction: column;
   }
 
+  .phone-input-group {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+  }
+
+  .country-selector {
+    width: auto;
+    min-width: 90px;
+    padding: 12px 8px;
+    border: 2px solid #D1D5DB;
+    border-right: none;
+    border-radius: 8px 0 0 8px;
+    background: #F9FAFB;
+    font: 14px 'Plus Jakarta Sans', sans-serif;
+    color: #374151;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+
+  .phone-input {
+    flex: 1;
+    padding: 12px 16px;
+    border: 2px solid #D1D5DB;
+    border-left: none;
+    border-radius: 0 8px 8px 0;
+    font: 14px 'Plus Jakarta Sans', sans-serif;
+    color: #374151;
+    background: white;
+    transition: border-color 0.15s;
+  }
+
+  .country-selector:focus,
+  .phone-input:focus {
+    outline: none;
+    border-color: #FF6B6B;
+  }
+
+  .country-selector:focus + .phone-input {
+    border-color: #FF6B6B;
+  }
+
   .submit-button {
     width: 100%;
     height: 44px;
     font-size: 16px;
-  }
-
-  .divider {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin: 8px 0;
-  }
-
-  .divider::before,
-  .divider::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: #F0F0F0;
-  }
-
-  .divider span {
-    font-size: 13px;
-    font-weight: 600;
-    color: #9CA3AF;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-
-  .social-login {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
   }
 
   .login-footer {

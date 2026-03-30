@@ -1,28 +1,27 @@
 <script lang="ts">
-  import { ArrowRight, Mail, MessageCircle, Phone } from 'lucide-svelte';
+  import { ArrowRight, Mail, MessageCircle, Phone } from "lucide-svelte";
 
   const footerLinks = {
     product: [
-      { label: 'How it works', href: '/' },
-      { label: 'Features', href: '/' },
-      { label: 'Pricing', href: '/' },
-      { label: 'Changelog', href: '/' },
+      { label: "How it works", href: "/" },
+      { label: "Features", href: "/" },
+      { label: "Pricing", href: "/" },
     ],
     company: [
-      { label: 'About', href: '/' },
-      { label: 'Blog', href: '/' },
-      { label: 'Careers', href: '/' },
-      { label: 'Contact', href: '/' },
+      { label: "About", href: "/" },
+      { label: "Contact", href: "/" },
     ],
     legal: [
-      { label: 'Privacy Policy', href: '/' },
-      { label: 'Terms of Service', href: '/' },
-      { label: 'Cookie Policy', href: '/' },
+      { label: "Privacy Policy", href: "/" },
+      { label: "Terms of Service", href: "/" },
+      { label: "Cookie Policy", href: "/" },
     ],
   };
 </script>
 
-<footer style="background: #0F172A; font-family: 'Plus Jakarta Sans', sans-serif;">
+<footer
+  style="background: #0F172A; font-family: 'Plus Jakarta Sans', sans-serif;"
+>
   <!-- Top accent line -->
   <div
     style="
@@ -98,25 +97,9 @@
             max-width: 240px;
           "
         >
-          Split bills, not friendships. WhatsApp-native payments for your whole group.
+          Split bills, not friendships. WhatsApp notification payments for your
+          whole group.
         </p>
-        <span
-          style="
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 12px;
-            border-radius: 100px;
-            font-size: 11px;
-            font-weight: 600;
-            background: rgba(255, 107, 107, 0.1);
-            color: #FF6B6B;
-            border: 1px solid rgba(255, 107, 107, 0.2);
-          "
-        >
-          <span style="width: 6px; height: 6px; border-radius: 50%; background: #10B981; animation: pulse 2s infinite;"></span>
-          All systems operational
-        </span>
       </div>
 
       <!-- Product links -->
@@ -147,12 +130,12 @@
                 gap: 4px;
               "
               onmouseenter={(e) => {
-                const arrow = e.currentTarget.querySelector('.link-arrow');
-                if (arrow) arrow.style.transform = 'translateX(4px)';
+                const arrow = e.currentTarget.querySelector(".link-arrow");
+                if (arrow) arrow.style.transform = "translateX(4px)";
               }}
               onmouseleave={(e) => {
-                const arrow = e.currentTarget.querySelector('.link-arrow');
-                if (arrow) arrow.style.transform = 'translateX(0)';
+                const arrow = e.currentTarget.querySelector(".link-arrow");
+                if (arrow) arrow.style.transform = "translateX(0)";
               }}
             >
               {link.label}
@@ -194,12 +177,12 @@
                 gap: 4px;
               "
               onmouseenter={(e) => {
-                const arrow = e.currentTarget.querySelector('.link-arrow');
-                if (arrow) arrow.style.transform = 'translateX(4px)';
+                const arrow = e.currentTarget.querySelector(".link-arrow");
+                if (arrow) arrow.style.transform = "translateX(4px)";
               }}
               onmouseleave={(e) => {
-                const arrow = e.currentTarget.querySelector('.link-arrow');
-                if (arrow) arrow.style.transform = 'translateX(0)';
+                const arrow = e.currentTarget.querySelector(".link-arrow");
+                if (arrow) arrow.style.transform = "translateX(0)";
               }}
             >
               {link.label}
@@ -241,12 +224,12 @@
                 gap: 4px;
               "
               onmouseenter={(e) => {
-                const arrow = e.currentTarget.querySelector('.link-arrow');
-                if (arrow) arrow.style.transform = 'translateX(4px)';
+                const arrow = e.currentTarget.querySelector(".link-arrow");
+                if (arrow) arrow.style.transform = "translateX(4px)";
               }}
               onmouseleave={(e) => {
-                const arrow = e.currentTarget.querySelector('.link-arrow');
-                if (arrow) arrow.style.transform = 'translateX(0)';
+                const arrow = e.currentTarget.querySelector(".link-arrow");
+                if (arrow) arrow.style.transform = "translateX(0)";
               }}
             >
               {link.label}
@@ -277,49 +260,14 @@
       <p style="font-size: 13px; color: #334155; margin: 0;">
         © 2026 Letpai. All rights reserved.
       </p>
-      <div style="display: flex; align-items: center; gap: 16px;">
-        <a
-          href="/"
-          style="
-            font-size: 13px;
-            color: #334155;
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            transition: color 0.15s;
-          "
-          onmouseenter={(e) => (e.currentTarget.style.color = '#64748B')}
-          onmouseleave={(e) => (e.currentTarget.style.color = '#334155')}
-        >
-          <Phone size={16} />
-          WhatsApp
-        </a>
-        <a
-          href="mailto:hello@letpai.com"
-          style="
-            font-size: 13px;
-            color: #334155;
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            transition: color 0.15s;
-          "
-          onmouseenter={(e) => (e.currentTarget.style.color = '#64748B')}
-          onmouseleave={(e) => (e.currentTarget.style.color = '#334155')}
-        >
-          <Mail size={16} />
-          Contact Support
-        </a>
-      </div>
     </div>
   </div>
 </footer>
 
 <style>
   @keyframes pulse {
-    0%, 100% {
+    0%,
+    100% {
       opacity: 1;
     }
     50% {
