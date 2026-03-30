@@ -1,26 +1,77 @@
 import { get, post } from './api';
+import { setToken, setUser, logout as logoutStore } from '$lib/stores/auth';
 
-export async function register(data: { whatsapp_number: string; password: string }) {
+// API Response Types
+interface LoginResponse {
+  success: true;
+  token: string;
+  user: {
+    user_id: string;
+    whatsapp_number: string;
+    full_name: string;
+  };
+}
+
+interface RegisterResponse {
+  success: true;
+  message: string;
+  user_id: string;
+  expires_at: string;
+}
+
+interface VerifyOTPResponse {
+  success: true;
+  token: string;
+  user: {
+    user_id: string;
+    whatsapp_number: string;
+    full_name: string;
+  };
+}
+
+interface ErrorResponse {
+  success: false;
+  error: {
+    code: string;
+    message: string;
+  };
+}
+
+interface ProfileResponse {
+  success: true;
+  user: {
+    user_id: string;
+    whatsapp_number: string;
+    full_name: string;
+    avatar_url?: string;
+  };
+}
+
+export async function register(data: { whatsapp_number: string; password: string; full_name?: string }): Promise<RegisterResponse | ErrorResponse> {
   return await post('/auth/register', data);
 }
 
-export async function verifyOTP(data: { whatsapp_number: string; otp_code: string }) {
-  return await post('/auth/verify-otp', data);
+export async function verifyOTP(data: { whatsapp_number: string; otp: string }): Promise<VerifyOTPResponse | ErrorResponse> {
+  return await post('/auth/verify-otp', { whatsapp_number: data.whatsapp_number, otp_code: data.otp });
 }
 
-export async function login(data: { whatsapp_number: string; password: string }) {
-  return await post('/auth/login', data);
+export async function login(data: { whatsapp_number: string; password: string }): Promise<LoginResponse | ErrorResponse> {
+  const response = await post('/auth/login', data);
+  if (response.success) {
+    setToken(response.token);
+    setUser(response.user);
+  }
+  return response;
 }
 
 export async function logout() {
-  localStorage.removeItem('token');
-  localStorage.removeItem('user');
+  logoutStore();
 }
 
-export async function getProfile() {
+export async function getProfile(): Promise<ProfileResponse | ErrorResponse> {
   return await get('/auth/profile');
 }
 
-export async function updateProfile(data: { full_name?: string; avatar_url?: string }) {
+export async function updateProfile(data: { full_name?: string; avatar_url?: string }): Promise<ProfileResponse | ErrorResponse> {
   return await post('/auth/profile', data);
 }
