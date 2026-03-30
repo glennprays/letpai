@@ -2,15 +2,10 @@
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
   import { ArrowRight, Menu, X } from 'lucide-svelte';
+  import Logo from '$lib/components/layout/Logo.svelte';
 
   let { variant = 'full' } = $props<{ variant: 'full' | 'auth' }>();
   let mobileMenuOpen = $state(false);
-
-  function handleLogoClick() {
-    if ($page.url.pathname !== '/') {
-      goto('/');
-    }
-  }
 
   function closeMobileMenu() {
     mobileMenuOpen = false;
@@ -21,9 +16,9 @@
   class="navbar"
 >
   <div class="navbar-inner">
-    <button class="logo" onclick={handleLogoClick}>
-      Letpai
-    </button>
+    <a href="/" class="logo-link" onclick={(e) => { if ($page.url.pathname === '/') e.preventDefault(); }}>
+      <Logo size="md" />
+    </a>
 
     {#if variant === 'full'}
       <nav class="desktop-nav">
@@ -90,22 +85,9 @@
     justify-content: space-between;
   }
 
-  .logo {
-    font-size: 22px;
-    font-weight: 800;
-    color: #111827;
-    margin: 0;
-    padding: 0;
-    letter-spacing: -0.02em;
-    cursor: pointer;
-    transition: color 0.15s;
-    background: none;
-    border: none;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-  }
-
-  .logo:hover {
-    color: #FF6B6B;
+  .logo-link {
+    display: inline-flex;
+    text-decoration: none;
   }
 
   .desktop-nav {

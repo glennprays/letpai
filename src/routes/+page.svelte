@@ -408,18 +408,6 @@
     }
   }
 
-  /* Nav */
-  .nav-link {
-    font-size: 14px;
-    font-weight: 500;
-    color: #4b5563;
-    text-decoration: none;
-    transition: color 0.15s;
-  }
-  .nav-link:hover {
-    color: #111827;
-  }
-
   /* Primary CTA */
   .btn-coral {
     display: inline-flex;

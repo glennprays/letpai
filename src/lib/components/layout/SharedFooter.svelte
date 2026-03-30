@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { ArrowRight, Mail, MessageCircle, Phone } from "lucide-svelte";
+  import { ArrowRight } from "lucide-svelte";
+  import Logo from "$lib/components/layout/Logo.svelte";
 
   const footerLinks = {
     product: [
@@ -68,17 +69,9 @@
 
       <!-- Brand column -->
       <div style="position: relative; z-index: 1;">
-        <h2
-          style="
-            font-size: 22px;
-            font-weight: 800;
-            color: #fff;
-            margin: 0 0 12px;
-            letter-spacing: -0.02em;
-          "
-        >
-          Letpai
-        </h2>
+        <div style="margin-bottom: 16px;">
+          <Logo size="sm" />
+        </div>
         <p
           style="
             font-size: 14px;
