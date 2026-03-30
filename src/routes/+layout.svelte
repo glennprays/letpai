@@ -9,6 +9,23 @@
 
 	let { children, data }: { children: any; data: LayoutData } = $props();
 
+	// Create reactive state for auth data
+	let authData = $state({
+		isAuthenticated: data.isAuthenticated,
+		token: data.token,
+		user: data.user
+	});
+
+	// Update authData when data prop changes
+	$effect(() => {
+		authData = {
+			isAuthenticated: data.isAuthenticated,
+			token: data.token,
+			user: data.user
+		};
+		console.log('📊 Auth data updated:', authData);
+	});
+
 	// Initialize auth store from server-provided data
 	onMount(() => {
 		// Use server-provided auth state if available, otherwise check localStorage
@@ -28,13 +45,11 @@
 	// Use $derived to ensure reactivity
 	const navbarVariant = $derived.by(() => {
 		const pathname = $page.url.pathname;
-		const isAuthenticated = data.isAuthenticated;
-		const hasToken = data.token;
 
 		console.log('🔍 Navbar variant calculation:', {
 			pathname,
-			isAuthenticated,
-			hasToken
+			isAuthenticated: authData.isAuthenticated,
+			hasToken: authData.token
 		});
 
 		// Auth pages get minimal navbar
@@ -43,7 +58,7 @@
 			return 'auth';
 		}
 		// Protected pages get logged-in navbar if authenticated
-		else if (isAuthenticated && hasToken) {
+		else if (authData.isAuthenticated && authData.token) {
 			console.log('✅ Variant: loggedIn');
 			return 'loggedIn';
 		}
