@@ -110,14 +110,15 @@
             </div>
           {/if}
         </div>
+      </nav>
 
-        <button class="hamburger" onclick={() => (mobileMenuOpen = !mobileMenuOpen)} aria-label="Toggle menu">
-          {#if mobileMenuOpen}
-            <X size={24} color="#111827" />
-          {:else}
-            <Menu size={24} color="#111827" />
-          {/if}
-        </button>
+      <button class="hamburger" onclick={() => (mobileMenuOpen = !mobileMenuOpen)} aria-label="Toggle menu">
+        {#if mobileMenuOpen}
+          <X size={24} color="#111827" />
+        {:else}
+          <Menu size={24} color="#111827" />
+        {/if}
+      </button>
     {/if}
   </div>
 
