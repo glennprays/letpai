@@ -170,7 +170,7 @@
         Resend Reset Link
       </button>
 
-      <Button variant="primary" size="default" onclick={() => goto('/login')} class="submit-button" rightIcon={ArrowRight}>
+      <Button variant="primary" size="default" onbuttonclick={() => goto('/login')} class="submit-button" rightIcon={ArrowRight}>
         Back to Login
       </Button>
 
