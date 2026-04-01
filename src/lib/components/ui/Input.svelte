@@ -37,7 +37,7 @@
     error = false,
     success = false,
     class: className,
-    value = '',
+    value = $bindable(''),
     name,
     id,
     oninput,
@@ -77,8 +77,9 @@
   );
 
   function handleInput(e: Event) {
+    const target = e.target as HTMLInputElement;
+    value = target.value;
     if (oninput) {
-      const target = e.target as HTMLInputElement;
       oninput(target.value);
     }
   }
@@ -88,6 +89,7 @@
   }
 
   function clearInput() {
+    value = '';
     if (oninput) {
       oninput('');
     }
