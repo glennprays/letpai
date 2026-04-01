@@ -7,6 +7,16 @@ export function formatCurrency(amount: number, currency = 'IDR'): string {
   }).format(amount);
 }
 
+export function formatIDR(cents: number): string {
+  const rupiah = cents / 100;
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(rupiah);
+}
+
 export function formatPhoneNumber(phone: string): string {
   // Remove all non-digit characters
   let cleaned = phone.replace(/\D/g, '');
