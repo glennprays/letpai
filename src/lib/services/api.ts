@@ -7,8 +7,8 @@ function getToken(): string | null {
   return localStorage.getItem('token');
 }
 
-export async function get(endpoint: string, customFetch?: typeof fetch) {
-  const token = getToken();
+export async function get(endpoint: string, customFetch?: typeof fetch, serverToken?: string) {
+  const token = serverToken || getToken();
 
   const fetchFn = customFetch || fetch;
   const response = await fetchFn(`${API_BASE}${endpoint}`, {
@@ -26,8 +26,8 @@ export async function get(endpoint: string, customFetch?: typeof fetch) {
   return response.json();
 }
 
-export async function post(endpoint: string, data: unknown, customFetch?: typeof fetch) {
-  const token = getToken();
+export async function post(endpoint: string, data: unknown, customFetch?: typeof fetch, serverToken?: string) {
+  const token = serverToken || getToken();
 
   const fetchFn = customFetch || fetch;
   const response = await fetchFn(`${API_BASE}${endpoint}`, {
@@ -47,8 +47,8 @@ export async function post(endpoint: string, data: unknown, customFetch?: typeof
   return response.json();
 }
 
-export async function put(endpoint: string, data: unknown, customFetch?: typeof fetch) {
-  const token = getToken();
+export async function put(endpoint: string, data: unknown, customFetch?: typeof fetch, serverToken?: string) {
+  const token = serverToken || getToken();
 
   const fetchFn = customFetch || fetch;
   const response = await fetchFn(`${API_BASE}${endpoint}`, {
@@ -68,8 +68,8 @@ export async function put(endpoint: string, data: unknown, customFetch?: typeof 
   return response.json();
 }
 
-export async function del(endpoint: string, customFetch?: typeof fetch) {
-  const token = getToken();
+export async function del(endpoint: string, customFetch?: typeof fetch, serverToken?: string) {
+  const token = serverToken || getToken();
 
   const fetchFn = customFetch || fetch;
   const response = await fetchFn(`${API_BASE}${endpoint}`, {

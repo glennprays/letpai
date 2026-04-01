@@ -1,4 +1,4 @@
-import { get, post } from './api';
+import { get, post, put } from './api';
 import { setToken, setUser, logout as logoutStore } from '$lib/stores/auth';
 
 // API Response Types
@@ -21,6 +21,7 @@ interface RegisterResponse {
 
 interface VerifyOTPResponse {
   success: true;
+  message: string;
   token: string;
   user: {
     user_id: string;
@@ -45,9 +46,10 @@ interface ProfileResponse {
     full_name: string;
     avatar_url?: string;
   };
+  updated_at?: string;
 }
 
-export async function register(data: { whatsapp_number: string; password: string; full_name?: string }): Promise<RegisterResponse | ErrorResponse> {
+export async function register(data: { whatsapp_number: string; password: string }): Promise<RegisterResponse | ErrorResponse> {
   return await post('/auth/register', data);
 }
 
@@ -73,5 +75,9 @@ export async function getProfile(): Promise<ProfileResponse | ErrorResponse> {
 }
 
 export async function updateProfile(data: { full_name?: string; avatar_url?: string }): Promise<ProfileResponse | ErrorResponse> {
-  return await post('/auth/profile', data);
+  return await put('/auth/profile', data);
+}
+
+export async function sendResetLink(data: { whatsapp_number: string }): Promise<{ success: boolean; message: string } | ErrorResponse> {
+  return await post('/auth/forgot-password', data);
 }
