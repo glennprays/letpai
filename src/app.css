@@ -1,3 +1,56 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "@fontsource/plus-jakarta-sans/400.css";
+@import "@fontsource/plus-jakarta-sans/500.css";
+@import "@fontsource/plus-jakarta-sans/600.css";
+@import "@fontsource/plus-jakarta-sans/700.css";
+@import "@fontsource/plus-jakarta-sans/800.css";
+
+@import "tailwindcss";
+
+@theme {
+  --font-family-sans: "Plus Jakarta Sans", system-ui, sans-serif;
+
+  /* Primary - Coral Red */
+  --color-primary: #FF6B6B;
+  --color-primary-hover: #FF5252;
+
+  /* Secondary - Teal Blue */
+  --color-secondary: #14B8A6;
+  --color-secondary-hover: #10A392;
+
+  /* WhatsApp */
+  --color-whatsapp: #25D366;
+  --color-whatsapp-hover: #1EBE59;
+
+  /* Status Colors */
+  --color-status-pending: #F59E0B;
+  --color-status-submitted: #3B82F6;
+  --color-status-paid: #10B981;
+  --color-status-rejected: #EF4444;
+
+  /* Text Colors */
+  --color-text-primary: #111827;
+  --color-text-secondary: #6B7280;
+  --color-text-tertiary: #9CA3AF;
+
+  /* Background Colors */
+  --color-bg-white: #FFFFFF;
+  --color-bg-light: #FAFAFA;
+  --color-bg-dark: #111827;
+
+  /* Border Colors */
+  --color-border-light: #F0F0F0;
+  --color-border-dark: #1E293B;
+
+  /* Border Radius */
+  --radius-sm: 4px;
+  --radius-icon: 14px;
+  --radius-default: 18px;
+  --radius-card: 20px;
+  --radius-lg: 24px;
+  --radius-xl: 28px;
+  --radius-full: 100px;
+}
+
+:root {
+  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+}
