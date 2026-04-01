@@ -7,7 +7,12 @@
 	import { auth, initAuth } from '$lib/stores/auth';
 	import type { LayoutData } from './$types';
 
-	let { children, data }: { children: any; data: LayoutData } = $props();
+	interface Props {
+		children: import('svelte').Snippet;
+		data: LayoutData;
+	}
+
+	let { children, data }: Props = $props();
 
 	// Create reactive state for auth data
 	let authData = $state({

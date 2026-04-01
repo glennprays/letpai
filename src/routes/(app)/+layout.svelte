@@ -1,20 +1,26 @@
 <script lang="ts">
   import { User } from 'lucide-svelte';
   import { user } from '$lib/stores/auth';
+
+  interface Props {
+    children: import('svelte').Snippet;
+  }
+
+  let { children }: Props = $props();
 </script>
 
 <div class="min-h-screen flex flex-col">
   <main class="flex-1">
     {@render children()}
   </main>
-  
+
   {#if $user}
     <footer class="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-200">
       <nav class="max-w-md mx-auto px-4">
         <ul class="flex items-center justify-around h-16">
           <li>
-            <a 
-              href="/" 
+            <a
+              href="/"
               class="flex flex-col items-center gap-1 text-gray-600 hover:text-[#FF6B6B] transition-colors"
             >
               <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -23,10 +29,10 @@
               <span class="text-xs">Home</span>
             </a>
           </li>
-          
+
           <li>
-            <a 
-              href="/sessions" 
+            <a
+              href="/sessions"
               class="flex flex-col items-center gap-1 text-gray-600 hover:text-[#FF6B6B] transition-colors"
             >
               <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -35,10 +41,10 @@
               <span class="text-xs">Sessions</span>
             </a>
           </li>
-          
+
           <li>
-            <a 
-              href="/contacts" 
+            <a
+              href="/contacts"
               class="flex flex-col items-center gap-1 text-gray-600 hover:text-[#FF6B6B] transition-colors"
             >
               <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -49,10 +55,10 @@
               <span class="text-xs">Contacts</span>
             </a>
           </li>
-          
+
           <li>
-            <a 
-              href="/profile" 
+            <a
+              href="/profile"
               class="flex flex-col items-center gap-1 text-gray-600 hover:text-[#FF6B6B] transition-colors"
             >
               <User class="h-6 w-6" />
