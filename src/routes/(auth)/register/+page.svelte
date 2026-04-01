@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { goto } from '$app/navigation';
+  import { goto, invalidateAll } from '$app/navigation';
   import Button from '$lib/components/ui/Button.svelte';
   import Input from '$lib/components/ui/Input.svelte';
   import { toast } from '$lib/stores/toast';
@@ -7,7 +7,7 @@
   import { setToken, setUser } from '$lib/stores/auth';
   import { validatePhone, validatePassword, validateOTP } from '$lib/utils/validation';
   import { formatPhoneNumber } from '$lib/utils/format';
-  import { UserPlus, Mail, Shield, ArrowRight, CheckCircle2, Clock, RotateCw } from 'lucide-svelte';
+  import { UserPlus, Shield, ArrowRight, CheckCircle2, Clock, RotateCw, AlertCircle } from 'lucide-svelte';
 
   const countryCodes = [
     { code: '62', label: 'ID (Indonesia)', short: 'ID' },
@@ -18,11 +18,20 @@
     { code: '60', label: 'MY (Malaysia)', short: 'MY' },
   ];
 
+  // Form state
   let currentStep = $state(1);
+  let isLoading = $state(false);
   let formData = $state({
     country_code: '62',
     whatsapp_number: '',
-    full_name: '',
+    password: '',
+    confirmPassword: '',
+    otp: ['', '', '', '', '', ''],
+  });
+
+  // Validation errors
+  let errors = $state({
+    whatsapp_number: '',
     password: '',
     confirmPassword: '',
     otp: '',
@@ -33,97 +42,174 @@
     { id: 2, label: 'Verify OTP' },
   ];
 
-  async function handleStep1Submit() {
-    const whatsapp_number = formData.country_code + formatPhoneNumber(formData.whatsapp_number);
-    const phoneValidation = validatePhone(whatsapp_number);
-    const passwordValidation = validatePassword(formData.password);
+  function validateStep1(): boolean {
+    let isValid = true;
+    errors = { whatsapp_number: '', password: '', confirmPassword: '', otp: '' };
 
+    // Validate phone number
+    const fullPhone = formData.country_code + formatPhoneNumber(formData.whatsapp_number);
+    const phoneValidation = validatePhone(fullPhone);
     if (!phoneValidation.valid) {
-      toast.error(phoneValidation.error || 'Nomor WhatsApp tidak valid');
-      return;
+      errors.whatsapp_number = phoneValidation.error || 'Invalid phone number';
+      isValid = false;
     }
 
+    // Validate password
+    const passwordValidation = validatePassword(formData.password);
     if (!passwordValidation.valid) {
-      toast.error(passwordValidation.error || 'Password tidak valid');
+      errors.password = passwordValidation.error || 'Invalid password';
+      isValid = false;
+    }
+
+    // Validate confirm password
+    if (formData.password !== formData.confirmPassword) {
+      errors.confirmPassword = 'Passwords do not match';
+      isValid = false;
+    }
+
+    return isValid;
+  }
+
+  async function handleStep1Submit() {
+    if (!validateStep1()) {
       return;
     }
 
-    if (formData.password !== formData.confirmPassword) {
-      toast.error('Password tidak cocok');
-      return;
-    }
+    isLoading = true;
+    const whatsapp_number = formData.country_code + formatPhoneNumber(formData.whatsapp_number);
 
     try {
       const response = await register({
         whatsapp_number,
-        password: formData.password,
-        full_name: formData.full_name.trim()
+        password: formData.password
       });
 
       if (response.success) {
         currentStep = 2;
-        toast.success('Account created! Please verify your OTP.');
+        toast.success('OTP sent to your WhatsApp!');
       } else {
-        toast.error(response.error?.message || 'Registration failed. Please try again.');
+        toast.error(response.error?.message || 'Registration failed');
       }
     } catch (error) {
       toast.error('An error occurred. Please try again.');
-      console.error(error);
+      console.error('Registration error:', error);
+    } finally {
+      isLoading = false;
     }
   }
 
-  async function handleOTPSubmit() {
-    const whatsapp_number = formData.country_code + formatPhoneNumber(formData.whatsapp_number);
-    const otpValidation = validateOTP(formData.otp);
+  function validateStep2(): boolean {
+    const otp = formData.otp.join('');
+    const otpValidation = validateOTP(otp);
 
     if (!otpValidation.valid) {
-      toast.error(otpValidation.error || 'OTP tidak valid');
+      errors.otp = otpValidation.error || 'Invalid OTP';
+      return false;
+    }
+
+    errors.otp = '';
+    return true;
+  }
+
+  async function handleOTPSubmit() {
+    if (!validateStep2()) {
       return;
     }
 
+    isLoading = true;
+    const whatsapp_number = formData.country_code + formatPhoneNumber(formData.whatsapp_number);
+    const otp = formData.otp.join('');
+
     try {
-      const response = await verifyOTP({ whatsapp_number, otp: formData.otp });
+      const response = await verifyOTP({ whatsapp_number, otp });
 
       if (response.success) {
-        // Store token and user for auto-login
         setToken(response.token);
         setUser(response.user);
-        toast.success('Registration successful! Welcome to Letpai!');
-        goto('/dashboard');
+        toast.success('Account verified successfully!');
+
+        // Invalidate all loads and redirect
+        await invalidateAll();
+
+        // Use setTimeout to ensure state is updated before navigation
+        setTimeout(() => {
+          goto('/dashboard', { replaceState: true });
+        }, 100);
       } else {
-        toast.error(response.error?.message || 'Invalid OTP. Please try again.');
+        toast.error(response.error?.message || 'OTP verification failed');
       }
     } catch (error) {
       toast.error('An error occurred. Please try again.');
-      console.error(error);
+      console.error('OTP verification error:', error);
+    } finally {
+      isLoading = false;
     }
   }
 
   async function resendOTP() {
+    isLoading = true;
     const whatsapp_number = formData.country_code + formatPhoneNumber(formData.whatsapp_number);
 
     try {
       const response = await register({
         whatsapp_number,
-        password: formData.password,
-        full_name: formData.full_name.trim()
+        password: formData.password
       });
 
       if (response.success) {
-        toast.success('OTP sent successfully!');
+        toast.success('OTP resent successfully!');
       } else {
         toast.error(response.error?.message || 'Failed to resend OTP');
       }
     } catch (error) {
       toast.error('Failed to resend OTP');
-      console.error(error);
+      console.error('Resend OTP error:', error);
+    } finally {
+      isLoading = false;
     }
   }
 
   function handleBack() {
-    if (currentStep > 1) {
-      currentStep--;
+    currentStep = 1;
+  }
+
+  function handleOTPInput(index: number, value: string) {
+    if (value.length > 1) {
+      value = value.slice(-1);
     }
+
+    formData.otp[index] = value;
+
+    // Auto-focus next input
+    if (value && index < 5) {
+      const inputs = document.querySelectorAll('.otp-input');
+      (inputs[index + 1] as HTMLInputElement)?.focus();
+    }
+  }
+
+  function handleOTPKeyDown(event: KeyboardEvent, index: number) {
+    if (event.key === 'Backspace' && !formData.otp[index] && index > 0) {
+      const inputs = document.querySelectorAll('.otp-input');
+      (inputs[index - 1] as HTMLInputElement)?.focus();
+    }
+  }
+
+  function handleOTPPaste(event: ClipboardEvent) {
+    event.preventDefault();
+    const pastedData = event.clipboardData?.getData('text') || '';
+    const digits = pastedData.replace(/\D/g, '').slice(0, 6);
+
+    digits.split('').forEach((digit, i) => {
+      if (i < 6) {
+        formData.otp[i] = digit;
+      }
+    });
+
+    // Focus the last filled input or the first empty one
+    const nextEmptyIndex = formData.otp.findIndex(d => !d);
+    const focusIndex = nextEmptyIndex === -1 ? 5 : nextEmptyIndex;
+    const inputs = document.querySelectorAll('.otp-input');
+    (inputs[focusIndex] as HTMLInputElement)?.focus();
   }
 
   const passwordStrength = $derived(calculatePasswordStrength(formData.password));
@@ -162,27 +248,12 @@
           <h2>Create Account</h2>
           <p>Let's get you started with your account details</p>
         </div>
-       </div>
-
-      <div class="form-group">
-        <label style="font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 6px; display: block;">
-          Full Name
-        </label>
-        <input
-          type="text"
-          bind:value={formData.full_name}
-          class="text-input"
-          placeholder="John Doe"
-          required
-          style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; font-weight: 500; color: #374151; background: white;"
-        />
       </div>
 
+      <!-- Phone Number -->
       <div class="form-group">
-        <label style="font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 6px; display: block;">
-          WhatsApp Number
-        </label>
-        <div class="phone-input-group">
+        <label class="form-label">WhatsApp Number</label>
+        <div class="phone-input-group" class:error={!!errors.whatsapp_number}>
           <select class="country-selector" bind:value={formData.country_code}>
             {#each countryCodes as country}
               <option value={country.code}>{country.short} (+{country.code})</option>
@@ -194,14 +265,19 @@
             class="phone-input"
             placeholder="8123456789"
             required
-            style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; font-weight: 500; color: #374151; background: white;"
           />
         </div>
-        <p style="font-size: 12px; color: #9CA3AF; margin-top: 6px; line-height: 1.5;">
-          We'll send you a WhatsApp notification for verification
-        </p>
+        {#if errors.whatsapp_number}
+          <div class="error-message">
+            <AlertCircle size={14} />
+            <span>{errors.whatsapp_number}</span>
+          </div>
+        {:else}
+          <p class="helper-text">We'll send you a WhatsApp notification for verification</p>
+        {/if}
       </div>
 
+      <!-- Password -->
       <div class="form-group">
         <Input
           type="password"
@@ -213,6 +289,8 @@
           showCount
           maxLength={20}
           helperText="Use 8+ characters with a mix of letters, numbers & symbols"
+          error={!!errors.password}
+          errorText={errors.password}
         />
 
         <!-- Password strength indicator -->
@@ -228,6 +306,7 @@
         {/if}
       </div>
 
+      <!-- Confirm Password -->
       <div class="form-group">
         <Input
           type="password"
@@ -235,14 +314,21 @@
           placeholder="Re-enter your password"
           bind:value={formData.confirmPassword}
           required
-          error={formData.confirmPassword && formData.password !== formData.confirmPassword}
-          errorText={formData.confirmPassword && formData.password !== formData.confirmPassword ? 'Passwords do not match' : ''}
           showClear
+          error={!!errors.confirmPassword}
+          errorText={errors.confirmPassword}
           leftIcon={Shield}
         />
       </div>
 
-      <Button onclick={handleStep1Submit} variant="primary" size="default" class="submit-button" rightIcon={ArrowRight}>
+      <Button
+        onbuttonclick={handleStep1Submit}
+        variant="primary"
+        size="default"
+        class="submit-button"
+        rightIcon={ArrowRight}
+        loading={isLoading}
+      >
         Continue
       </Button>
     </div>
@@ -269,44 +355,46 @@
 
       <!-- OTP Input -->
       <div class="otp-container">
-        {#each [1, 2, 3, 4, 5, 6] as index}
+        {#each formData.otp as digit, index}
           <input
             type="text"
             maxlength="1"
             class="otp-input"
-            oninput={(e) => {
-              const input = e.target as HTMLInputElement;
-              if (input.value.length === 1) {
-                const nextInput = input.nextElementSibling as HTMLInputElement;
-                if (nextInput) nextInput.focus();
-              }
-              formData.otp = Array.from(document.querySelectorAll('.otp-input')).map((i) => (i as HTMLInputElement).value).join('');
-            }}
-            onkeydown={(e) => {
-              if (e.key === 'Backspace') {
-                const input = e.target as HTMLInputElement;
-                if (input.value === '') {
-                  const prevInput = input.previousElementSibling as HTMLInputElement;
-                  if (prevInput) prevInput.focus();
-                }
-              }
-            }}
+            class:error={!!errors.otp}
+            value={digit}
+            oninput={(e) => handleOTPInput(index, e.target.value)}
+            onkeydown={(e) => handleOTPKeyDown(e, index)}
+            onpaste={handleOTPPaste}
           />
         {/each}
       </div>
 
+      {#if errors.otp}
+        <div class="error-message" style="justify-content: center; margin-top: 8px;">
+          <AlertCircle size={14} />
+          <span>{errors.otp}</span>
+        </div>
+      {/if}
+
       <!-- Timer info -->
       <div class="timer-info">
         <Clock size={16} style="color: #6B7280;" />
-        <span>OTP is active for 2 minutes</span>
+        <span>OTP is valid for 2 minutes</span>
       </div>
 
-      <button class="resend-button" onclick={resendOTP}>
+      <button class="resend-button" onclick={resendOTP} disabled={isLoading}>
         <RotateCw size={16} style="color: #FF6B6B;" />
         Resend OTP
       </button>
 
-      <Button onclick={handleOTPSubmit} variant="primary" size="default" class="submit-button" rightIcon={ArrowRight}>
+      <Button
+        onbuttonclick={handleOTPSubmit}
+        variant="primary"
+        size="default"
+        class="submit-button"
+        rightIcon={ArrowRight}
+        loading={isLoading}
+      >
         Verify & Create Account
       </Button>
 
@@ -318,29 +406,10 @@
 
   <!-- Bottom link -->
   <div class="register-footer">
-    <p style="font-size: 14px; color: #6B7280; margin: 0 0 8px;">
-      Already have an account?
-    </p>
+    <p class="footer-text">Already have an account?</p>
     <a
       href="/login"
-      style="
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 14px;
-        font-weight: 600;
-        color: #FF6B6B;
-        text-decoration: none;
-        transition: all 0.15s;
-      "
-      onmouseenter={(e) => {
-        e.currentTarget.style.transform = 'translateX(4px)';
-        e.currentTarget.style.color = '#FF5252';
-      }}
-      onmouseleave={(e) => {
-        e.currentTarget.style.transform = 'translateX(0)';
-        e.currentTarget.style.color = '#FF6B6B';
-      }}
+      class="footer-link"
     >
       Sign in
       <ArrowRight size={16} />
@@ -349,11 +418,11 @@
 
   <!-- Terms & Privacy -->
   <div class="terms-links">
-    <p style="font-size: 12px; color: #9CA3AF; margin: 0; text-align: center;">
+    <p class="terms-text">
       By creating an account, you agree to our
-      <a href="/" style="color: #FF6B6B; text-decoration: none;">Terms of Service</a>
+      <a href="/" class="terms-link">Terms of Service</a>
       and
-      <a href="/" style="color: #FF6B6B; text-decoration: none;">Privacy Policy</a>
+      <a href="/" class="terms-link">Privacy Policy</a>
     </p>
   </div>
 </div>
@@ -423,13 +492,27 @@
   .form-group {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 6px;
+  }
+
+  .form-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 6px;
+    display: block;
   }
 
   .phone-input-group {
     display: flex;
     align-items: stretch;
     gap: 0;
+    transition: all 0.15s;
+  }
+
+  .phone-input-group.error .country-selector,
+  .phone-input-group.error .phone-input {
+    border-color: #EF4444;
   }
 
   .country-selector {
@@ -468,20 +551,19 @@
     border-color: #FF6B6B;
   }
 
-  .text-input {
-    width: 100%;
-    padding: 12px 16px;
-    border: 2px solid #D1D5DB;
-    border-radius: 12px;
-    font: 14px 'Plus Jakarta Sans', sans-serif;
-    color: #374151;
-    background: white;
-    transition: border-color 0.15s;
+  .error-message {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #EF4444;
+    margin-top: 4px;
   }
 
-  .text-input:focus {
-    outline: none;
-    border-color: #FF6B6B;
+  .helper-text {
+    font-size: 12px;
+    color: #9CA3AF;
+    margin-top: 4px;
   }
 
   .password-strength {
@@ -547,6 +629,10 @@
     box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.12);
   }
 
+  .otp-input.error {
+    border-color: #EF4444;
+  }
+
   @media (max-width: 640px) {
     .otp-input {
       width: 40px;
@@ -582,9 +668,14 @@
     transition: all 0.15s;
   }
 
-  .resend-button:hover {
+  .resend-button:hover:not(:disabled) {
     background: #FFE5E5;
     transform: translateY(-1px);
+  }
+
+  .resend-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 
   .submit-button {
@@ -616,17 +707,57 @@
     border-top: 1px solid #F0F0F0;
   }
 
+  .footer-text {
+    font-size: 14px;
+    color: #6B7280;
+    margin: 0 0 8px;
+  }
+
+  .footer-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #FF6B6B;
+    text-decoration: none;
+    transition: all 0.15s;
+  }
+
+  .footer-link:hover {
+    transform: translateX(4px);
+    color: #FF5252;
+  }
+
   .terms-links {
     margin-top: 8px;
   }
 
+  .terms-text {
+    font-size: 12px;
+    color: #9CA3AF;
+    margin: 0;
+    text-align: center;
+  }
+
+  .terms-link {
+    color: #FF6B6B;
+    text-decoration: none;
+  }
+
+  .terms-link:hover {
+    text-decoration: underline;
+  }
+
   .animate-in {
-    opacity: 0;
-    transform: translateY(24px);
     animation: slideIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
   }
 
   @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateY(24px);
+    }
     to {
       opacity: 1;
       transform: translateY(0);
@@ -644,24 +775,14 @@
       height: 48px;
     }
 
-    .otp-input {
-      width: 40px;
-      height: 48px;
-      font-size: 20px;
-    }
-
-    .otp-container {
-      gap: 6px;
+    .step-title h2 {
+      font-size: 18px;
     }
 
     .country-selector {
       min-width: 80px;
       padding: 12px 6px;
       font-size: 13px;
-    }
-
-    .step-title h2 {
-      font-size: 18px;
     }
   }
 
