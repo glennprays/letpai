@@ -39,6 +39,15 @@ export const user = derived(auth, ($auth) => $auth.user);
 export function setToken(token: string, cookieSetter?: (name: string, value: string, options?: Record<string, unknown>) => void) {
   if (typeof window !== 'undefined') {
     localStorage.setItem('token', token);
+
+    // Only set cookie client-side if not already set by server
+    if (!document.cookie.includes('token=')) {
+      const isSecure = import.meta.env.PROD;
+      const expires = new Date();
+      expires.setDate(expires.getDate() + 30); // 30 days
+
+      document.cookie = `token=${encodeURIComponent(token)}; path=/; expires=${expires.toUTCString()}; SameSite=lax${isSecure ? '; Secure' : ''}`;
+    }
   }
   if (cookieSetter) {
     cookieSetter('token', token, {
@@ -63,6 +72,9 @@ export function logout(cookieDeleter?: (name: string, options?: Record<string, u
   if (typeof window !== 'undefined') {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+
+    // Clear cookie
+    document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
   }
   if (cookieDeleter) {
     cookieDeleter('token', { path: '/' });
