@@ -1,19 +1,17 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
   import { page } from '$app/stores';
-  import Button from '$lib/components/ui/Button.svelte';
   import Input from '$lib/components/ui/Input.svelte';
   import { validatePhone, validatePassword } from '$lib/utils/validation';
   import { formatPhoneNumber } from '$lib/utils/format';
-  import { Lock, ArrowRight } from 'lucide-svelte';
+  import { ArrowRight, Shield } from 'lucide-svelte';
   import type { ActionData } from './$types';
 
   interface Props {
-    data: { isAuthenticated: boolean };
     form?: ActionData;
   }
 
-  let { data, form }: Props = $props();
+  let { form }: Props = $props();
 
   const countryCodes = [
     { code: '62', label: 'ID (Indonesia)', short: 'ID' },
@@ -30,15 +28,15 @@
     password: '',
   });
 
+  let clientErrors = $state({
+    whatsapp_number: '',
+    password: '',
+  });
+
   // Get return URL from query params
   const returnURL = $derived(() => {
     const returnParam = $page.url.searchParams.get('return');
     return returnParam ? returnParam : '/dashboard';
-  });
-
-  let clientErrors = $state({
-    whatsapp_number: '',
-    password: ''
   });
 </script>
 
@@ -56,6 +54,7 @@
   <!-- Server error message -->
   {#if form?.message}
     <div class="error-banner">
+      <Shield size={16} />
       {form.message}
     </div>
   {/if}
@@ -65,11 +64,13 @@
     method="POST"
     class="login-form"
     use:enhance={({ formData, cancel }) => {
-      const whatsapp_number = formData.get('whatsapp_number') as string;
+      const whatsapp_number_raw = formData.get('whatsapp_number_raw') as string;
+      const country_code_hidden = formData.get('country_code_hidden') as string;
       const password = formData.get('password') as string;
 
       // Client-side validation
-      const phoneValidation = validatePhone(whatsapp_number);
+      const fullPhone = country_code_hidden + formatPhoneNumber(whatsapp_number_raw);
+      const phoneValidation = validatePhone(fullPhone);
       const passwordValidation = validatePassword(password);
 
       if (!phoneValidation.valid) {
@@ -80,122 +81,89 @@
         cancel();
       } else {
         clientErrors = { whatsapp_number: '', password: '' };
+        // Remove raw fields and set formatted phone number
+        formData.delete('whatsapp_number_raw');
+        formData.delete('country_code_hidden');
+        formData.set('whatsapp_number', fullPhone);
         // Add return URL to form data
         formData.set('return', returnURL());
       }
     }}
   >
+    <!-- Phone Number -->
     <div class="form-group animate-in" style="animation-delay: 0.24s;">
-      <label style="font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 6px; display: block;">
-        Nomor WhatsApp
-      </label>
-        <div class="phone-input-group">
-          <select class="country-selector" bind:value={formData.country_code}>
-            {#each countryCodes as country}
-              <option value={country.code}>{country.short} (+{country.code})</option>
-            {/each}
-          </select>
+      <label class="form-label">WhatsApp Number</label>
+      <div class="phone-input-group" class:error={!!clientErrors.whatsapp_number}>
+        <select class="country-selector" bind:value={formData.country_code}>
+          {#each countryCodes as country}
+            <option value={country.code}>{country.short} (+{country.code})</option>
+          {/each}
+        </select>
         <input
           type="tel"
-          name="whatsapp_number"
+          name="whatsapp_number_raw"
           bind:value={formData.whatsapp_number}
           class="phone-input"
           placeholder="8123456789"
           required
-          style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; font-weight: 500; color: #374151; background: white;"
         />
       </div>
+      <input type="hidden" name="country_code_hidden" value={formData.country_code} />
       {#if clientErrors.whatsapp_number}
-        <p style="font-size: 12px; color: #EF4444; margin-top: 4px;">
-          {clientErrors.whatsapp_number}
-        </p>
+        <div class="error-message">
+          <Shield size={14} />
+          <span>{clientErrors.whatsapp_number}</span>
+        </div>
       {:else}
-        <p style="font-size: 12px; color: #9CA3AF; margin-top: 6px; line-height: 1.5;">
-          We'll send you a WhatsApp notification if needed
-        </p>
+        <p class="helper-text">We'll send you a WhatsApp notification if needed</p>
       {/if}
     </div>
 
+    <!-- Password -->
     <div class="form-group animate-in" style="animation-delay: 0.32s;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-        <label for="password" style="font-size: 13px; font-weight: 600; color: #374151;">
-          Password
-        </label>
-        <a
-          href="/forgot-password"
-          style="font-size: 13px; font-weight: 600; color: #FF6B6B; text-decoration: none; transition: color 0.15s;"
-          onmouseenter={(e) => (e.currentTarget.style.color = '#FF5252')}
-          onmouseleave={(e) => (e.currentTarget.style.color = '#FF6B6B')}
-        >
+      <div class="password-header">
+        <label for="password" class="form-label">Password</label>
+        <a href="/forgot-password" class="forgot-link">
           Forgot password?
         </a>
       </div>
       <Input
         type="password"
         name="password"
-        placeholder="Masukkan password"
+        id="password"
+        placeholder="Enter your password"
         bind:value={formData.password}
         required
         showClear
-        id="password"
+        error={!!clientErrors.password}
+        errorText={clientErrors.password}
       />
-      {#if clientErrors.password}
-        <p style="font-size: 12px; color: #EF4444; margin-top: 4px;">
-          {clientErrors.password}
-        </p>
-      {/if}
     </div>
 
-    <!-- Hidden field for country code -->
-    <input type="hidden" name="country_code" value={formData.country_code} />
-    <input type="hidden" name="whatsapp_number" value={formData.country_code + formatPhoneNumber(formData.whatsapp_number)} />
-
+    <!-- Remember me -->
     <div class="form-group animate-in" style="animation-delay: 0.4s;">
-      <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 14px; color: #6B7280;">
-        <input type="checkbox" style="width: 18px; height: 18px; accent-color: #FF6B6B; cursor: pointer;" />
+      <label class="checkbox-label">
+        <input type="checkbox" class="checkbox" />
         <span>Remember me</span>
       </label>
     </div>
 
+    <!-- Submit Button -->
     <div class="form-group animate-in" style="animation-delay: 0.48s;">
-      <Button
+      <button
         type="submit"
-        variant="primary"
-        size="default"
         class="submit-button"
-        rightIcon={ArrowRight}
       >
         Login
-      </Button>
+        <ArrowRight size={18} style="margin-left: 6px;" />
+      </button>
     </div>
   </form>
 
   <!-- Bottom links -->
   <div class="login-footer animate-in" style="animation-delay: 0.72s;">
-    <p style="font-size: 14px; color: #6B7280; margin: 0 0 8px;">
-      Don't have an account?
-    </p>
-    <a
-      href="/register"
-      style="
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 14px;
-        font-weight: 600;
-        color: #FF6B6B;
-        text-decoration: none;
-        transition: all 0.15s;
-      "
-      onmouseenter={(e) => {
-        e.currentTarget.style.transform = 'translateX(4px)';
-        e.currentTarget.style.color = '#FF5252';
-      }}
-      onmouseleave={(e) => {
-        e.currentTarget.style.transform = 'translateX(0)';
-        e.currentTarget.style.color = '#FF6B6B';
-      }}
-    >
+    <p class="footer-text">Don't have an account?</p>
+    <a href="/register" class="footer-link">
       Create an account
       <ArrowRight size={16} />
     </a>
@@ -203,25 +171,11 @@
 
   <!-- Terms & Privacy -->
   <div class="terms-links animate-in" style="animation-delay: 0.8s;">
-    <p style="font-size: 12px; color: #9CA3AF; margin: 0; text-align: center;">
+    <p class="terms-text">
       By logging in, you agree to our
-      <a
-        href="/"
-        style="color: #FF6B6B; text-decoration: none; transition: color 0.15s;"
-        onmouseenter={(e) => (e.currentTarget.style.color = '#FF5252')}
-        onmouseleave={(e) => (e.currentTarget.style.color = '#FF6B6B')}
-      >
-        Terms of Service
-      </a>
+      <a href="/" class="terms-link">Terms of Service</a>
       and
-      <a
-        href="/"
-        style="color: #FF6B6B; text-decoration: none; transition: color 0.15s;"
-        onmouseenter={(e) => (e.currentTarget.style.color = '#FF5252')}
-        onmouseleave={(e) => (e.currentTarget.style.color = '#FF6B6B')}
-      >
-        Privacy Policy
-      </a>
+      <a href="/" class="terms-link">Privacy Policy</a>
     </p>
   </div>
 </div>
@@ -231,17 +185,6 @@
     display: flex;
     flex-direction: column;
     gap: 24px;
-  }
-
-  .error-banner {
-    padding: 12px 16px;
-    background: #FEF2F2;
-    border: 1px solid #FECACA;
-    border-radius: 12px;
-    color: #DC2626;
-    font-size: 14px;
-    font-weight: 500;
-    text-align: center;
   }
 
   .login-header {
@@ -264,6 +207,20 @@
     line-height: 1.6;
   }
 
+  .error-banner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 16px;
+    background: #FEF2F2;
+    border: 1px solid #FECACA;
+    border-radius: 12px;
+    color: #DC2626;
+    font-size: 14px;
+    font-weight: 500;
+  }
+
   .login-form {
     display: flex;
     flex-direction: column;
@@ -273,12 +230,27 @@
   .form-group {
     display: flex;
     flex-direction: column;
+    gap: 6px;
+  }
+
+  .form-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 6px;
+    display: block;
   }
 
   .phone-input-group {
     display: flex;
     align-items: stretch;
     gap: 0;
+    transition: all 0.15s;
+  }
+
+  .phone-input-group.error .country-selector,
+  .phone-input-group.error .phone-input {
+    border-color: #EF4444;
   }
 
   .country-selector {
@@ -317,10 +289,79 @@
     border-color: #FF6B6B;
   }
 
+  .error-message {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #EF4444;
+    margin-top: 4px;
+  }
+
+  .helper-text {
+    font-size: 12px;
+    color: #9CA3AF;
+    margin-top: 4px;
+  }
+
+  .password-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+
+  .forgot-link {
+    font-size: 13px;
+    font-weight: 600;
+    color: #FF6B6B;
+    text-decoration: none;
+    transition: color 0.15s;
+  }
+
+  .forgot-link:hover {
+    color: #FF5252;
+  }
+
+  .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #6B7280;
+  }
+
+  .checkbox {
+    width: 18px;
+    height: 18px;
+    accent-color: #FF6B6B;
+    cursor: pointer;
+  }
+
   .submit-button {
     width: 100%;
     height: 44px;
     font-size: 16px;
+    font-weight: 600;
+    color: white;
+    background: #FF6B6B;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+  }
+
+  .submit-button:hover {
+    background: #FF5252;
+    transform: translateY(-1px);
+  }
+
+  .submit-button:active {
+    transform: scale(0.98);
   }
 
   .login-footer {
@@ -330,17 +371,57 @@
     border-top: 1px solid #F0F0F0;
   }
 
+  .footer-text {
+    font-size: 14px;
+    color: #6B7280;
+    margin: 0 0 8px;
+  }
+
+  .footer-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #FF6B6B;
+    text-decoration: none;
+    transition: all 0.15s;
+  }
+
+  .footer-link:hover {
+    transform: translateX(4px);
+    color: #FF5252;
+  }
+
   .terms-links {
     margin-top: 8px;
   }
 
+  .terms-text {
+    font-size: 12px;
+    color: #9CA3AF;
+    margin: 0;
+    text-align: center;
+  }
+
+  .terms-link {
+    color: #FF6B6B;
+    text-decoration: none;
+  }
+
+  .terms-link:hover {
+    text-decoration: underline;
+  }
+
   .animate-in {
-    opacity: 0;
-    transform: translateY(24px);
     animation: slideIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
   }
 
   @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateY(24px);
+    }
     to {
       opacity: 1;
       transform: translateY(0);

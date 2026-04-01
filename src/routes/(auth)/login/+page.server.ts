@@ -1,49 +1,59 @@
-import { redirect, fail } from '@sveltejs/kit';
+import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import { login as apiLogin } from '$lib/services/auth';
 
-export const load: PageServerLoad = async ({ locals }) => {
-	return {
-		isAuthenticated: locals.isAuthenticated
-	};
+export const load: PageServerLoad = async () => {
+  return {};
 };
 
 export const actions: Actions = {
-	default: async ({ request, cookies }) => {
-		const formData = await request.formData();
-		const whatsapp_number = formData.get('whatsapp_number') as string;
-		const password = formData.get('password') as string;
+  default: async ({ request, cookies, fetch }) => {
+    const formData = await request.formData();
+    const whatsapp_number = formData.get('whatsapp_number') as string;
+    const password = formData.get('password') as string;
+    console.log("password", password, "whatsapp_number", whatsapp_number);
 
-		if (!whatsapp_number || !password) {
-			return fail(400, { message: 'Missing required fields' });
-		}
+    if (!whatsapp_number || !password) {
+      return fail(400, { message: 'Please fill in all fields' });
+    }
 
-		try {
-			const response = await apiLogin({ whatsapp_number, password });
+    try {
+      // Call backend API from server-side
+      const API_BASE = 'http://localhost:3000/api/v1';
+      const response = await fetch(`${API_BASE}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ whatsapp_number, password })
+      });
 
-			if (response.success) {
-				// Set cookie for SSR
-				cookies.set('token', response.token, {
-					path: '/',
-					httpOnly: false, // Allow client-side access
-					secure: import.meta.env.PROD,
-					sameSite: 'lax',
-					maxAge: 60 * 60 * 24 * 30 // 30 days
-				});
+      const data = await response.json();
 
-				// Get return URL from form data or default to dashboard
-				const returnURL = formData.get('return') as string || '/dashboard';
+      if (data.success) {
+        // Set cookie for SSR
+        cookies.set('token', data.token, {
+          path: '/',
+          httpOnly: false,
+          secure: false, // Set to true in production with HTTPS
+          sameSite: 'lax',
+          maxAge: 60 * 60 * 24 * 30 // 30 days
+        });
 
-				throw redirect(303, returnURL);
-			} else {
-				return fail(401, { message: response.error?.message || 'Login failed' });
-			}
-		} catch (error) {
-			if (error && typeof error === 'object' && 'location' in error) {
-				// This is a redirect, re-throw it
-				throw error;
-			}
-			return fail(500, { message: 'An error occurred during login' });
-		}
-	}
+        // Get return URL from form data
+        const returnURL = formData.get('return') as string || '/dashboard';
+        throw redirect(303, returnURL);
+      } else {
+        return fail(401, {
+          message: data.error?.message || 'Invalid credentials'
+        });
+      }
+    } catch (error) {
+      if (error && typeof error === 'object' && 'location' in error) {
+        // This is a redirect, re-throw it
+        throw error;
+      }
+      console.error('Login error:', error);
+      return fail(500, {
+        message: 'An error occurred during login'
+      });
+    }
+  }
 };
