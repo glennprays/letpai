@@ -1,7 +1,7 @@
 <script lang="ts">
   import { cn } from '$lib/utils/cn';
 
-  type BadgeVariant = 'pending' | 'submitted' | 'paid' | 'rejected';
+  type BadgeVariant = 'pending' | 'submitted' | 'paid' | 'rejected' | 'active' | 'completed' | 'cancelled';
 
   interface Props {
     variant: BadgeVariant;
@@ -21,6 +21,9 @@
     submitted: 'bg-[#3B82F6] text-white',
     paid: 'bg-[#10B981] text-white',
     rejected: 'bg-[#EF4444] text-white',
+    active: 'bg-yellow-100 text-yellow-700 border border-yellow-200',
+    completed: 'bg-green-100 text-green-700 border border-green-200',
+    cancelled: 'bg-red-100 text-red-700 border border-red-200'
   };
 
   const baseClasses = cn(

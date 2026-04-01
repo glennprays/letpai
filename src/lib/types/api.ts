@@ -95,10 +95,20 @@ export interface Participant {
 }
 
 export interface DashboardStats {
+  success: boolean;
   active_sessions: number;
   completed_sessions: number;
   pending_payments: number;
   total_pending: number;
+}
+
+export interface SessionsResponse {
+  data: Session[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+  };
 }
 
 export interface ApiResponse<T> {
