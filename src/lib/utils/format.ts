@@ -9,15 +9,13 @@ export function formatCurrency(amount: number, currency = 'IDR'): string {
 
 export function formatPhoneNumber(phone: string): string {
   // Remove all non-digit characters
-  const cleaned = phone.replace(/\D/g, '');
-  
-  // Add +62 prefix if not present
+  let cleaned = phone.replace(/\D/g, '');
+
+  // Remove leading 0 for Indonesia numbers (country code 62 will be added separately)
   if (cleaned.startsWith('0')) {
-    return '+62' + cleaned.substring(1);
-  } else if (!cleaned.startsWith('+62')) {
-    return '+62' + cleaned;
+    cleaned = cleaned.substring(1);
   }
-  
+
   return cleaned;
 }
 
