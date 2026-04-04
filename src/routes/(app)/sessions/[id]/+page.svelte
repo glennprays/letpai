@@ -4,38 +4,39 @@
 		ArrowLeft,
 		Plus,
 		UserPlus,
-		Trash2,
-		Edit2,
 		CheckCircle2,
 		Clock,
 		XCircle,
 		Loader2,
 		Users,
 		Receipt,
-		Share2
+		Share2,
+		Phone,
+		Type
 	} from 'lucide-svelte';
-	import type { PageData, ActionData } from './$types';
+	import type { PageData } from './$types';
 	import { formatIDR, formatRelativeTime } from '$lib/utils/format';
+	import Modal from '$lib/components/ui/Modal.svelte';
 
 	interface Props {
 		data: PageData;
-		form?: ActionData;
 	}
 
-	let { data, form }: Props = $props();
+	let { data }: Props = $props();
 
-	let showAddContact = $state(false);
-	let showAddBill = $state(false);
+	let showAddContactModal = $state(false);
 	let selectedContacts = $state<Set<string>>(new Set());
 	let isLoading = $state(false);
+	let contactsPickerSupported = $state(false);
 
 	// Temporary state for adding contact
 	let newContactName = $state('');
 	let newContactPhone = $state('');
 
-	// Temporary state for adding bill
-	let newBillName = $state('');
-	let newBillAmount = $state('');
+	// Check if Contacts Picker API is supported
+	$effect(() => {
+		contactsPickerSupported = 'contacts' in navigator && 'ContactsManager' in window;
+	});
 
 	function getCurrencySymbol(currency: string): string {
 		const symbols: Record<string, string> = {
@@ -69,39 +70,72 @@
 		} else {
 			selectedContacts.add(participantId);
 		}
-		selectedContacts = new Set(selectedContacts); // Trigger reactivity
+		selectedContacts = new Set(selectedContacts);
 	}
 
-	async function handleAddContact() {
+	async function openContactsPicker() {
+		if (!contactsPickerSupported) return;
+
+		try {
+			const contacts = await (navigator as any).contacts.select(['name', 'tel'], {
+				multiple: true
+			});
+
+			if (contacts && contacts.length > 0) {
+				// Add each contact to the session
+				for (const contact of contacts) {
+					await addParticipantToSession(
+						contact.name || 'Unknown',
+						contact.tel?.[0] || ''
+					);
+				}
+				// Reload to show new participants
+				window.location.reload();
+			}
+		} catch (error) {
+			console.error('Contacts picker error:', error);
+		}
+	}
+
+	async function handleManualAddContact() {
 		if (!newContactName.trim() || !newContactPhone.trim()) return;
 
+		const success = await addParticipantToSession(
+			newContactName.trim(),
+			newContactPhone.trim()
+		);
+
+		if (success) {
+			newContactName = '';
+			newContactPhone = '';
+			showAddContactModal = false;
+			window.location.reload();
+		}
+	}
+
+	async function addParticipantToSession(name: string, phone: string): Promise<boolean> {
 		isLoading = true;
 		try {
 			const response = await fetch(`/api/v1/sessions/${data.session.session_id}/participants`, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
-					'Authorization': `Bearer ${localStorage.getItem('token')}`
+					Authorization: `Bearer ${localStorage.getItem('token')}`
 				},
 				body: JSON.stringify({
 					participants: [
 						{
-							name: newContactName.trim(),
-							whatsapp_number: newContactPhone.trim()
+							name,
+							whatsapp_number: phone
 						}
 					]
 				})
 			});
 
-			if (response.ok) {
-				newContactName = '';
-				newContactPhone = '';
-				showAddContact = false;
-				// Reload page to show new participant
-				window.location.reload();
-			}
+			return response.ok;
 		} catch (error) {
 			console.error('Add contact error:', error);
+			return false;
 		} finally {
 			isLoading = false;
 		}
@@ -112,16 +146,14 @@
 
 		isLoading = true;
 		try {
-			// Calculate equal split: total / selected contacts
 			const totalPerPerson = data.session.total_amount / selectedContacts.size;
 
-			// Update each selected participant's share
 			for (const participantId of selectedContacts) {
 				await fetch(`/api/v1/sessions/${data.session.session_id}/participants/${participantId}`, {
 					method: 'PUT',
 					headers: {
 						'Content-Type': 'application/json',
-						'Authorization': `Bearer ${localStorage.getItem('token')}`
+						Authorization: `Bearer ${localStorage.getItem('token')}`
 					},
 					body: JSON.stringify({ share_amount: totalPerPerson })
 				});
@@ -218,65 +250,13 @@
 			<div class="flex items-center justify-between mb-4">
 				<h2 class="text-lg font-semibold text-gray-900">Participants</h2>
 				<button
-					onclick={() => (showAddContact = true)}
+					onclick={() => (showAddContactModal = true)}
 					class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#FF6B6B] hover:bg-[#FF6B6B]/10 rounded-lg transition-colors"
 				>
 					<UserPlus class="w-4 h-4" />
 					Add Contact
 				</button>
 			</div>
-
-			<!-- Add Contact Form -->
-			{#if showAddContact}
-				<div class="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-					<h3 class="text-sm font-medium text-gray-900 mb-3">Add New Contact</h3>
-					<div class="space-y-3">
-						<div>
-							<label for="contact_name" class="block text-sm font-medium text-gray-700 mb-1">
-								Name
-							</label>
-							<input
-								type="text"
-								id="contact_name"
-								bind:value={newContactName}
-								placeholder="Enter name"
-								class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent"
-							/>
-						</div>
-						<div>
-							<label for="contact_phone" class="block text-sm font-medium text-gray-700 mb-1">
-								WhatsApp Number
-							</label>
-							<input
-								type="tel"
-								id="contact_phone"
-								bind:value={newContactPhone}
-								placeholder="+6281234567890"
-								class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent"
-							/>
-						</div>
-						<div class="flex gap-2">
-							<button
-								onclick={handleAddContact}
-								disabled={isLoading}
-								class="px-4 py-2 text-sm font-medium text-white bg-[#FF6B6B] rounded-lg hover:bg-[#FF5252] disabled:opacity-50"
-							>
-								{#if isLoading}
-									<Loader2 class="w-4 h-4 animate-spin" />
-								{:else}
-									Add
-								{/if}
-							</button>
-							<button
-								onclick={() => (showAddContact = false)}
-								class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50"
-							>
-								Cancel
-							</button>
-						</div>
-					</div>
-				</div>
-			{/if}
 
 			<!-- Equal Split Action -->
 			{#if data.session.participants && data.session.participants.length > 0}
@@ -349,10 +329,7 @@
 		<section class="bg-white rounded-xl border border-gray-200 p-6">
 			<div class="flex items-center justify-between mb-4">
 				<h2 class="text-lg font-semibold text-gray-900">Bill Items</h2>
-				<button
-					onclick={() => (showAddBill = true)}
-					class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#FF6B6B] hover:bg-[#FF6B6B]/10 rounded-lg transition-colors"
-				>
+				<button class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#FF6B6B] hover:bg-[#FF6B6B]/10 rounded-lg transition-colors">
 					<Plus class="w-4 h-4" />
 					Add Bill
 				</button>
@@ -381,3 +358,82 @@
 		</section>
 	</div>
 </div>
+
+<!-- Add Contact Modal -->
+<Modal open={showAddContactModal} title="Add Contact">
+	<div class="space-y-4">
+		<!-- Contacts Picker Button -->
+		{#if contactsPickerSupported}
+			<button
+				onclick={openContactsPicker}
+				class="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-[#FF6B6B] hover:bg-[#FF6B6B]/5 transition-colors group"
+			>
+				<Phone class="w-5 h-5 text-gray-400 group-hover:text-[#FF6B6B]" />
+				<span class="text-sm font-medium text-gray-700 group-hover:text-[#FF6B6B]">
+					Import from Device Contacts
+				</span>
+			</button>
+			<div class="relative">
+				<div class="absolute inset-0 flex items-center">
+					<div class="w-full border-t border-gray-200"></div>
+				</div>
+				<div class="relative flex justify-center text-sm">
+					<span class="px-2 bg-white text-gray-500">or add manually</span>
+				</div>
+			</div>
+		{/if}
+
+		<!-- Manual Entry -->
+		<div>
+			<label for="contact_name" class="block text-sm font-medium text-gray-700 mb-1">
+				Name
+			</label>
+			<div class="relative">
+				<Type class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+				<input
+					type="text"
+					id="contact_name"
+					bind:value={newContactName}
+					placeholder="Enter name"
+					class="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent"
+				/>
+			</div>
+		</div>
+
+		<div>
+			<label for="contact_phone" class="block text-sm font-medium text-gray-700 mb-1">
+				WhatsApp Number
+			</label>
+			<div class="relative">
+				<Phone class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+				<input
+					type="tel"
+					id="contact_phone"
+					bind:value={newContactPhone}
+					placeholder="+6281234567890"
+					class="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent"
+				/>
+			</div>
+		</div>
+
+		<div class="flex gap-3 pt-2">
+			<button
+				onclick={() => (showAddContactModal = false)}
+				class="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+			>
+				Cancel
+			</button>
+			<button
+				onclick={handleManualAddContact}
+				disabled={isLoading || !newContactName.trim() || !newContactPhone.trim()}
+				class="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-[#FF6B6B] rounded-lg hover:bg-[#FF5252] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+			>
+				{#if isLoading}
+					<Loader2 class="w-4 h-4 animate-spin mx-auto" />
+				{:else}
+					Add Contact
+				{/if}
+			</button>
+		</div>
+	</div>
+</Modal>
