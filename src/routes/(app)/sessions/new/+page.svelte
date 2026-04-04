@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { enhance } from '$app/forms';
+	import { onMount } from 'svelte';
 	import { Plus, X, Loader2 } from 'lucide-svelte';
 	import type { ActionData } from './$types';
 
@@ -16,6 +17,7 @@
 	let errors = $state<Record<string, string>>({});
 	let touched = $state<Record<string, boolean>>({});
 	let isSubmitting = $state(false);
+	let handleSubmit = $state<(() => void) | undefined>(undefined);
 
 	const currencies = [
 		{ code: 'IDR', symbol: 'Rp', name: 'Indonesian Rupiah' },
@@ -51,6 +53,21 @@
 		goto('/dashboard');
 	}
 
+	// Initialize enhance only on client side
+	onMount(() => {
+		handleSubmit = enhance(() => {
+			return async ({ action, formData }) => {
+				isSubmitting = true;
+				try {
+					const response = await action(formData);
+					return response;
+				} finally {
+					isSubmitting = false;
+				}
+			};
+		});
+	});
+
 	// Handle successful form submission - redirect to session detail
 	$effect(() => {
 		if (form?.success && form.sessionId) {
@@ -63,18 +80,6 @@
 		if (form?.error) {
 			isSubmitting = false;
 		}
-	});
-
-	const handleSubmit = enhance(() => {
-		return async ({ action, formData }) => {
-			isSubmitting = true;
-			try {
-				const response = await action(formData);
-				return response;
-			} finally {
-				isSubmitting = false;
-			}
-		};
 	});
 </script>
 
@@ -103,7 +108,7 @@
 		{/if}
 
 		<!-- Form -->
-		<form method="POST" use:handleSubmit class="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
+		<form method="POST" class="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
 			<!-- Session Name -->
 			<div>
 				<label for="session_name" class="block text-sm font-medium text-gray-700 mb-2">
