@@ -83,12 +83,12 @@
       <ContactCard
         {contact}
         selected={selectedContacts.has(contact.contact_id)}
-        {onSelect}
-        {onEdit}
-        {onDelete}
-        {onToggleFavorite}
-        {onCall}
-        {onMessage}
+        onSelect={onSelect ? () => onSelect(contact) : undefined}
+        onEdit={onEdit ? () => onEdit(contact) : undefined}
+        onDelete={onDelete ? () => onDelete(contact) : undefined}
+        onToggleFavorite={onToggleFavorite ? () => onToggleFavorite(contact) : undefined}
+        onCall={onCall ? () => onCall(contact) : undefined}
+        onMessage={onMessage ? () => onMessage(contact) : undefined}
         showActions={true}
         showCheckbox={showCheckbox}
       />

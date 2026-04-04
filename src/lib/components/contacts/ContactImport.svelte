@@ -193,7 +193,7 @@
       <div class="flex gap-3 justify-center">
         {#if oncancel}
           <button
-            onbuttonclick={handleCancel}
+            onclick={handleCancel}
             class="h-10 px-6 text-[15px] font-bold rounded-full border-[1.5px] border-[#F0F0F0] text-[#6B7280] hover:border-[#FF6B6B] hover:text-[#FF6B6B] transition-colors"
           >
             Cancel

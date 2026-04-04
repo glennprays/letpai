@@ -29,7 +29,7 @@
 
   let showGroupMenu = $state(false);
   let showFavoriteMenu = $state(false);
-  let menuElements: Record<string, HTMLElement> = $state({});
+  let menuElement: HTMLElement;
 
   function handleAssignGroup(groupId: string) {
     if (onassigngroup) onassigngroup(groupId);
@@ -45,10 +45,8 @@
   $effect(() => {
     function handleClickOutside(e: MouseEvent) {
       const target = e.target as Node;
-      if (showGroupMenu && menuElements['group'] && !menuElements['group'].contains(target)) {
+      if (menuElement && !menuElement.contains(target)) {
         showGroupMenu = false;
-      }
-      if (showFavoriteMenu && menuElements['favorite'] && !menuElements['favorite'].contains(target)) {
         showFavoriteMenu = false;
       }
     }
@@ -92,7 +90,7 @@
 
         <!-- Toggle Favorite -->
         {#if ontogglefavorite}
-          <div class="relative" bind:this={(el) => menuElements['favorite'] = el}>
+          <div class="relative" bind:this={menuElement}>
             <Button
               variant="secondary"
               size="sm"
@@ -106,14 +104,14 @@
             {#if showFavoriteMenu}
               <div class="absolute bottom-full mb-2 left-0 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
                 <button
-                  onbuttonclick={() => handleToggleFavorite(true)}
+                  onclick={() => handleToggleFavorite(true)}
                   class="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-3"
                 >
                   <Star class="w-4 h-4 text-amber-500 fill-amber-500" />
                   <span>Add to favorites</span>
                 </button>
                 <button
-                  onbuttonclick={() => handleToggleFavorite(false)}
+                  onclick={() => handleToggleFavorite(false)}
                   class="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-3"
                 >
                   <StarOff class="w-4 h-4 text-gray-400" />
@@ -126,7 +124,7 @@
 
         <!-- Assign to Group -->
         {#if onassigngroup && groups.length > 0}
-          <div class="relative" bind:this={(el) => menuElements['group'] = el}>
+          <div class="relative" bind:this={menuElement}>
             <Button
               variant="secondary"
               size="sm"
