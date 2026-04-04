@@ -27,16 +27,23 @@
   } from '$lib/services/contacts';
   import type { Contact, ContactGroup, CreateContactRequest, UpdateContactRequest } from '$lib/types/api';
 
-  // State
-  let contacts = $state<Contact[]>([]);
-  let groups = $state<ContactGroup[]>([]);
+  interface PageData {
+    contacts: Contact[];
+    groups: ContactGroup[];
+  }
+
+  let { data }: { data: PageData } = $props();
+
+  // State - Initialize with server data
+  let contacts = $state<Contact[]>(data?.contacts || []);
+  let groups = $state<ContactGroup[]>(data?.groups || []);
   let filteredContacts = $state<Contact[]>([]);
 
   let searchQuery = $state('');
   let activeFilter = $state<'all' | 'favorites' | string>('all');
   let selectedContacts = $state<Set<string>>(new Set());
 
-  let isLoading = $state(true);
+  let isLoading = $state(false);
   let isSaving = $state(false);
 
   // Modals
@@ -52,32 +59,32 @@
 
   let isBulkMode = $state(false);
 
-  // Load data
-  onMount(async () => {
-    await Promise.all([loadContacts(), loadGroups()]);
-    isLoading = false;
+  // Initial filter application
+  $effect(() => {
+    if (contacts.length > 0 || data?.contacts) {
+      applyFilters();
+    }
   });
 
-  async function loadContacts() {
+  // Refresh data (for after mutations)
+  async function refreshData() {
+    isLoading = true;
     try {
-      const response = await getContacts();
-      if (response.success) {
-        contacts = response.data;
-        applyFilters();
+      const [contactsResponse, groupsResponse] = await Promise.all([
+        getContacts(),
+        getContactGroups()
+      ]);
+      if (contactsResponse.success) {
+        contacts = contactsResponse.data;
       }
-    } catch (error) {
-      console.error('Failed to load contacts:', error);
-    }
-  }
-
-  async function loadGroups() {
-    try {
-      const response = await getContactGroups();
-      if (response.success) {
-        groups = response.data;
+      if (groupsResponse.success) {
+        groups = groupsResponse.data;
       }
+      applyFilters();
     } catch (error) {
-      console.error('Failed to load groups:', error);
+      console.error('Failed to refresh data:', error);
+    } finally {
+      isLoading = false;
     }
   }
 
@@ -228,7 +235,7 @@
         updates: { group_id: groupId || undefined }
       });
       if (response.success) {
-        await loadContacts();
+        await refreshData();
         selectedContacts = new Set();
       }
     } catch (error) {
@@ -248,7 +255,7 @@
         updates: { is_favorite: isFavorite }
       });
       if (response.success) {
-        await loadContacts();
+        await refreshData();
         selectedContacts = new Set();
       }
     } catch (error) {
@@ -275,7 +282,7 @@
       const response = await updateContactGroup(groupId, data);
       if (response.success) {
         groups = groups.map(g => g.group_id === groupId ? response.data : g);
-        await loadContacts(); // Refresh to see updated group names
+        await refreshData(); // Refresh to see updated group names
       }
     } catch (error) {
       console.error('Failed to update group:', error);
@@ -286,7 +293,7 @@
     try {
       await deleteContactGroup(groupId);
       groups = groups.filter(g => g.group_id !== groupId);
-      await loadContacts(); // Refresh to remove deleted group from contacts
+      await refreshData(); // Refresh to remove deleted group from contacts
     } catch (error) {
       console.error('Failed to delete group:', error);
     }
@@ -297,7 +304,7 @@
     try {
       const response = await bulkImportContacts({ contacts: newContacts });
       if (response.success) {
-        await loadContacts();
+        await refreshData();
       }
     } catch (error) {
       console.error('Failed to import contacts:', error);

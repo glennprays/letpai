@@ -10,6 +10,14 @@ function getToken(): string | null {
 export async function get(endpoint: string, customFetch?: typeof fetch, serverToken?: string) {
   const token = serverToken || getToken();
 
+  // Debug logging
+  if (import.meta.env.DEV) {
+    console.log('[API GET]', `${API_BASE}${endpoint}`, {
+      hasToken: !!token,
+      tokenLength: token?.length
+    });
+  }
+
   const fetchFn = customFetch || fetch;
   const response = await fetchFn(`${API_BASE}${endpoint}`, {
     headers: {
@@ -19,6 +27,16 @@ export async function get(endpoint: string, customFetch?: typeof fetch, serverTo
   });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      console.error('[API] 401 Unauthorized for', endpoint);
+      // Clear invalid token and redirect to login
+      if (browser) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      }
+      throw new Error('Unauthorized. Please login again.');
+    }
     const error = await response.json();
     throw new Error(error.error?.message || response.statusText);
   }
@@ -40,6 +58,14 @@ export async function post(endpoint: string, data: unknown, customFetch?: typeof
   });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      if (browser) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      }
+      throw new Error('Unauthorized. Please login again.');
+    }
     const error = await response.json();
     throw new Error(error.error?.message || response.statusText);
   }
@@ -61,6 +87,14 @@ export async function put(endpoint: string, data: unknown, customFetch?: typeof 
   });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      if (browser) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      }
+      throw new Error('Unauthorized. Please login again.');
+    }
     const error = await response.json();
     throw new Error(error.error?.message || response.statusText);
   }
@@ -80,6 +114,14 @@ export async function del(endpoint: string, customFetch?: typeof fetch, serverTo
   });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      if (browser) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      }
+      throw new Error('Unauthorized. Please login again.');
+    }
     const error = await response.json();
     throw new Error(error.error?.message || response.statusText);
   }
