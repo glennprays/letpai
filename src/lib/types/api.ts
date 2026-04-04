@@ -265,6 +265,8 @@ export interface GroupsResponse {
 }
 
 // Bulk Operations
+export type BulkOperationType = 'delete' | 'update';
+
 export interface BulkImportRequest {
   contacts: Array<{
     name: string;
@@ -280,6 +282,15 @@ export interface BulkDeleteRequest {
 export interface BulkUpdateRequest {
   contact_ids: string[];
   updates: {
+    group_id?: string;
+    is_favorite?: boolean;
+  };
+}
+
+export interface BulkOperationRequest {
+  operation: BulkOperationType;
+  contact_ids: string[];
+  updates?: {
     group_id?: string;
     is_favorite?: boolean;
   };
