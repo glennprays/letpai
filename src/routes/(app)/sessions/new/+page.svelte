@@ -1,327 +1,205 @@
 <script lang="ts">
-  import { goto } from '$app/navigation';
-  import Button from '$lib/components/ui/Button.svelte';
-  import Input from '$lib/components/ui/Input.svelte';
-  import Card from '$lib/components/ui/Card.svelte';
-  import { toast } from '$lib/stores/toast';
-  import { validateRequired } from '$lib/utils/validation';
+	import { goto } from '$app/navigation';
+	import { enhance } from '$app/forms';
+	import { Plus, X, Loader2 } from 'lucide-svelte';
+	import type { ActionData } from './$types';
 
-  // Step management
-  let currentStep = $state(1);
-  const totalSteps = 4;
+	interface Props {
+		form?: ActionData;
+	}
 
-  // Form state
-  let sessionName = $state('');
-  let sessionDescription = $state('');
-  let currency = $state('IDR');
-  
-  function nextStep() {
-    if (currentStep < totalSteps) {
-      currentStep++;
-    }
-  }
+	let { form }: Props = $props();
 
-  function previousStep() {
-    if (currentStep > 1) {
-      currentStep--;
-    }
-  }
+	let sessionName = $state('');
+	let sessionDescription = $state('');
+	let currency = $state('IDR');
+	let errors = $state<Record<string, string>>({});
+	let touched = $state<Record<string, boolean>>({});
+	let isSubmitting = $state(false);
 
-  async function handleSubmit() {
-    try {
-      toast.success('Session berhasil dibuat!');
-      goto('/dashboard');
-    } catch (error) {
-      toast.error('Terjadi kesalahan. Silakan coba lagi.');
-      console.error(error);
-    }
-  }
+	const currencies = [
+		{ code: 'IDR', symbol: 'Rp', name: 'Indonesian Rupiah' },
+		{ code: 'USD', symbol: '$', name: 'US Dollar' },
+		{ code: 'EUR', symbol: '€', name: 'Euro' },
+		{ code: 'SGD', symbol: 'S$', name: 'Singapore Dollar' }
+	];
+
+	function validateField(field: string, value: string) {
+		if (field === 'sessionName' && !value.trim()) {
+			errors.sessionName = 'Session name is required';
+		} else {
+			delete errors[field];
+		}
+	}
+
+	function handleBlur(field: string, value: string) {
+		touched[field] = true;
+		validateField(field, value);
+	}
+
+	function handleInput(field: string, value: string) {
+		if (touched[field]) {
+			validateField(field, value);
+		}
+	}
+
+	function isFormValid() {
+		return sessionName.trim().length > 0 && Object.keys(errors).length === 0;
+	}
+
+	function handleCancel() {
+		goto('/dashboard');
+	}
+
+	// Handle successful form submission
+	$effect(() => {
+		if (form?.success && form.sessionId) {
+			goto(`/sessions/${form.sessionId}`);
+		}
+	});
+
+	// Handle server errors
+	$effect(() => {
+		if (form?.error) {
+			isSubmitting = false;
+		}
+	});
 </script>
 
-<div class="px-4 py-8">
-  <div class="max-w-md mx-auto">
-    <h1 class="text-3xl font-bold text-gray-900 mb-6">
-      Buat Session Baru
-    </h1>
+<div class="min-h-screen bg-gray-50/50">
+	<div class="max-w-lg mx-auto px-4 py-8 sm:py-12">
+		<!-- Header -->
+		<header class="mb-8">
+			<button
+				onclick={handleCancel}
+				class="inline-flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors mb-4 text-sm"
+			>
+				<X class="w-4 h-4" />
+				<span>Cancel</span>
+			</button>
+			<h1 class="text-2xl font-semibold text-gray-900 tracking-tight">Create New Session</h1>
+			<p class="text-sm text-gray-500 mt-1"
+				>Start a new bill splitting session. You can add contacts and bills after creating.</p
+			>
+		</header>
 
-    <!-- Step Indicator -->
-    <div class="flex items-center justify-between mb-8">
-      <div class="flex items-center gap-2">
-        <div class={currentStep >= 1 ? 'bg-[#FF6B6B] text-white' : 'bg-gray-200 text-gray-600'}>
-          1
-        </div>
-        <div class="w-8 h-0.5 bg-gray-200"></div>
-        <div class={currentStep >= 2 ? 'bg-[#FF6B6B] text-white' : 'bg-gray-200 text-gray-600'}>
-          2
-        </div>
-        <div class="w-8 h-0.5 bg-gray-200"></div>
-        <div class={currentStep >= 3 ? 'bg-[#FF6B6B] text-white' : 'bg-gray-200 text-gray-600'}>
-          3
-        </div>
-        <div class="w-8 h-0.5 bg-gray-200"></div>
-        <div class={currentStep >= 4 ? 'bg-[#FF6B6B] text-white' : 'bg-gray-200 text-gray-600'}>
-          4
-        </div>
-      </div>
-      <div class="text-sm text-gray-600">
-        Step {currentStep} of {totalSteps}
-      </div>
-    </div>
+		<!-- Server Error -->
+		{#if form?.error}
+			<div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+				<p class="text-sm text-red-700">{form.error}</p>
+			</div>
+		{/if}
 
-    <!-- Step 1: Session Info -->
-    {#if currentStep === 1}
-      <Card>
-        <div class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              Nama Session <span class="text-red-500">*</span>
-            </label>
-            <Input
-              type="text"
-              placeholder="Contoh: Makan Siang"
-              value={sessionName}
-            />
-          </div>
+		<!-- Form -->
+		<form
+			method="POST"
+			use:enhance={{
+				onSubmit: () => {
+					isSubmitting = true;
+				}
+			}}
+			class="bg-white rounded-xl border border-gray-200 p-6 space-y-6"
+		>
+			<!-- Session Name -->
+			<div>
+				<label for="session_name" class="block text-sm font-medium text-gray-700 mb-2">
+					Session Name <span class="text-red-500">*</span>
+				</label>
+				<input
+					type="text"
+					id="session_name"
+					name="session_name"
+					bind:value={sessionName}
+					onblur={() => handleBlur('sessionName', sessionName)}
+					oninput={() => handleInput('sessionName', sessionName)}
+					placeholder="e.g., Lunch at Warung"
+					required
+					class="w-full px-4 py-3 border border-gray-200 rounded-lg text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent transition-all disabled:bg-gray-50 disabled:cursor-not-allowed"
+					disabled={isSubmitting}
+				/>
+				{#if errors.sessionName && touched.sessionName}
+					<p class="mt-2 text-sm text-red-600">{errors.sessionName}</p>
+				{/if}
+			</div>
 
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              Deskripsi
-            </label>
-            <textarea
-              class="w-full border-2 border-gray-300 rounded-sm px-4 py-3 font-medium focus:border-[#FF6B6B] focus:outline-none placeholder:text-gray-400 transition-colors duration-150"
-              placeholder="Deskripsi opsional..."
-              rows="3"
-              bind:value={sessionDescription}
-            ></textarea>
-          </div>
+			<!-- Session Description -->
+			<div>
+				<label for="session_description" class="block text-sm font-medium text-gray-700 mb-2">
+					Description <span class="text-gray-400 font-normal">(optional)</span>
+				</label>
+				<textarea
+					id="session_description"
+					name="session_description"
+					bind:value={sessionDescription}
+					placeholder="Add a description to help everyone remember what this session is for..."
+					rows="3"
+					class="w-full px-4 py-3 border border-gray-200 rounded-lg text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent transition-all resize-none disabled:bg-gray-50 disabled:cursor-not-allowed"
+					disabled={isSubmitting}
+				></textarea>
+			</div>
 
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              Mata Uang
-            </label>
-            <select
-              class="w-full border-2 border-gray-300 rounded-sm px-4 py-3 font-medium focus:border-[#FF6B6B] focus:outline-none transition-colors duration-150"
-              bind:value={currency}
-            >
-              <option value="IDR">IDR - Rupiah</option>
-              <option value="USD">USD - US Dollar</option>
-              <option value="EUR">EUR - Euro</option>
-            </select>
-          </div>
+			<!-- Currency -->
+			<div>
+				<label for="currency" class="block text-sm font-medium text-gray-700 mb-2">
+					Currency
+				</label>
+				<select
+					id="currency"
+					name="currency"
+					bind:value={currency}
+					class="w-full px-4 py-3 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent transition-all disabled:bg-gray-50 disabled:cursor-not-allowed appearance-none bg-white"
+					disabled={isSubmitting}
+				>
+					{#each currencies as curr}
+						<option value={curr.code}>{curr.symbol} - {curr.name}</option>
+					{/each}
+				</select>
+			</div>
 
-          <div class="flex justify-between">
-            <div class="text-sm text-gray-500">
-              <span class="text-red-500">*</span> Wajib diisi
-            </div>
-          </div>
-        </div>
+			<!-- Actions -->
+			<div class="flex gap-3 pt-4 border-t border-gray-100">
+				<button
+					type="button"
+					onclick={handleCancel}
+					class="flex-1 px-6 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+					disabled={isSubmitting}
+				>
+					Cancel
+				</button>
+				<button
+					type="submit"
+					class="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-medium text-white bg-[#FF6B6B] rounded-lg hover:bg-[#FF5252] transition-colors focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+					disabled={isSubmitting || !isFormValid()}
+				>
+					{#if isSubmitting}
+						<Loader2 class="w-4 h-4 animate-spin" />
+						Creating...
+					{:else}
+						<Plus class="w-4 h-4" />
+						Create Session
+					{/if}
+				</button>
+			</div>
+		</form>
 
-        <div class="flex gap-3 mt-6">
-          <Button
-            variant="ghost"
-            onclick={() => goto('/dashboard')}
-          >
-            Batal
-          </Button>
-          <Button
-            variant="primary"
-            onclick={nextStep}
-            disabled={!sessionName.trim()}
-          >
-            Lanjut
-          </Button>
-        </div>
-      </Card>
-    {/if}
-
-    <!-- Step 2: Add Participants -->
-    {#if currentStep === 2}
-      <Card>
-        <div class="space-y-4">
-          <div class="text-center py-8">
-            <svg class="h-16 w-16 mx-auto text-gray-400 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2a4 4 0 004 4h2"></path>
-              <circle cx="9" cy="7" r="4"></circle>
-            </svg>
-            <h3 class="text-lg font-semibold text-gray-900 mb-2">
-              Tambah Peserta
-            </h3>
-            <p class="text-gray-600 mb-6">
-              Pilih peserta dari kontak atau tambah manual
-            </p>
-            
-            <div class="space-y-3">
-              <Button
-                variant="secondary"
-                onclick={() => toast.success('Fitur ini segera hadir')}
-              >
-                Dari Kontak
-              </Button>
-              <Button
-                variant="secondary"
-                onclick={() => toast.success('Fitur ini segera hadir')}
-              >
-                Tambah Manual
-              </Button>
-            </div>
-
-            <p class="text-sm text-gray-500 text-center">
-              {currentStep} peserta dipilih
-            </p>
-          </div>
-        </div>
-
-        <div class="flex gap-3">
-          <Button
-            variant="ghost"
-            onclick={previousStep}
-          >
-            Kembali
-          </Button>
-          <Button
-            variant="primary"
-            onclick={nextStep}
-            disabled
-          >
-            Lanjut
-          </Button>
-        </div>
-      </Card>
-    {/if}
-
-    <!-- Step 3: Add Bills -->
-    {#if currentStep === 3}
-      <Card>
-        <div class="space-y-4">
-          <div class="text-center py-8">
-            <svg class="h-16 w-16 mx-auto text-gray-400 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <path d="M12 1v22a2 2 0 002-2h0a2 2 0 00-2 2V3a2 2 0 002 2h2z"></path>
-            </svg>
-            <h3 class="text-lg font-semibold text-gray-900 mb-2">
-              Tambah Bill
-            </h3>
-            <p class="text-gray-600 mb-6">
-              Masukkan item pembayaran
-            </p>
-            
-            <div class="space-y-3">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  Nama Item
-                </label>
-                <Input
-                  type="text"
-                  placeholder="Contoh: Nasi goreng"
-                />
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  Jumlah
-                </label>
-                <Input
-                  type="number"
-                  placeholder="0"
-                />
-              </div>
-
-              <Button
-                variant="secondary"
-                onclick={() => toast.success('Bill ditambahkan')}
-              >
-                + Tambah Bill Lain
-              </Button>
-            </div>
-
-            <div class="border-t-2 border-gray-200 pt-4 mt-4">
-              <div class="flex justify-between text-lg font-semibold text-gray-900">
-                <span>Total:</span>
-                <span class="text-[#FF6B6B]">Rp 0</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="flex gap-3">
-          <Button
-            variant="ghost"
-            onclick={previousStep}
-          >
-            Kembali
-          </Button>
-          <Button
-            variant="primary"
-            onclick={nextStep}
-            disabled
-          >
-            Lanjut
-          </Button>
-        </div>
-      </Card>
-    {/if}
-
-    <!-- Step 4: Review -->
-    {#if currentStep === 4}
-      <Card>
-        <div class="space-y-6">
-          <div class="text-center">
-            <svg class="h-16 w-16 mx-auto text-green-500 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <path d="M22 11.08V12a10 10 0 0020-10h-3.64a1 1 0 01-1.94-1.2l-.93-.5a.5.5 0 01-.8-.36L14 9.07a3 3 0 01-2.29-3.94l-.4-2.7a3 3 0 01-2.2-2.52l-.2-1a3 3 0 01-4.14-2.26L11 4.8a3 3 0 01-3.33-2.26L6.64 8.8a3 3 0 01-3.33 2.26L5.13 9.2a3 3 0 01-1.67 2.27l-.52.6a3 3 0 01-1.94-1.62l-.4-.2a3 3 0 01-3.33-1.2l-.2-1a3 3 0 01-3.33-1.2zM4 14a1 1 0 011 1v1a1 1 0 011-1h6a1 1 0 011-1v-1a1 1 0 01-1-1h-6a1 1 0 01-1-1z"></path>
-            </svg>
-            <h3 class="text-lg font-semibold text-gray-900 mb-2">
-              Review & Kirim Notifikasi
-            </h3>
-          </div>
-
-          <div class="space-y-4">
-            <div class="border-2 border-gray-200 rounded-lg p-4">
-              <h4 class="font-semibold text-gray-900 mb-2">
-                {sessionName || 'Session Tanpa Nama'}
-              </h4>
-              <p class="text-sm text-gray-600 mb-2">
-                {sessionDescription || 'Tidak ada deskripsi'}
-              </p>
-              
-              <div class="flex justify-between py-2 border-t-2 border-gray-200">
-                <span class="font-semibold">Total:</span>
-                <span class="text-2xl font-bold text-[#FF6B6B]">Rp 0</span>
-              </div>
-            </div>
-
-            <div class="border-2 border-gray-200 rounded-lg p-4">
-              <div class="flex items-center justify-between mb-2">
-                <span class="font-semibold text-gray-900">Mata Uang:</span>
-                <span class="text-gray-600">{currency}</span>
-              </div>
-              
-              <div class="flex items-center justify-between mb-2">
-                <span class="font-semibold text-gray-900">Peserta:</span>
-                <span class="text-gray-600">0 orang</span>
-              </div>
-              
-              <div class="flex items-center justify-between">
-                <span class="font-semibold text-gray-900">Bill:</span>
-                <span class="text-gray-600">0 item</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="flex gap-3">
-          <Button
-            variant="ghost"
-            onclick={previousStep}
-          >
-            Edit
-          </Button>
-          <Button
-            variant="primary"
-            onclick={handleSubmit}
-          >
-            Kirim Notifikasi
-          </Button>
-        </div>
-      </Card>
-    {/if}
-  </div>
+		<!-- Help Text -->
+		<p class="text-center text-xs text-gray-400 mt-6">
+			After creating, you can add contacts and split bills equally or assign specific amounts.
+		</p>
+	</div>
 </div>
+
+<style>
+	/* Custom select arrow */
+	select {
+		background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236B7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+		background-position: right 0.75rem center;
+		background-repeat: no-repeat;
+		background-size: 1.5em 1.5em;
+		padding-right: 2.5rem;
+	}
+
+	textarea::-webkit-resizer {
+		display: none;
+	}
+</style>
