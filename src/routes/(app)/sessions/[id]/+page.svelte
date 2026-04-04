@@ -12,7 +12,9 @@
 		Receipt,
 		Share2,
 		Phone,
-		Type
+		Type,
+		Trash2,
+		User
 	} from 'lucide-svelte';
 	import type { PageData } from './$types';
 	import { formatIDR, formatRelativeTime } from '$lib/utils/format';
@@ -25,6 +27,7 @@
 	let { data }: Props = $props();
 
 	let showAddContactModal = $state(false);
+	let showAddBillModal = $state(false);
 	let selectedContacts = $state<Set<string>>(new Set());
 	let isLoading = $state(false);
 	let contactsPickerSupported = $state(false);
@@ -32,6 +35,12 @@
 	// Temporary state for adding contact
 	let newContactName = $state('');
 	let newContactPhone = $state('');
+
+	// Temporary state for adding bill
+	let newBillName = $state('');
+	let newBillAmount = $state('');
+	let newBillDescription = $state('');
+	let selectedBillParticipant = $state<string>('');
 
 	// Check if Contacts Picker API is supported
 	$effect(() => {
@@ -166,6 +175,114 @@
 		} finally {
 			isLoading = false;
 		}
+	}
+
+	async function handleAddBill() {
+		if (!newBillName.trim() || !newBillAmount.trim() || !selectedBillParticipant) return;
+
+		isLoading = true;
+		try {
+			const amountInCents = Math.round(parseFloat(newBillAmount) * 100);
+
+			// Add the bill item
+			const billResponse = await fetch(`/api/v1/sessions/${data.session.session_id}/bills`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					Authorization: `Bearer ${localStorage.getItem('token')}`
+				},
+				body: JSON.stringify({
+					name: newBillName.trim(),
+					description: newBillDescription.trim() || undefined,
+					amount: amountInCents
+				})
+			});
+
+			if (billResponse.ok) {
+				// Update the participant's share amount
+				const participant = data.session.participants?.find(
+					(p) => p.participant_id === selectedBillParticipant
+				);
+
+				if (participant) {
+					const newShareAmount = participant.share_amount + amountInCents;
+
+					await fetch(
+						`/api/v1/sessions/${data.session.session_id}/participants/${selectedBillParticipant}`,
+						{
+							method: 'PUT',
+							headers: {
+								'Content-Type': 'application/json',
+								Authorization: `Bearer ${localStorage.getItem('token')}`
+							},
+							body: JSON.stringify({ share_amount: newShareAmount })
+						}
+					);
+				}
+
+				// Reset form and close modal
+				newBillName = '';
+				newBillAmount = '';
+				newBillDescription = '';
+				selectedBillParticipant = '';
+				showAddBillModal = false;
+
+				// Reload to show updated data
+				window.location.reload();
+			}
+		} catch (error) {
+			console.error('Add bill error:', error);
+		} finally {
+			isLoading = false;
+		}
+	}
+
+	async function handleDeleteBill(billItemId: string) {
+		if (!confirm('Are you sure you want to delete this bill?')) return;
+
+		isLoading = true;
+		try {
+			await fetch(`/api/v1/sessions/${data.session.session_id}/bills/${billItemId}`, {
+				method: 'DELETE',
+				headers: {
+					Authorization: `Bearer ${localStorage.getItem('token')}`
+				}
+			});
+
+			window.location.reload();
+		} catch (error) {
+			console.error('Delete bill error:', error);
+		} finally {
+			isLoading = false;
+		}
+	}
+
+	function openAddBillModal() {
+		if (!data.session.participants || data.session.participants.length === 0) {
+			alert('Please add participants first before adding bills.');
+			return;
+		}
+		showAddBillModal = true;
+	}
+
+	// Group bills by participant for display
+	function getBillsByParticipant() {
+		const grouped: Record<string, typeof data.session.bill_items> = {};
+
+		if (!data.session.bill_items) return grouped;
+
+		// Note: In a real implementation, bills would have a participant_id field
+		// For now, we'll just show all bills together
+		grouped['all'] = data.session.bill_items;
+
+		return grouped;
+	}
+
+	function getTotalForParticipant(participantId: string): number {
+		const participant = data.session.participants?.find(
+			(p) => p.participant_id === participantId
+		);
+		return participant?.share_amount || 0;
 	}
 
 	function handleBack() {
@@ -329,7 +446,10 @@
 		<section class="bg-white rounded-xl border border-gray-200 p-6">
 			<div class="flex items-center justify-between mb-4">
 				<h2 class="text-lg font-semibold text-gray-900">Bill Items</h2>
-				<button class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#FF6B6B] hover:bg-[#FF6B6B]/10 rounded-lg transition-colors">
+				<button
+					onclick={openAddBillModal}
+					class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#FF6B6B] hover:bg-[#FF6B6B]/10 rounded-lg transition-colors"
+				>
 					<Plus class="w-4 h-4" />
 					Add Bill
 				</button>
@@ -341,18 +461,44 @@
 					<p class="text-sm">No bill items yet. Add bills to track expenses.</p>
 				</div>
 			{:else}
-				<div class="space-y-2">
+				<div class="space-y-3">
 					{#each data.session.bill_items as item}
-						<div class="flex items-center justify-between p-3 rounded-lg bg-gray-50 border border-gray-200">
-							<div>
-								<p class="text-sm font-medium text-gray-900">{item.name}</p>
-								{#if item.description}
-									<p class="text-xs text-gray-500">{item.description}</p>
-								{/if}
+						<div class="p-4 rounded-lg bg-gray-50 border border-gray-200">
+							<div class="flex items-start justify-between gap-4">
+								<div class="flex-1 min-w-0">
+									<div class="flex items-center gap-2">
+										<Receipt class="w-4 h-4 text-gray-400 flex-shrink-0" />
+										<p class="text-sm font-medium text-gray-900 truncate">{item.name}</p>
+									</div>
+									{#if item.description}
+										<p class="text-xs text-gray-500 mt-1 ml-6">{item.description}</p>
+									{/if}
+								</div>
+								<div class="flex items-center gap-3 flex-shrink-0">
+									<p class="text-sm font-semibold text-gray-900">{formatIDR(item.amount)}</p>
+									<button
+										onclick={() => handleDeleteBill(item.bill_item_id)}
+										class="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+										title="Delete bill"
+									>
+										<Trash2 class="w-4 h-4" />
+									</button>
+								</div>
 							</div>
-							<p class="text-sm font-medium text-gray-900">{formatIDR(item.amount)}</p>
 						</div>
 					{/each}
+				</div>
+			{/if}
+
+			<!-- Total Summary -->
+			{#if data.session.bill_items && data.session.bill_items.length > 0}
+				<div class="mt-4 pt-4 border-t border-gray-200">
+					<div class="flex items-center justify-between">
+						<span class="text-sm font-medium text-gray-700">Total Bills</span>
+						<span class="text-lg font-semibold text-gray-900">
+							{formatIDR(data.session.total_amount)}
+						</span>
+					</div>
 				</div>
 			{/if}
 		</section>
@@ -432,6 +578,110 @@
 					<Loader2 class="w-4 h-4 animate-spin mx-auto" />
 				{:else}
 					Add Contact
+				{/if}
+			</button>
+		</div>
+	</div>
+</Modal>
+
+<!-- Add Bill Modal -->
+<Modal open={showAddBillModal} title="Add Bill Item">
+	<div class="space-y-4">
+		<div>
+			<label for="bill_name" class="block text-sm font-medium text-gray-700 mb-1">
+				Bill Name <span class="text-red-500">*</span>
+			</label>
+			<input
+				type="text"
+				id="bill_name"
+				bind:value={newBillName}
+				placeholder="e.g., Nasi Goreng"
+				class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent"
+			/>
+		</div>
+
+		<div>
+			<label for="bill_description" class="block text-sm font-medium text-gray-700 mb-1">
+				Description <span class="text-gray-400 font-normal">(optional)</span>
+			</label>
+			<textarea
+				id="bill_description"
+				bind:value={newBillDescription}
+				placeholder="Add details about this bill..."
+				rows="2"
+				class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent resize-none"
+			></textarea>
+		</div>
+
+		<div>
+			<label for="bill_amount" class="block text-sm font-medium text-gray-700 mb-1">
+				Amount ({getCurrencySymbol(data.session.currency)}) <span class="text-red-500">*</span>
+			</label>
+			<input
+				type="number"
+				id="bill_amount"
+				bind:value={newBillAmount}
+				placeholder="0"
+				step="0.01"
+				min="0"
+				class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent"
+			/>
+		</div>
+
+		<div>
+			<label for="bill_participant" class="block text-sm font-medium text-gray-700 mb-1">
+				Assign to <span class="text-red-500">*</span>
+			</label>
+			<div class="relative">
+				<User class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+				<select
+					id="bill_participant"
+					bind:value={selectedBillParticipant}
+					class="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent appearance-none bg-white"
+				>
+					<option value="">Select participant</option>
+					{#each data.session.participants || [] as participant}
+						<option value={participant.participant_id}>{participant.name}</option>
+					{/each}
+				</select>
+			</div>
+			<p class="text-xs text-gray-500 mt-1.5">
+				This bill will be added to the selected participant's share.
+			</p>
+		</div>
+
+		<!-- Preview -->
+		{#if newBillAmount && selectedBillParticipant}
+			<div class="p-3 bg-blue-50 rounded-lg border border-blue-200">
+				<p class="text-xs text-blue-700 font-medium mb-1">Preview</p>
+				<div class="flex items-center justify-between text-sm">
+					<span class="text-blue-600">
+						{data.session.participants?.find((p) => p.participant_id === selectedBillParticipant)
+							?.name}
+					</span>
+					<span class="font-semibold text-blue-900">
+						{formatIDR(Math.round(parseFloat(newBillAmount || '0') * 100))}
+					</span>
+				</div>
+			</div>
+		{/if}
+
+		<div class="flex gap-3 pt-2">
+			<button
+				onclick={() => (showAddBillModal = false)}
+				class="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+			>
+				Cancel
+			</button>
+			<button
+				onclick={handleAddBill}
+				disabled={isLoading || !newBillName.trim() || !newBillAmount.trim() || !selectedBillParticipant}
+				class="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-[#FF6B6B] rounded-lg hover:bg-[#FF5252] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+			>
+				{#if isLoading}
+					<Loader2 class="w-4 h-4 animate-spin mx-auto" />
+				{:else}
+					Add Bill
 				{/if}
 			</button>
 		</div>
