@@ -29,7 +29,7 @@
 
   let showGroupMenu = $state(false);
   let showFavoriteMenu = $state(false);
-  let menuElement: HTMLDivElement;
+  let menuElements: Record<string, HTMLElement> = $state({});
 
   function handleAssignGroup(groupId: string) {
     if (onassigngroup) onassigngroup(groupId);
@@ -44,12 +44,11 @@
   // Close menus when clicking outside
   $effect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (
-        (showGroupMenu || showFavoriteMenu) &&
-        menuElement &&
-        !menuElement.contains(e.target as Node)
-      ) {
+      const target = e.target as Node;
+      if (showGroupMenu && menuElements['group'] && !menuElements['group'].contains(target)) {
         showGroupMenu = false;
+      }
+      if (showFavoriteMenu && menuElements['favorite'] && !menuElements['favorite'].contains(target)) {
         showFavoriteMenu = false;
       }
     }
@@ -84,7 +83,7 @@
         <Button
           variant="ghost"
           size="sm"
-          onclick={onclear}
+          onbuttonclick={onclear}
           disabled={loading}
           leftIcon={X}
         >
@@ -93,11 +92,11 @@
 
         <!-- Toggle Favorite -->
         {#if ontogglefavorite}
-          <div class="relative">
+          <div class="relative" bind:this={(el) => menuElements['favorite'] = el}>
             <Button
               variant="secondary"
               size="sm"
-              onclick={() => showFavoriteMenu = !showFavoriteMenu}
+              onbuttonclick={() => showFavoriteMenu = !showFavoriteMenu}
               disabled={loading}
               leftIcon={Star}
             >
@@ -107,14 +106,14 @@
             {#if showFavoriteMenu}
               <div class="absolute bottom-full mb-2 left-0 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
                 <button
-                  onclick={() => handleToggleFavorite(true)}
+                  onbuttonclick={() => handleToggleFavorite(true)}
                   class="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-3"
                 >
                   <Star class="w-4 h-4 text-amber-500 fill-amber-500" />
                   <span>Add to favorites</span>
                 </button>
                 <button
-                  onclick={() => handleToggleFavorite(false)}
+                  onbuttonclick={() => handleToggleFavorite(false)}
                   class="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-3"
                 >
                   <StarOff class="w-4 h-4 text-gray-400" />
@@ -127,11 +126,11 @@
 
         <!-- Assign to Group -->
         {#if onassigngroup && groups.length > 0}
-          <div class="relative">
+          <div class="relative" bind:this={(el) => menuElements['group'] = el}>
             <Button
               variant="secondary"
               size="sm"
-              onclick={() => showGroupMenu = !showGroupMenu}
+              onbuttonclick={() => showGroupMenu = !showGroupMenu}
               disabled={loading}
               leftIcon={FolderOpen}
             >
@@ -169,7 +168,7 @@
           <Button
             variant="destructive"
             size="sm"
-            onclick={ondelete}
+            onbuttonclick={ondelete}
             disabled={loading}
             leftIcon={Trash2}
           >

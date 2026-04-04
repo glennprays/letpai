@@ -225,6 +225,7 @@ export interface UpdateContactRequest {
   group_id?: string;
   avatar_url?: string;
   notes?: string;
+  is_favorite?: boolean;
 }
 
 export interface ContactResponse {

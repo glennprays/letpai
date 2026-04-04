@@ -2,7 +2,7 @@
  * Scroll utility functions for better UX
  */
 
-let scrollTimeout: NodeJS.Timeout | null = null;
+let scrollTimeout: ReturnType<typeof setTimeout> | null = null;
 
 export function checkScrollDirection(element: HTMLElement) {
   // Debounce scroll events for performance

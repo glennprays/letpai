@@ -2,6 +2,7 @@
   import { cn } from '$lib/utils/cn';
   import { AlertTriangle, X } from 'lucide-svelte';
   import Button from './Button.svelte';
+  type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'destructive' | 'whatsapp';
 
   interface Props {
     open?: boolean;
@@ -50,7 +51,7 @@
     }
   }
 
-  const variantStyles = {
+  const variantStyles: Record<string, { icon: string; iconBg: string; button: ButtonVariant }> = {
     danger: {
       icon: 'text-red-500',
       iconBg: 'bg-red-100',
@@ -80,6 +81,7 @@
     role="dialog"
     aria-modal="true"
     aria-labelledby="confirm-dialog-title"
+    tabindex="-1"
   >
     <div
       class="w-full max-w-sm bg-white rounded-xl shadow-xl p-6 animate-in fade-in slide-in-from-bottom-4 sm:slide-in-from-bottom-0 sm:animate-in"
@@ -107,20 +109,18 @@
 
       <!-- Actions -->
       <div class="flex gap-3">
-        <Button
-          variant="secondary"
+        <button
           onclick={handleCancel}
-          class="flex-1"
+          class="flex-1 h-10 px-6 text-[15px] font-bold rounded-full border-[1.5px] border-[#F0F0F0] text-[#6B7280] hover:border-[#FF6B6B] hover:text-[#FF6B6B] transition-colors"
         >
           {cancelText}
-        </Button>
-        <Button
-          variant={currentStyle.button}
+        </button>
+        <button
           onclick={handleConfirm}
-          class="flex-1"
+          class="flex-1 h-10 px-6 text-[15px] font-bold rounded-full bg-[#EF4444] hover:bg-[#DC2626] text-white transition-colors"
         >
           {confirmText}
-        </Button>
+        </button>
       </div>
     </div>
   </div>

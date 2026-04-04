@@ -56,12 +56,21 @@
   function handleSubmit() {
     if (!validate()) return;
 
-    const data: CreateContactRequest | UpdateContactRequest = {
-      name: name.trim(),
-      whatsapp_number: phone.replace(/\D/g, ''),
-      ...(groupId && { group_id: groupId }),
-      ...(notes.trim() && { notes: notes.trim() })
-    };
+    // For editing, use UpdateContactRequest format (optional fields)
+    // For creating, use CreateContactRequest format (required fields)
+    const data = contact
+      ? {
+          ...(name.trim() !== contact.name && { name: name.trim() }),
+          ...(phone.replace(/\D/g, '') !== contact.whatsapp_number && { whatsapp_number: phone.replace(/\D/g, '') }),
+          ...(groupId !== contact.group_id && { group_id: groupId || undefined }),
+          ...(notes.trim() !== (contact.notes || '') && { notes: notes.trim() || undefined })
+        }
+      : {
+          name: name.trim(),
+          whatsapp_number: phone.replace(/\D/g, ''),
+          ...(groupId && { group_id: groupId }),
+          ...(notes.trim() && { notes: notes.trim() })
+        };
 
     if (onsubmit) onsubmit(data);
   }
@@ -116,22 +125,23 @@
 
   <!-- Phone Number -->
   <div>
-    <Input
-      id="contact-phone"
-      type="tel"
-      label="WhatsApp Number"
-      placeholder="e.g., 812-3456-7890"
-      bind:value={phone}
-      oninput={(val) => phone = formatPhone(val)}
-      error={!!errors.phone}
-      errorText={errors.phone}
-      disabled={loading}
-      leftIcon={() => ''}
-    >
-      {#if phone}
-        <span slot="leftIcon" class="text-sm text-gray-500 mr-1">+62</span>
-      {/if}
-    </Input>
+    <div class="relative">
+      <span class="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-gray-500 pointer-events-none z-10">
+        +62
+      </span>
+      <Input
+        id="contact-phone"
+        type="tel"
+        label="WhatsApp Number"
+        placeholder="e.g., 812-3456-7890"
+        bind:value={phone}
+        oninput={(val) => phone = formatPhone(val)}
+        error={!!errors.phone}
+        errorText={errors.phone}
+        disabled={loading}
+        class="pl-14"
+      />
+    </div>
   </div>
 
   <!-- Group -->

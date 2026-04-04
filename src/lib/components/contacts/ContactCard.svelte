@@ -36,7 +36,7 @@
   }: Props = $props();
 
   let showMenu = $state(false);
-  let menuElement: HTMLDivElement;
+  let menuElement: HTMLElement;
 
   function handleMenuClick(e: MouseEvent) {
     e.stopPropagation();
@@ -178,7 +178,7 @@
       {/if}
 
       <!-- More Menu -->
-      <div class="relative" use:menuElement>
+      <div class="relative" bind:this={menuElement}>
         <button
           onclick={handleMenuClick}
           class="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-colors"

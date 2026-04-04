@@ -1,20 +1,21 @@
 <script lang="ts">
 	import { X } from 'lucide-svelte';
 	import { fly } from 'svelte/transition';
-	import { createEventDispatcher } from 'svelte';
 
 	interface Props {
 		open?: boolean;
 		title?: string;
+		onclose?: () => void;
 		children: import('svelte').Snippet;
 	}
 
-	let { open = false, title, children }: Props = $props();
+	let { open = false, title, onclose, children }: Props = $props();
 
-	let dialogElement: HTMLDialogElement;
+	let dialogElement: HTMLDivElement;
 
 	function handleClose() {
 		open = false;
+		if (onclose) onclose();
 	}
 
 	// Close on escape key

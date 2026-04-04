@@ -159,7 +159,7 @@
 
       <Button
         variant="primary"
-        onclick={handleCreate}
+        onbuttonclick={handleCreate}
         disabled={!newGroupName.trim() || loading}
         loading={loading}
         class="w-full"
@@ -170,7 +170,7 @@
   {:else}
     <Button
       variant="secondary"
-      onclick={openCreateForm}
+      onbuttonclick={openCreateForm}
       disabled={loading}
       leftIcon={Plus}
       class="w-full"
@@ -223,7 +223,7 @@
               <Button
                 variant="secondary"
                 size="sm"
-                onclick={closeEditGroup}
+                onbuttonclick={closeEditGroup}
                 disabled={loading}
               >
                 Cancel
@@ -231,7 +231,7 @@
               <Button
                 variant="primary"
                 size="sm"
-                onclick={handleUpdate}
+                onbuttonclick={handleUpdate}
                 disabled={!editGroupName.trim() || loading}
                 loading={loading}
               >

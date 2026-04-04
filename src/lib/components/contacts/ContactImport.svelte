@@ -192,17 +192,17 @@
 
       <div class="flex gap-3 justify-center">
         {#if oncancel}
-          <Button
-            variant="secondary"
-            onclick={handleCancel}
+          <button
+            onbuttonclick={handleCancel}
+            class="h-10 px-6 text-[15px] font-bold rounded-full border-[1.5px] border-[#F0F0F0] text-[#6B7280] hover:border-[#FF6B6B] hover:text-[#FF6B6B] transition-colors"
           >
             Cancel
-          </Button>
+          </button>
         {/if}
 
         <Button
           variant="primary"
-          onclick={handleSelectContacts}
+          onbuttonclick={handleSelectContacts}
           leftIcon={Upload}
         >
           Select Contacts
@@ -338,7 +338,7 @@
       <div class="flex gap-3 pt-2">
         <Button
           variant="secondary"
-          onclick={handleCancel}
+          onbuttonclick={handleCancel}
           disabled={loading}
           class="flex-1"
         >
@@ -347,7 +347,7 @@
 
         <Button
           variant="primary"
-          onclick={handleImport}
+          onbuttonclick={handleImport}
           disabled={selectedCount === 0 || loading}
           loading={loading}
           class="flex-1"
@@ -379,14 +379,14 @@
       <div class="flex gap-3 justify-center">
         <Button
           variant="secondary"
-          onclick={handleReset}
+          onbuttonclick={handleReset}
         >
           Import More
         </Button>
 
         <Button
           variant="primary"
-          onclick={handleCancel}
+          onbuttonclick={handleCancel}
         >
           Done
         </Button>

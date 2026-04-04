@@ -33,7 +33,7 @@ export function isContactPickerSupported(): boolean {
  * @returns Promise with selected contacts or error
  */
 export async function selectDeviceContacts(
-  properties: (keyof ContactProperties)['name'][][] = [['name'], ['tel']],
+  properties: string[][] = [['name'], ['tel']],
   multiple = true
 ): Promise<ContactPickerResult> {
   try {
