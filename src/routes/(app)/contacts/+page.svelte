@@ -30,11 +30,6 @@
   // In SvelteKit, server load data is accessed via $page store
   // The data is in $page.data for the current route
 
-  // Debug logging to check page data
-  if (import.meta.env.DEV) {
-    console.log('[Contacts Page] $page.data:', $page.data);
-  }
-
   // State - Initialize with server data from $page store
   let contacts = $state<Contact[]>([]);
   let groups = $state<ContactGroup[]>([]);
@@ -44,14 +39,6 @@
   $effect(() => {
     const serverContacts = $page.data?.contacts as Contact[] | undefined;
     const serverGroups = $page.data?.groups as ContactGroup[] | undefined;
-
-    if (import.meta.env.DEV) {
-      console.log('[Contacts Page] $page.data:', $page.data);
-      console.log('[Contacts Page] Server contacts:', serverContacts);
-      console.log('[Contacts Page] Server groups:', serverGroups);
-      console.log('[Contacts Page] Server contacts length:', serverContacts?.length);
-      console.log('[Contacts Page] Server groups length:', serverGroups?.length);
-    }
 
     if (serverContacts) {
       contacts = serverContacts;
@@ -83,9 +70,6 @@
 
   // Initial filter application
   $effect(() => {
-    if (import.meta.env.DEV) {
-      console.log('[Contacts Page] Filtering contacts:', contacts.length, 'groups:', groups.length);
-    }
     applyFilters();
   });
 

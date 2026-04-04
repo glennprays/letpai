@@ -35,9 +35,6 @@ export const actions: Actions = {
 				token
 			);
 
-			// Debug logging
-			console.log('Create session result:', JSON.stringify(result, null, 2));
-
 			// Handle different response structures
 			let sessionId: string | undefined;
 

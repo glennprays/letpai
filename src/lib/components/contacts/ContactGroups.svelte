@@ -1,10 +1,11 @@
 <script lang="ts">
   import { cn } from '$lib/utils/cn';
-  import { Plus, Pencil, Trash2, X, Users, ChevronRight } from 'lucide-svelte';
+  import { Plus, Pencil, Trash2, Users, ChevronRight } from 'lucide-svelte';
   import Button from '../ui/Button.svelte';
   import Input from '../ui/Input.svelte';
   import GroupBadge from './GroupBadge.svelte';
   import ConfirmDialog from '../ui/ConfirmDialog.svelte';
+  import Modal from '../ui/Modal.svelte';
   import type { ContactGroup } from '$lib/types/api';
 
   // Preset group colors with better visual distinction
@@ -44,57 +45,59 @@
   let editingGroup = $state<ContactGroup | null>(null);
   let deletingGroup = $state<ContactGroup | null>(null);
 
-  let newGroupName = $state('');
-  let newGroupColor = $state(GROUP_COLORS[0].value);
-  let editGroupName = $state('');
-  let editGroupColor = $state('');
+  // Combined state for the input (used in bind:value)
+  let inputGroupName = $state('');
+  let inputGroupColor = $state<string>(GROUP_COLORS[0].value);
 
   function openCreateModal() {
-    newGroupName = '';
-    newGroupColor = GROUP_COLORS[0].value;
+    editingGroup = null;
+    inputGroupName = '';
+    inputGroupColor = GROUP_COLORS[0].value;
     showCreateModal = true;
   }
 
   function closeCreateModal() {
     showCreateModal = false;
-    newGroupName = '';
+    editingGroup = null;
   }
 
   function handleCreate() {
-    if (!newGroupName.trim()) return;
+    if (!inputGroupName.trim()) return;
 
     if (oncreate) {
       oncreate({
-        name: newGroupName.trim(),
-        color: newGroupColor
+        name: inputGroupName.trim(),
+        color: inputGroupColor
       });
     }
+    inputGroupName = '';
+    inputGroupColor = GROUP_COLORS[0].value;
     closeCreateModal();
   }
 
   function openEditGroup(group: ContactGroup) {
     editingGroup = group;
-    editGroupName = group.name;
-    editGroupColor = group.color;
+    inputGroupName = group.name;
+    inputGroupColor = group.color;
     showCreateModal = true;
   }
 
   function closeEditGroup() {
     editingGroup = null;
-    editGroupName = '';
-    editGroupColor = '';
     showCreateModal = false;
   }
 
   function handleUpdate() {
-    if (!editingGroup || !editGroupName.trim()) return;
+    if (!editingGroup || !inputGroupName.trim()) return;
 
     if (onupdate) {
       onupdate(editingGroup.group_id, {
-        name: editGroupName.trim(),
-        color: editGroupColor
+        name: inputGroupName.trim(),
+        color: inputGroupColor
       });
     }
+    inputGroupName = '';
+    inputGroupColor = GROUP_COLORS[0].value;
     closeEditGroup();
   }
 
@@ -113,18 +116,8 @@
     }
   }
 
-  function handleColorSelect(color: string) {
-    newGroupColor = color;
-  }
-
-  function handleEditColorSelect(color: string) {
-    editGroupColor = color;
-  }
-
   const modalTitle = $derived(editingGroup ? 'Edit Group' : 'Create New Group');
   const submitButtonText = $derived(editingGroup ? 'Save Changes' : 'Create Group');
-  const selectedColorIndex = $derived(GROUP_COLORS.findIndex(c => c.value === newGroupColor));
-  const editColorIndex = $derived(GROUP_COLORS.findIndex(c => c.value === editGroupColor));
 </script>
 
 <div class={cn('space-y-4', className)} {...props}>
@@ -218,121 +211,90 @@
   {/if}
 
   <!-- Create/Edit Modal -->
-  {#if showCreateModal}
-    <div
-      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
-      role="dialog"
-      aria-modal="true"
-      onclick={(e) => {
-        if (e.target === e.currentTarget) closeEditGroup();
-      }}
-    >
-      <div
-        class="w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 animate-in fade-in slide-in-from-bottom-4"
-        onclick={(e) => e.stopPropagation()}
-      >
-        <!-- Header -->
-        <div class="flex items-center justify-between mb-6">
-          <h3 class="text-xl font-semibold text-gray-900">{modalTitle}</h3>
-          <button
-            onclick={closeEditGroup}
-            class="p-2 rounded-full hover:bg-gray-100 transition-colors"
-            aria-label="Close"
-          >
-            <X class="w-5 h-5 text-gray-500" />
-          </button>
+  <Modal open={showCreateModal} title={modalTitle} onclose={closeEditGroup}>
+    <!-- Form -->
+    <div class="space-y-6">
+      <!-- Group Name -->
+      <div>
+        <label
+          for="group-name-input"
+          class="block text-sm font-semibold text-gray-700 mb-2"
+        >
+          Group Name
+        </label>
+        <Input
+          id="group-name-input"
+          placeholder="e.g., Family, Friends, Work"
+          bind:value={inputGroupName}
+          disabled={loading}
+          maxLength={30}
+          showCount
+          class="text-base"
+        />
+      </div>
+
+      <!-- Color Selection -->
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-3">
+          Choose Color
+        </label>
+        <div class="grid grid-cols-5 gap-3">
+          {#each GROUP_COLORS as color (color.value)}
+            <button
+              type="button"
+              onclick={() => {
+                inputGroupColor = color.value;
+              }}
+              class={cn(
+                'relative w-full aspect-square rounded-xl transition-all duration-150 hover:scale-105',
+                color.bg,
+                color.border,
+                'border-2'
+              )}
+              class:ring-2={inputGroupColor === color.value}
+              class:ring-offset-2={inputGroupColor === color.value}
+              class:ring-gray-400={inputGroupColor === color.value}
+              aria-label={color.name}
+            >
+              {#if inputGroupColor === color.value}
+                <div class="absolute inset-0 flex items-center justify-center">
+                  <div class="w-5 h-5 rounded-full bg-white shadow-sm flex items-center justify-center">
+                    <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                </div>
+              {/if}
+            </button>
+          {/each}
         </div>
+        <p class="text-xs text-gray-500 mt-2">
+          Pick a color to easily identify this group
+        </p>
+      </div>
 
-        <!-- Form -->
-        <div class="space-y-6">
-          <!-- Group Name -->
-          <div>
-            <label
-              for="group-name-input"
-              class="block text-sm font-semibold text-gray-700 mb-2"
-            >
-              Group Name
-            </label>
-            <Input
-              id="group-name-input"
-              placeholder="e.g., Family, Friends, Work"
-              bind:value={editingGroup ? editGroupName : newGroupName}
-              disabled={loading}
-              maxLength={30}
-              showCount
-              class="text-base"
-            />
-          </div>
-
-          <!-- Color Selection -->
-          <div>
-            <label class="block text-sm font-semibold text-gray-700 mb-3">
-              Choose Color
-            </label>
-            <div class="grid grid-cols-5 gap-3">
-              {#each GROUP_COLORS as color (color.value)}
-                <button
-                  type="button"
-                  onclick={() => editingGroup ? handleEditColorSelect(color.value) : handleColorSelect(color.value)}
-                  class={cn(
-                    'relative w-full aspect-square rounded-xl transition-all duration-150 hover:scale-105',
-                    color.bg,
-                    color.border,
-                    'border-2'
-                  )}
-                  class:ring-2={editingGroup
-                    ? editColorIndex === GROUP_COLORS.indexOf(color)
-                    : selectedColorIndex === GROUP_COLORS.indexOf(color)}
-                  class:ring-offset-2={editingGroup
-                    ? editColorIndex === GROUP_COLORS.indexOf(color)
-                    : selectedColorIndex === GROUP_COLORS.indexOf(color)}
-                  class:ring-gray-400={editingGroup
-                    ? editColorIndex === GROUP_COLORS.indexOf(color)
-                    : selectedColorIndex === GROUP_COLORS.indexOf(color)}
-                  aria-label={color.name}
-                >
-                  {#if (editingGroup && editColorIndex === GROUP_COLORS.indexOf(color)) ||
-                      (!editingGroup && selectedColorIndex === GROUP_COLORS.indexOf(color))}
-                    <div class="absolute inset-0 flex items-center justify-center">
-                      <div class="w-5 h-5 rounded-full bg-white shadow-sm flex items-center justify-center">
-                        <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
-                        </svg>
-                      </div>
-                    </div>
-                  {/if}
-                </button>
-              {/each}
-            </div>
-            <p class="text-xs text-gray-500 mt-2">
-              Pick a color to easily identify this group
-            </p>
-          </div>
-
-          <!-- Actions -->
-          <div class="flex gap-3 pt-2">
-            <Button
-              variant="secondary"
-              onclick={closeEditGroup}
-              disabled={loading}
-              class="flex-1"
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              onclick={editingGroup ? handleUpdate : handleCreate}
-              disabled={loading || !(editingGroup ? editGroupName.trim() : newGroupName.trim())}
-              loading={loading}
-              class="flex-1"
-            >
-              {submitButtonText}
-            </Button>
-          </div>
-        </div>
+      <!-- Actions -->
+      <div class="flex gap-3 pt-2">
+        <Button
+          variant="secondary"
+          onclick={closeEditGroup}
+          disabled={loading}
+          class="flex-1"
+        >
+          Cancel
+        </Button>
+        <Button
+          variant="primary"
+          onclick={editingGroup ? handleUpdate : handleCreate}
+          disabled={loading || !inputGroupName.trim()}
+          loading={loading}
+          class="flex-1"
+        >
+          {submitButtonText}
+        </Button>
       </div>
     </div>
-  {/if}
+  </Modal>
 
   <!-- Delete Confirmation Dialog -->
   <ConfirmDialog

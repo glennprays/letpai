@@ -19,10 +19,6 @@ export const load: PageServerLoad = async ({ fetch, cookies }) => {
 			getSessions(1, 12, fetch, token)
 		]);
 
-		// Debug logging to see the actual structure
-		console.log('Stats result:', JSON.stringify(statsResult, null, 2));
-		console.log('Sessions result:', JSON.stringify(sessionsResult, null, 2));
-
 		// Handle sessions response - it might be wrapped in different ways
 		let sessionsArray: unknown[] = [];
 		let pagination = null;
@@ -47,9 +43,6 @@ export const load: PageServerLoad = async ({ fetch, cookies }) => {
 				sessionsArray = sessionsResult.sessions;
 			}
 		}
-
-		console.log('Parsed sessions array:', sessionsArray);
-		console.log('Parsed pagination:', pagination);
 
 		return {
 			stats: statsResult,

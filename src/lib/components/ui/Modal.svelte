@@ -44,12 +44,12 @@
 		aria-labelledby="modal-title"
 	>
 		<div
-			class="w-full max-w-md bg-white rounded-xl shadow-xl transition-all"
+			class="w-full max-w-md bg-white rounded-xl shadow-xl transition-all max-h-[90vh] flex flex-col"
 			transition:fly={{ y: 20, duration: 200 }}
 		>
 			<!-- Header -->
 			{#if title}
-				<div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+				<div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
 					<h2 id="modal-title" class="text-lg font-semibold text-gray-900">{title}</h2>
 					<button
 						onclick={handleClose}
@@ -62,7 +62,7 @@
 			{/if}
 
 			<!-- Content -->
-			<div class="px-6 py-4">
+			<div class="px-6 py-4 overflow-y-auto">
 				{@render children()}
 			</div>
 		</div>
