@@ -28,6 +28,7 @@
   let name = $state(contact?.name || '');
   let phone = $state(contact?.whatsapp_number || '');
   let groupId = $state(contact?.group_id || '');
+  let selectedGroupIds = $state<string[]>(contact?.group_id ? [contact.group_id] : []);
   let notes = $state(contact?.notes || '');
   let errors = $state<{ name?: string; phone?: string }>({});
 
@@ -76,19 +77,22 @@
     // Normalize phone number for API (backend expects: 6289876543240)
     const normalizedPhone = normalizePhoneNumber(phone);
 
+    // Use first selected group (TODO: backend support for multiple groups coming soon)
+    const primaryGroupId = selectedGroupIds.length > 0 ? selectedGroupIds[0] : undefined;
+
     // For editing, use UpdateContactRequest format (optional fields)
     // For creating, use CreateContactRequest format (required fields)
     const data = contact
       ? {
           ...(name.trim() !== contact.name && { name: name.trim() }),
           ...(normalizedPhone !== contact.whatsapp_number && { whatsapp_number: normalizedPhone }),
-          ...(groupId !== contact.group_id && { group_id: groupId || undefined }),
+          ...(primaryGroupId !== contact.group_id && { group_id: primaryGroupId || undefined }),
           ...(notes.trim() !== (contact.notes || '') && { notes: notes.trim() || undefined })
         }
       : {
           name: name.trim(),
           whatsapp_number: normalizedPhone,
-          ...(groupId && { group_id: groupId }),
+          ...(primaryGroupId && { group_id: primaryGroupId }),
           ...(notes.trim() && { notes: notes.trim() })
         };
 
@@ -168,26 +172,56 @@
     </div>
   </div>
 
-  <!-- Group -->
+  <!-- Groups (Multiple Selection) -->
   {#if groups && groups.length > 0}
     <div>
-      <label
-        for="contact-group"
-        class="block text-sm font-semibold text-gray-700 mb-2"
-      >
-        Group (Optional)
+      <label class="block text-sm font-semibold text-gray-700 mb-2">
+        Groups {selectedGroupIds.length > 0 ? `(${selectedGroupIds.length})` : ''}
       </label>
-      <select
-        id="contact-group"
-        bind:value={groupId}
-        disabled={loading}
-        class="w-full h-11 px-4 border-[1.5px] border-gray-300 rounded-[12px] font-medium text-[15px] focus:border-[#FF6B6B] focus:shadow-[0_0_0_3px_rgba(255,107,107,0.12)] transition-all duration-150 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        <option value="">No group</option>
-        {#each groups as group}
-          <option value={group.group_id}>{group.name}</option>
+
+      <!-- Group Chips Grid -->
+      <div class="flex flex-wrap gap-2">
+        {#each groups as group (group.group_id)}
+          {@const isSelected = selectedGroupIds.includes(group.group_id)}
+          <button
+            type="button"
+            onclick={() => {
+              if (isSelected) {
+                selectedGroupIds = selectedGroupIds.filter(id => id !== group.group_id);
+              } else {
+                selectedGroupIds = [...selectedGroupIds, group.group_id];
+              }
+            }}
+            class={cn(
+              'inline-flex items-center gap-2 px-3 py-2 rounded-full text-sm font-medium border-2 transition-all duration-150',
+              'hover:scale-105 active:scale-95',
+              isSelected
+                ? 'bg-opacity-100'
+                : 'bg-white hover:bg-gray-50'
+            )}
+            style={isSelected
+              ? `background-color: ${group.color}; border-color: ${group.color}; color: white;`
+              : `border-color: ${group.color}30%; color: ${group.color};`}
+          >
+            {#if isSelected}
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+              </svg>
+            {/if}
+            <span>{group.name}</span>
+          </button>
         {/each}
-      </select>
+      </div>
+
+      {#if selectedGroupIds.length === 0}
+        <p class="text-xs text-gray-400 mt-1">
+          Select groups to organize this contact
+        </p>
+      {:else}
+        <p class="text-xs text-gray-500 mt-1">
+          {selectedGroupIds.length} group{selectedGroupIds.length === 1 ? '' : 's'} selected
+        </p>
+      {/if}
     </div>
   {/if}
 
