@@ -1,24 +1,15 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
-  import { onMount } from 'svelte';
   import { ArrowRight, Menu, X, User, LogOut, Settings } from 'lucide-svelte';
   import Logo from '$lib/components/layout/Logo.svelte';
   import { auth, logout } from '$lib/stores/auth';
-  import { refreshProfile } from '$lib/services/auth';
   import { toast } from '$lib/stores/toast';
   import { getFirstName, getAvatarWithFallback } from '$lib/utils/avatar';
 
   let { variant = 'full' } = $props<{ variant: 'full' | 'auth' | 'loggedIn' }>();
   let mobileMenuOpen = $state(false);
   let userMenuOpen = $state(false);
-
-  // Fetch fresh profile data on mount
-  onMount(async () => {
-    if ($auth.isAuthenticated) {
-      await refreshProfile();
-    }
-  });
 
   function closeMobileMenu() {
     mobileMenuOpen = false;

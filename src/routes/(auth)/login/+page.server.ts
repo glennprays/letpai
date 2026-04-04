@@ -10,7 +10,6 @@ export const actions: Actions = {
     const formData = await request.formData();
     const whatsapp_number = formData.get('whatsapp_number') as string;
     const password = formData.get('password') as string;
-    console.log("password", password, "whatsapp_number", whatsapp_number);
 
     if (!whatsapp_number || !password) {
       return fail(400, { message: 'Please fill in all fields' });
@@ -28,11 +27,20 @@ export const actions: Actions = {
       const data = await response.json();
 
       if (data.success) {
-        // Set cookie for SSR
+        // Set token cookie for SSR
         cookies.set('token', data.token, {
           path: '/',
           httpOnly: false,
           secure: false, // Set to true in production with HTTPS
+          sameSite: 'lax',
+          maxAge: 60 * 60 * 24 * 30 // 30 days
+        });
+
+        // Store user data in cookie for client-side access
+        cookies.set('user', JSON.stringify(data.user), {
+          path: '/',
+          httpOnly: false,
+          secure: false,
           sameSite: 'lax',
           maxAge: 60 * 60 * 24 * 30 // 30 days
         });

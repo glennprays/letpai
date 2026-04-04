@@ -40,8 +40,17 @@
 				isAuthenticated: true
 			});
 		} else {
-			// Fallback to localStorage for client-only navigation
-			initAuth();
+			// Fallback to cookies for client-side navigation
+			const cookieToken = document.cookie
+				.split('; ')
+				.find(row => row.startsWith('token='))
+				?.split('=')[1];
+			const cookieUser = document.cookie
+				.split('; ')
+				.find(row => row.startsWith('user='))
+				?.split('=')[1];
+
+			initAuth(cookieToken || null, cookieUser || null);
 		}
 	});
 

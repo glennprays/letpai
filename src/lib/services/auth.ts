@@ -38,9 +38,10 @@ interface ErrorResponse {
   };
 }
 
-interface ProfileResponse {
+interface UpdateProfileResponse {
   success: true;
-  data: {
+  message: string;
+  user: {
     user_id: string;
     whatsapp_number: string;
     full_name: string;
@@ -53,7 +54,12 @@ export async function register(data: { whatsapp_number: string; password: string
 }
 
 export async function verifyOTP(data: { whatsapp_number: string; otp: string }): Promise<VerifyOTPResponse | ErrorResponse> {
-  return await post('/auth/verify-otp', { whatsapp_number: data.whatsapp_number, otp_code: data.otp });
+  const response = await post('/auth/verify-otp', { whatsapp_number: data.whatsapp_number, otp_code: data.otp });
+  if (response.success) {
+    setToken(response.token);
+    setUser(response.user);
+  }
+  return response;
 }
 
 export async function login(data: { whatsapp_number: string; password: string }): Promise<LoginResponse | ErrorResponse> {
@@ -69,28 +75,11 @@ export async function logout() {
   logoutStore();
 }
 
-export async function getProfile(): Promise<ProfileResponse | ErrorResponse> {
-  const response = await get('/auth/profile');
-  // Sync profile data with auth store if successful
-  if (response && 'success' in response && response.success) {
-    setUser(response.data);
-  }
-  return response;
-}
-
-export async function refreshProfile(): Promise<void> {
-  try {
-    await getProfile();
-  } catch (error) {
-    console.error('Failed to refresh profile:', error);
-  }
-}
-
-export async function updateProfile(data: { full_name?: string; avatar_url?: string }): Promise<ProfileResponse | ErrorResponse> {
+export async function updateProfile(data: { full_name?: string; avatar_url?: string }): Promise<UpdateProfileResponse | ErrorResponse> {
   const response = await put('/auth/profile', data);
   // Sync updated profile data with auth store
   if (response && 'success' in response && response.success) {
-    setUser(response.data);
+    setUser(response.user);
   }
   return response;
 }
