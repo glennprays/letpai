@@ -1,0 +1,129 @@
+import { get, post, put, del } from './api';
+import type {
+	Session,
+	SessionDetail,
+	SessionResponse,
+	SessionDetailResponse,
+	UpdateSessionRequest,
+	CreateSessionRequest,
+	AddParticipantsRequest,
+	ParticipantsResponse,
+	CreateBillItemRequest,
+	BillItemResponse,
+	UpdateBillItemRequest,
+	UpdateBillItemResponse
+} from '$lib/types/api';
+
+export async function getSessions(
+	page = 1,
+	limit = 10,
+	customFetch?: typeof fetch,
+	serverToken?: string
+): Promise<{ success: boolean; data: Session[]; pagination?: { page: number; limit: number; total: number } }> {
+	return get(`/sessions?page=${page}&limit=${limit}`, customFetch, serverToken);
+}
+
+export async function getSession(
+	sessionId: string,
+	customFetch?: typeof fetch,
+	serverToken?: string
+): Promise<SessionDetailResponse> {
+	return get(`/sessions/${sessionId}`, customFetch, serverToken);
+}
+
+export async function createSession(
+	data: CreateSessionRequest,
+	customFetch?: typeof fetch,
+	serverToken?: string
+): Promise<SessionResponse> {
+	return post('/sessions', data, customFetch, serverToken);
+}
+
+export async function updateSession(
+	sessionId: string,
+	data: UpdateSessionRequest,
+	customFetch?: typeof fetch,
+	serverToken?: string
+): Promise<SessionResponse> {
+	return put(`/sessions/${sessionId}`, data, customFetch, serverToken);
+}
+
+export async function cancelSession(
+	sessionId: string,
+	customFetch?: typeof fetch,
+	serverToken?: string
+): Promise<{ success: boolean; message: string }> {
+	return del(`/sessions/${sessionId}`, customFetch, serverToken);
+}
+
+export async function addParticipants(
+	sessionId: string,
+	data: AddParticipantsRequest,
+	customFetch?: typeof fetch,
+	serverToken?: string
+): Promise<ParticipantsResponse> {
+	return post(`/sessions/${sessionId}/participants`, data, customFetch, serverToken);
+}
+
+export async function updateParticipant(
+	sessionId: string,
+	participantId: string,
+	data: { payment_status: 'paid' | 'rejected'; rejection_reason?: string },
+	customFetch?: typeof fetch,
+	serverToken?: string
+): Promise<{ success: boolean; data: unknown }> {
+	return put(`/sessions/${sessionId}/participants/${participantId}`, data, customFetch, serverToken);
+}
+
+export async function removeParticipant(
+	sessionId: string,
+	participantId: string,
+	customFetch?: typeof fetch,
+	serverToken?: string
+): Promise<{ success: boolean; message: string }> {
+	return del(`/sessions/${sessionId}/participants/${participantId}`, customFetch, serverToken);
+}
+
+export async function addBillItem(
+	sessionId: string,
+	data: CreateBillItemRequest,
+	customFetch?: typeof fetch,
+	serverToken?: string
+): Promise<BillItemResponse> {
+	return post(`/sessions/${sessionId}/bills`, data, customFetch, serverToken);
+}
+
+export async function updateBillItem(
+	sessionId: string,
+	billItemId: string,
+	data: UpdateBillItemRequest,
+	customFetch?: typeof fetch,
+	serverToken?: string
+): Promise<UpdateBillItemResponse> {
+	return put(`/sessions/${sessionId}/bills/${billItemId}`, data, customFetch, serverToken);
+}
+
+export async function deleteBillItem(
+	sessionId: string,
+	billItemId: string,
+	customFetch?: typeof fetch,
+	serverToken?: string
+): Promise<{ success: boolean; message: string }> {
+	return del(`/sessions/${sessionId}/bills/${billItemId}`, customFetch, serverToken);
+}
+
+export async function calculateSplits(
+	sessionId: string,
+	customFetch?: typeof fetch,
+	serverToken?: string
+): Promise<{ success: boolean; data: unknown; message: string }> {
+	return post(`/sessions/${sessionId}/calculate`, {}, customFetch, serverToken);
+}
+
+export async function sendNotifications(
+	sessionId: string,
+	customFetch?: typeof fetch,
+	serverToken?: string
+): Promise<{ success: boolean; message: string }> {
+	return post(`/sessions/${sessionId}/notify`, {}, customFetch, serverToken);
+}
