@@ -85,24 +85,29 @@ export async function selectDeviceContacts(
 }
 
 /**
- * Format phone number from device contact to WhatsApp format
+ * Format phone number from device contact to match backend API format
+ * Backend expects: 6289876543240 (always starts with 62, no +, no spaces/dashes)
  * @param phone - Phone number string
- * @returns Formatted Indonesian phone number (+62 XXX-XXXX-XXXX)
+ * @returns Formatted Indonesian phone number (62XXXXXXXXXX)
  */
 export function formatDevicePhoneNumber(phone: string): string {
   // Remove all non-digit characters
   let cleaned = phone.replace(/\D/g, '');
 
-  // Remove leading country code if present
-  if (cleaned.startsWith('62')) {
-    cleaned = cleaned.slice(2);
-  } else if (cleaned.startsWith('0')) {
-    cleaned = cleaned.slice(1);
+  // If starts with 0, replace with 62
+  if (cleaned.startsWith('0')) {
+    cleaned = '62' + cleaned.slice(1);
   }
 
-  // Validate length (Indonesian numbers are 9-12 digits)
-  if (cleaned.length < 9 || cleaned.length > 12) {
-    return phone; // Return original if invalid
+  // If doesn't start with 62, add it
+  if (!cleaned.startsWith('62')) {
+    cleaned = '62' + cleaned;
+  }
+
+  // Validate length (Indonesian numbers are 11-14 digits with 62 prefix)
+  if (cleaned.length < 11 || cleaned.length > 14) {
+    console.warn('Invalid Indonesian phone number length:', cleaned);
+    return cleaned; // Return anyway, backend will validate
   }
 
   return cleaned;

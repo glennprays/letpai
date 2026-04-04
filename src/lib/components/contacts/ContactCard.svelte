@@ -73,13 +73,22 @@
 
   function formatPhoneNumber(phone: string): string {
     if (!phone) return '';
-    // Remove leading 0 and format as +62 XXX-XXXX-XXXX
-    let formatted = phone.replace(/^0/, '');
-    if (!formatted.startsWith('62')) {
+    // Backend sends: 6289876543240
+    // Display as: +62 898-7654-3240
+    let formatted = phone;
+
+    // Ensure it starts with 62 for display
+    if (formatted.startsWith('0')) {
+      formatted = '62' + formatted.slice(1);
+    } else if (!formatted.startsWith('62')) {
       formatted = '62' + formatted;
     }
-    if (formatted.length >= 10) {
-      return '+' + formatted.replace(/(\d{2})(\d{3})(\d{4})(\d+)/, '+$1 $2-$3-$4');
+
+    // Format as +62 XXX-XXXX-XXXX or +62 XX-XXXX-XXXX
+    if (formatted.length >= 11) {
+      return '+' + formatted.replace(/(\d{2})(\d{3})(\d{4})(\d+)/, '$1 $2-$3-$4');
+    } else if (formatted.length > 2) {
+      return '+' + formatted.replace(/(\d{2})(\d+)/, '$1 $2');
     }
     return '+' + formatted;
   }

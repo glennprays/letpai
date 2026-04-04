@@ -43,8 +43,8 @@
     if (!phone.trim()) {
       errors.phone = 'Phone number is required';
     } else {
-      // Validate Indonesian phone format
-      const cleanedPhone = phone.replace(/\D/g, '');
+      // Validate Indonesian phone format (with or without 62 prefix)
+      const cleanedPhone = normalizePhoneNumber(phone);
       if (cleanedPhone.length < 10 || cleanedPhone.length > 14) {
         errors.phone = 'Please enter a valid phone number';
       }
@@ -53,21 +53,41 @@
     return Object.keys(errors).length === 0;
   }
 
+  // Normalize phone number to match backend format (always starts with 62)
+  function normalizePhoneNumber(value: string): string {
+    let cleaned = value.replace(/\D/g, '');
+
+    // Remove leading 0 and add 62
+    if (cleaned.startsWith('0')) {
+      cleaned = '62' + cleaned.slice(1);
+    }
+
+    // Ensure it starts with 62
+    if (!cleaned.startsWith('62')) {
+      cleaned = '62' + cleaned;
+    }
+
+    return cleaned;
+  }
+
   function handleSubmit() {
     if (!validate()) return;
+
+    // Normalize phone number for API (backend expects: 6289876543240)
+    const normalizedPhone = normalizePhoneNumber(phone);
 
     // For editing, use UpdateContactRequest format (optional fields)
     // For creating, use CreateContactRequest format (required fields)
     const data = contact
       ? {
           ...(name.trim() !== contact.name && { name: name.trim() }),
-          ...(phone.replace(/\D/g, '') !== contact.whatsapp_number && { whatsapp_number: phone.replace(/\D/g, '') }),
+          ...(normalizedPhone !== contact.whatsapp_number && { whatsapp_number: normalizedPhone }),
           ...(groupId !== contact.group_id && { group_id: groupId || undefined }),
           ...(notes.trim() !== (contact.notes || '') && { notes: notes.trim() || undefined })
         }
       : {
           name: name.trim(),
-          whatsapp_number: phone.replace(/\D/g, ''),
+          whatsapp_number: normalizedPhone,
           ...(groupId && { group_id: groupId }),
           ...(notes.trim() && { notes: notes.trim() })
         };
@@ -80,23 +100,27 @@
   }
 
   function formatPhone(value: string): string {
-    // Remove all non-digits
+    // Remove all non-digits for processing
     let cleaned = value.replace(/\D/g, '');
 
-    // Format as +62 XXX-XXXX-XXXX for display
+    // Remove leading 0 and add 62 for display
     if (cleaned.startsWith('0')) {
       cleaned = '62' + cleaned.slice(1);
     }
 
-    if (cleaned.length <= 12) {
-      if (cleaned.length > 6) {
-        return cleaned.replace(/(\d{3})(\d{3})(\d+)/, '$1-$2-$3');
-      } else if (cleaned.length > 3) {
-        return cleaned.replace(/(\d{3})(\d+)/, '$1-$2');
-      }
+    // Ensure it starts with 62
+    if (!cleaned.startsWith('62')) {
+      cleaned = '62' + cleaned;
     }
 
-    return value;
+    // Format as 62-8XX-XXXX-XXXX for display (without + for cleaner display)
+    if (cleaned.length > 6) {
+      return cleaned.replace(/(\d{2})(\d{3})(\d{4})(\d+)/, '$1-$2-$3-$4');
+    } else if (cleaned.length > 2) {
+      return cleaned.replace(/(\d{2})(\d+)/, '$1-$2');
+    }
+
+    return cleaned;
   }
 </script>
 
