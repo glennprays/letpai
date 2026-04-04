@@ -4,7 +4,16 @@ import type {
 	CreateContactRequest,
 	UpdateContactRequest,
 	ContactResponse,
-	Contact
+	Contact,
+	ContactGroup,
+	CreateGroupRequest,
+	UpdateGroupRequest,
+	GroupResponse,
+	GroupsResponse,
+	BulkImportRequest,
+	BulkDeleteRequest,
+	BulkUpdateRequest,
+	BulkOperationResponse
 } from '$lib/types/api';
 
 export async function getContacts(
@@ -37,4 +46,62 @@ export async function deleteContact(
 	serverToken?: string
 ): Promise<{ success: boolean; message: string }> {
 	return del(`/contacts/${contactId}`, customFetch, serverToken);
+}
+
+// Contact Groups CRUD
+export async function getContactGroups(
+	customFetch?: typeof fetch,
+	serverToken?: string
+): Promise<GroupsResponse> {
+	return get('/contacts/groups', customFetch, serverToken);
+}
+
+export async function createContactGroup(
+	data: CreateGroupRequest,
+	customFetch?: typeof fetch,
+	serverToken?: string
+): Promise<GroupResponse> {
+	return post('/contacts/groups', data, customFetch, serverToken);
+}
+
+export async function updateContactGroup(
+	groupId: string,
+	data: UpdateGroupRequest,
+	customFetch?: typeof fetch,
+	serverToken?: string
+): Promise<GroupResponse> {
+	return put(`/contacts/groups/${groupId}`, data, customFetch, serverToken);
+}
+
+export async function deleteContactGroup(
+	groupId: string,
+	customFetch?: typeof fetch,
+	serverToken?: string
+): Promise<{ success: boolean; message: string }> {
+	return del(`/contacts/groups/${groupId}`, customFetch, serverToken);
+}
+
+// Bulk Operations
+export async function bulkImportContacts(
+	data: BulkImportRequest,
+	customFetch?: typeof fetch,
+	serverToken?: string
+): Promise<BulkOperationResponse> {
+	return post('/contacts/bulk/import', data, customFetch, serverToken);
+}
+
+export async function bulkDeleteContacts(
+	data: BulkDeleteRequest,
+	customFetch?: typeof fetch,
+	serverToken?: string
+): Promise<BulkOperationResponse> {
+	return post('/contacts/bulk/delete', data, customFetch, serverToken);
+}
+
+export async function bulkUpdateContacts(
+	data: BulkUpdateRequest,
+	customFetch?: typeof fetch,
+	serverToken?: string
+): Promise<BulkOperationResponse> {
+	return post('/contacts/bulk/update', data, customFetch, serverToken);
 }

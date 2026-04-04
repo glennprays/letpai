@@ -232,3 +232,89 @@ export interface ContactResponse {
   data: Contact;
   message?: string;
 }
+
+// Contact Groups
+export interface ContactGroup {
+  group_id: string;
+  name: string;
+  color: string;
+  contact_count: number;
+  created_at: string;
+}
+
+export interface CreateGroupRequest {
+  name: string;
+  color: string;
+}
+
+export interface UpdateGroupRequest {
+  name?: string;
+  color?: string;
+}
+
+export interface GroupResponse {
+  success: boolean;
+  data: ContactGroup;
+  message?: string;
+}
+
+export interface GroupsResponse {
+  success: boolean;
+  data: ContactGroup[];
+}
+
+// Bulk Operations
+export interface BulkImportRequest {
+  contacts: Array<{
+    name: string;
+    whatsapp_number: string;
+    group_id?: string;
+  }>;
+}
+
+export interface BulkDeleteRequest {
+  contact_ids: string[];
+}
+
+export interface BulkUpdateRequest {
+  contact_ids: string[];
+  updates: {
+    group_id?: string;
+    is_favorite?: boolean;
+  };
+}
+
+export interface BulkOperationResponse {
+  success: boolean;
+  data: {
+    succeeded: number;
+    failed: number;
+    errors: Array<{
+      contact_id: string;
+      error: string;
+    }>;
+  };
+  message: string;
+}
+
+// Device Import Preview
+export interface DeviceContact {
+  id: string;
+  name: string;
+  phone_numbers: string[];
+}
+
+export interface ImportPreviewResponse {
+  success: boolean;
+  data: {
+    total: number;
+    new_contacts: number;
+    existing_contacts: number;
+    contacts: Array<{
+      name: string;
+      whatsapp_number: string;
+      status: 'new' | 'existing';
+      existing_id?: string;
+    }>;
+  };
+}
