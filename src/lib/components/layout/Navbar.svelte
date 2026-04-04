@@ -1,14 +1,24 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
+  import { onMount } from 'svelte';
   import { ArrowRight, Menu, X, User, LogOut, Settings } from 'lucide-svelte';
   import Logo from '$lib/components/layout/Logo.svelte';
   import { auth, logout } from '$lib/stores/auth';
+  import { refreshProfile } from '$lib/services/auth';
   import { toast } from '$lib/stores/toast';
+  import { getFirstName, getAvatarWithFallback } from '$lib/utils/avatar';
 
   let { variant = 'full' } = $props<{ variant: 'full' | 'auth' | 'loggedIn' }>();
   let mobileMenuOpen = $state(false);
   let userMenuOpen = $state(false);
+
+  // Fetch fresh profile data on mount
+  onMount(async () => {
+    if ($auth.isAuthenticated) {
+      await refreshProfile();
+    }
+  });
 
   function closeMobileMenu() {
     mobileMenuOpen = false;
@@ -33,38 +43,9 @@
     }
   }
 
-  // Extract first name from full name
-  function getFirstName(fullName: string | undefined | null): string {
-    if (!fullName) return 'User';
-    return fullName.trim().split(' ')[0];
-  }
-
-  // Get initials for avatar fallback
-  function getInitials(fullName: string | undefined | null): string {
-    if (!fullName) return 'U';
-    const names = fullName.trim().split(' ');
-    if (names.length === 1) return names[0].charAt(0).toUpperCase();
-    return (names[0].charAt(0) + names[names.length - 1].charAt(0)).toUpperCase();
-  }
-
-  // Get user avatar URL or generate SVG with initials
-  function getUserAvatarUrl(avatarUrl: string | undefined | null, fullName: string | undefined | null): string {
-    if (avatarUrl) return avatarUrl;
-    // Return data URL for SVG with initials
-    const initials = getInitials(fullName);
-    // Use unique gradient ID to avoid conflicts
-    const gradientId = `avatar-gradient-${initials}`;
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40">
-      <defs>
-        <linearGradient id="${gradientId}" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" style="stop-color:#FF6B6B"/>
-          <stop offset="100%" style="stop-color:#14B8A6"/>
-        </linearGradient>
-      </defs>
-      <rect width="40" height="40" fill="url(#${gradientId})"/>
-      <text x="50%" y="52%" text-anchor="middle" fill="white" font-size="14" font-weight="600">${initials}</text>
-    </svg>`;
-    return `data:image/svg+xml;base64,${btoa(svg)}`;
+  // Get avatar URL with fallback
+  function getUserAvatar(avatarUrl: string | undefined | null, fullName: string | undefined | null): string {
+    return getAvatarWithFallback(avatarUrl, fullName, $auth.user?.user_id);
   }
 </script>
 
@@ -112,7 +93,7 @@
           <button class="user-avatar-btn" onclick={toggleUserMenu} aria-label="User menu">
             <div class="user-avatar">
               <img
-                src={getUserAvatarUrl($auth.user?.avatar_url, $auth.user?.full_name)}
+                src={getUserAvatar($auth.user?.avatar_url, $auth.user?.full_name)}
                 alt={getFirstName($auth.user?.full_name)}
                 class="w-full h-full rounded-full object-cover"
               />
@@ -125,7 +106,7 @@
               <div class="user-info">
                 <div class="user-avatar-large">
                   <img
-                    src={getUserAvatarUrl($auth.user?.avatar_url, $auth.user?.full_name)}
+                    src={getUserAvatar($auth.user?.avatar_url, $auth.user?.full_name)}
                     alt={getFirstName($auth.user?.full_name)}
                     class="w-full h-full rounded-full object-cover"
                   />
@@ -333,10 +314,11 @@
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #FF6B6B, #14B8A6);
+    overflow: hidden;
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
   }
 
   .user-name {
@@ -374,7 +356,7 @@
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #FF6B6B, #14B8A6);
+    overflow: hidden;
     display: flex;
     align-items: center;
     justify-content: center;

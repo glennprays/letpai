@@ -40,13 +40,12 @@ interface ErrorResponse {
 
 interface ProfileResponse {
   success: true;
-  user: {
+  data: {
     user_id: string;
     whatsapp_number: string;
     full_name: string;
     avatar_url?: string;
   };
-  updated_at?: string;
 }
 
 export async function register(data: { whatsapp_number: string; password: string }): Promise<RegisterResponse | ErrorResponse> {
@@ -71,11 +70,29 @@ export async function logout() {
 }
 
 export async function getProfile(): Promise<ProfileResponse | ErrorResponse> {
-  return await get('/auth/profile');
+  const response = await get('/auth/profile');
+  // Sync profile data with auth store if successful
+  if (response && 'success' in response && response.success) {
+    setUser(response.data);
+  }
+  return response;
+}
+
+export async function refreshProfile(): Promise<void> {
+  try {
+    await getProfile();
+  } catch (error) {
+    console.error('Failed to refresh profile:', error);
+  }
 }
 
 export async function updateProfile(data: { full_name?: string; avatar_url?: string }): Promise<ProfileResponse | ErrorResponse> {
-  return await put('/auth/profile', data);
+  const response = await put('/auth/profile', data);
+  // Sync updated profile data with auth store
+  if (response && 'success' in response && response.success) {
+    setUser(response.data);
+  }
+  return response;
 }
 
 export async function sendResetLink(data: { whatsapp_number: string }): Promise<{ success: boolean; message: string } | ErrorResponse> {
