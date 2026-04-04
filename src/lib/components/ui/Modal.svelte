@@ -52,10 +52,10 @@
 					<h2 id="modal-title" class="text-lg font-semibold text-gray-900">{title}</h2>
 					<button
 						onclick={handleClose}
-						class="inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-gray-100 transition-colors"
+						class="inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded-lg hover:bg-gray-100 transition-colors"
 						aria-label="Close modal"
 					>
-						<X class="w-4 h-4 text-gray-500" />
+						<X class="w-5 h-5 text-gray-500" />
 					</button>
 				</div>
 			{/if}

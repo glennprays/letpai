@@ -296,7 +296,7 @@
 		<header class="flex items-center gap-4 mb-8">
 			<button
 				onclick={handleBack}
-				class="inline-flex items-center justify-center w-10 h-10 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition-colors"
+				class="inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition-colors"
 			>
 				<ArrowLeft class="w-5 h-5 text-gray-600" />
 			</button>
@@ -478,10 +478,10 @@
 									<p class="text-sm font-semibold text-gray-900">{formatIDR(item.amount)}</p>
 									<button
 										onclick={() => handleDeleteBill(item.bill_item_id)}
-										class="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+										class="p-2.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
 										title="Delete bill"
 									>
-										<Trash2 class="w-4 h-4" />
+										<Trash2 class="w-5 h-5" />
 									</button>
 								</div>
 							</div>
