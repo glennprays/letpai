@@ -27,22 +27,36 @@
   } from '$lib/services/contacts';
   import type { Contact, ContactGroup, CreateContactRequest, UpdateContactRequest } from '$lib/types/api';
 
-  // In SvelteKit + Svelte 5, server load data comes directly as props
-  let { contacts: initialContacts, groups: initialGroups }: {
-    contacts: Contact[];
-    groups: ContactGroup[];
-  } = $props();
+  // In SvelteKit, server load data is accessed via $page store
+  // The data is in $page.data for the current route
 
-  // Debug logging to check data
+  // Debug logging to check page data
   if (import.meta.env.DEV) {
-    console.log('[Contacts Page] Initial contacts:', initialContacts);
-    console.log('[Contacts Page] Initial groups:', initialGroups);
+    console.log('[Contacts Page] $page.data:', $page.data);
   }
 
-  // State - Initialize with server data
-  let contacts = $state<Contact[]>(initialContacts || []);
-  let groups = $state<ContactGroup[]>(initialGroups || []);
+  // State - Initialize with server data from $page store
+  let contacts = $state<Contact[]>([]);
+  let groups = $state<ContactGroup[]>([]);
   let filteredContacts = $state<Contact[]>([]);
+
+  // Initialize data from $page store
+  $effect(() => {
+    const serverContacts = $page.data?.contacts as Contact[] | undefined;
+    const serverGroups = $page.data?.groups as ContactGroup[] | undefined;
+
+    if (import.meta.env.DEV) {
+      console.log('[Contacts Page] Server contacts:', serverContacts);
+      console.log('[Contacts Page] Server groups:', serverGroups);
+    }
+
+    if (serverContacts) {
+      contacts = serverContacts;
+    }
+    if (serverGroups) {
+      groups = serverGroups;
+    }
+  });
 
   let searchQuery = $state('');
   let activeFilter = $state<'all' | 'favorites' | string>('all');
