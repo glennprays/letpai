@@ -64,6 +64,18 @@
 			isSubmitting = false;
 		}
 	});
+
+	const handleSubmit = enhance(() => {
+		return async ({ action, formData }) => {
+			isSubmitting = true;
+			try {
+				const response = await action(formData);
+				return response;
+			} finally {
+				isSubmitting = false;
+			}
+		};
+	});
 </script>
 
 <div class="min-h-screen bg-gray-50/50">
@@ -91,27 +103,7 @@
 		{/if}
 
 		<!-- Form -->
-		<form
-			method="POST"
-			use:enhance={() => {
-				return async ({ action, formData }) => {
-					// Set loading state
-					isSubmitting = true;
-
-					try {
-						// Submit the form
-						const response = await action(formData);
-
-						// Return the response to let SvelteKit handle it
-						return response;
-					} finally {
-						// Reset loading state
-						isSubmitting = false;
-					}
-				};
-			})}
-			class="bg-white rounded-xl border border-gray-200 p-6 space-y-6"
-		>
+		<form method="POST" use:handleSubmit class="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
 			<!-- Session Name -->
 			<div>
 				<label for="session_name" class="block text-sm font-medium text-gray-700 mb-2">
