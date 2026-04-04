@@ -1,6 +1,6 @@
 import type { Actions, PageServerLoad } from './$types';
 import { createSession } from '$lib/services/sessions';
-import { fail } from '@sveltejs/kit';
+import { fail, redirect } from '@sveltejs/kit';
 
 export const load: PageServerLoad = async () => {
 	// No pre-loading needed for create page
@@ -55,12 +55,14 @@ export const actions: Actions = {
 				return fail(500, { error: 'Failed to create session - no session ID returned' });
 			}
 
-			// Return success with session ID for client-side redirect
-			return {
-				success: true,
-				sessionId
-			};
+			// Redirect to the session detail page using SvelteKit redirect
+			throw redirect(302, `/sessions/${sessionId}`);
 		} catch (error) {
+			// Check if it's a redirect - rethrow it
+			if (error && typeof error === 'object' && 'status' in error && 'location' in error) {
+				throw error;
+			}
+
 			console.error('Create session error:', error);
 			const message = error instanceof Error ? error.message : 'Failed to create session';
 			return fail(500, { error: message });

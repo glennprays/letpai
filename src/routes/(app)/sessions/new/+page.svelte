@@ -1,7 +1,5 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { enhance } from '$app/forms';
-	import { onMount } from 'svelte';
 	import { Plus, X, Loader2 } from 'lucide-svelte';
 	import type { ActionData } from './$types';
 
@@ -17,7 +15,6 @@
 	let errors = $state<Record<string, string>>({});
 	let touched = $state<Record<string, boolean>>({});
 	let isSubmitting = $state(false);
-	let handleSubmit = $state<(() => void) | undefined>(undefined);
 
 	const currencies = [
 		{ code: 'IDR', symbol: 'Rp', name: 'Indonesian Rupiah' },
@@ -52,28 +49,6 @@
 	function handleCancel() {
 		goto('/dashboard');
 	}
-
-	// Initialize enhance only on client side
-	onMount(() => {
-		handleSubmit = enhance(() => {
-			return async ({ action, formData }) => {
-				isSubmitting = true;
-				try {
-					const response = await action(formData);
-					return response;
-				} finally {
-					isSubmitting = false;
-				}
-			};
-		});
-	});
-
-	// Handle successful form submission - redirect to session detail
-	$effect(() => {
-		if (form?.success && form.sessionId) {
-			goto(`/sessions/${form.sessionId}`);
-		}
-	});
 
 	// Handle server errors - reset submitting state on error
 	$effect(() => {
