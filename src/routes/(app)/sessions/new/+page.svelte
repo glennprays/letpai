@@ -51,14 +51,14 @@
 		goto('/dashboard');
 	}
 
-	// Handle successful form submission
+	// Handle successful form submission - redirect to session detail
 	$effect(() => {
 		if (form?.success && form.sessionId) {
 			goto(`/sessions/${form.sessionId}`);
 		}
 	});
 
-	// Handle server errors
+	// Handle server errors - reset submitting state on error
 	$effect(() => {
 		if (form?.error) {
 			isSubmitting = false;
@@ -93,11 +93,21 @@
 		<!-- Form -->
 		<form
 			method="POST"
-			use:enhance={{
-				onSubmit: () => {
+			use:enhance(({ formElement }) => {
+				return async ({ action, formData, cancel, submitter }) => {
+					// Set loading state
 					isSubmitting = true;
-				}
-			}}
+
+					// Submit the form
+					const response = await action(formData, submitter);
+
+					// Reset loading state
+					isSubmitting = false;
+
+					// Return the response to let SvelteKit handle it
+					return response;
+				};
+			})}
 			class="bg-white rounded-xl border border-gray-200 p-6 space-y-6"
 		>
 			<!-- Session Name -->
