@@ -5,6 +5,7 @@
   import Logo from '$lib/components/layout/Logo.svelte';
   import { auth, logout } from '$lib/stores/auth';
   import { toast } from '$lib/stores/toast';
+  import { getFirstName, getAvatarWithFallback } from '$lib/utils/avatar';
 
   let { variant = 'full' } = $props<{ variant: 'full' | 'auth' | 'loggedIn' }>();
   let mobileMenuOpen = $state(false);
@@ -31,6 +32,11 @@
     if (!target.closest('.user-menu-container')) {
       userMenuOpen = false;
     }
+  }
+
+  // Get avatar URL with fallback
+  function getUserAvatar(avatarUrl: string | undefined | null, fullName: string | undefined | null): string {
+    return getAvatarWithFallback(avatarUrl, fullName, $auth.user?.whatsapp_number, $auth.user?.user_id);
   }
 </script>
 
@@ -77,28 +83,36 @@
         <div class="user-menu-container">
           <button class="user-avatar-btn" onclick={toggleUserMenu} aria-label="User menu">
             <div class="user-avatar">
-              <User size={18} color="#374151" />
+              <img
+                src={getUserAvatar($auth.user?.avatar_url, $auth.user?.full_name)}
+                alt={getFirstName($auth.user?.full_name, $auth.user?.whatsapp_number)}
+                class="w-full h-full rounded-full object-cover"
+              />
             </div>
-            <span class="user-name">{$auth.user?.full_name || 'User'}</span>
+            <span class="user-name">{getFirstName($auth.user?.full_name, $auth.user?.whatsapp_number)}</span>
           </button>
 
           {#if userMenuOpen}
             <div class="user-dropdown">
               <div class="user-info">
                 <div class="user-avatar-large">
-                  <User size={20} color="#374151" />
+                  <img
+                    src={getUserAvatar($auth.user?.avatar_url, $auth.user?.full_name)}
+                    alt={getFirstName($auth.user?.full_name, $auth.user?.whatsapp_number)}
+                    class="w-full h-full rounded-full object-cover"
+                  />
                 </div>
                 <div class="user-details">
-                  <span class="user-display-name">{$auth.user?.full_name || 'User'}</span>
+                  <span class="user-display-name">{getFirstName($auth.user?.full_name, $auth.user?.whatsapp_number)}</span>
                   <span class="user-phone">{$auth.user?.whatsapp_number || ''}</span>
                 </div>
               </div>
               <div class="dropdown-divider"></div>
-              <a href="/profile" class="dropdown-item" onclick={closeMobileMenu}>
+              <a href="/profile" class="dropdown-item" onclick={() => userMenuOpen = false}>
                 <User size={16} />
                 Profile
               </a>
-              <a href="/settings" class="dropdown-item" onclick={closeMobileMenu}>
+              <a href="/settings" class="dropdown-item" onclick={() => userMenuOpen = false}>
                 <Settings size={16} />
                 Settings
               </a>
@@ -205,7 +219,9 @@
     background: none;
     border: none;
     cursor: pointer;
-    padding: 4px;
+    padding: 10px;
+    min-height: 44px;
+    min-width: 44px;
   }
 
   .btn-coral {
@@ -289,10 +305,11 @@
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #FF6B6B, #14B8A6);
+    overflow: hidden;
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
   }
 
   .user-name {
@@ -330,7 +347,7 @@
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #FF6B6B, #14B8A6);
+    overflow: hidden;
     display: flex;
     align-items: center;
     justify-content: center;

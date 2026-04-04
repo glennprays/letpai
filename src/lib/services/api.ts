@@ -18,12 +18,23 @@ export async function get(endpoint: string, customFetch?: typeof fetch, serverTo
     },
   });
 
+  const result = await response.json();
+
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error?.message || response.statusText);
+    if (response.status === 401) {
+      console.error('[API] 401 Unauthorized for', endpoint);
+      // Clear invalid token and redirect to login
+      if (browser) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      }
+      throw new Error('Unauthorized. Please login again.');
+    }
+    throw new Error(result.error?.message || response.statusText);
   }
 
-  return response.json();
+  return result;
 }
 
 export async function post(endpoint: string, data: unknown, customFetch?: typeof fetch, serverToken?: string) {
@@ -40,6 +51,10 @@ export async function post(endpoint: string, data: unknown, customFetch?: typeof
   });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      console.error(`[API POST] 401 Unauthorized for ${endpoint}`);
+      throw new Error('Unauthorized. Please login again.');
+    }
     const error = await response.json();
     throw new Error(error.error?.message || response.statusText);
   }
@@ -61,6 +76,14 @@ export async function put(endpoint: string, data: unknown, customFetch?: typeof 
   });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      if (browser) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      }
+      throw new Error('Unauthorized. Please login again.');
+    }
     const error = await response.json();
     throw new Error(error.error?.message || response.statusText);
   }
@@ -80,6 +103,14 @@ export async function del(endpoint: string, customFetch?: typeof fetch, serverTo
   });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      if (browser) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      }
+      throw new Error('Unauthorized. Please login again.');
+    }
     const error = await response.json();
     throw new Error(error.error?.message || response.statusText);
   }

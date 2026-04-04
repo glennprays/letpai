@@ -141,7 +141,7 @@
       oninput={handleInput}
       onfocus={handleFocus}
       onblur={handleBlur}
-      {maxLength}
+      maxlength={maxLength}
       {...props}
     />
 

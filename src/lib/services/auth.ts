@@ -38,15 +38,15 @@ interface ErrorResponse {
   };
 }
 
-interface ProfileResponse {
+interface UpdateProfileResponse {
   success: true;
+  message: string;
   user: {
     user_id: string;
     whatsapp_number: string;
     full_name: string;
     avatar_url?: string;
   };
-  updated_at?: string;
 }
 
 export async function register(data: { whatsapp_number: string; password: string }): Promise<RegisterResponse | ErrorResponse> {
@@ -54,7 +54,12 @@ export async function register(data: { whatsapp_number: string; password: string
 }
 
 export async function verifyOTP(data: { whatsapp_number: string; otp: string }): Promise<VerifyOTPResponse | ErrorResponse> {
-  return await post('/auth/verify-otp', { whatsapp_number: data.whatsapp_number, otp_code: data.otp });
+  const response = await post('/auth/verify-otp', { whatsapp_number: data.whatsapp_number, otp_code: data.otp });
+  if (response.success) {
+    setToken(response.token);
+    setUser(response.user);
+  }
+  return response;
 }
 
 export async function login(data: { whatsapp_number: string; password: string }): Promise<LoginResponse | ErrorResponse> {
@@ -70,12 +75,13 @@ export async function logout() {
   logoutStore();
 }
 
-export async function getProfile(): Promise<ProfileResponse | ErrorResponse> {
-  return await get('/auth/profile');
-}
-
-export async function updateProfile(data: { full_name?: string; avatar_url?: string }): Promise<ProfileResponse | ErrorResponse> {
-  return await put('/auth/profile', data);
+export async function updateProfile(data: { full_name?: string; avatar_url?: string }): Promise<UpdateProfileResponse | ErrorResponse> {
+  const response = await put('/auth/profile', data);
+  // Sync updated profile data with auth store
+  if (response && 'success' in response && response.success) {
+    setUser(response.user);
+  }
+  return response;
 }
 
 export async function sendResetLink(data: { whatsapp_number: string }): Promise<{ success: boolean; message: string } | ErrorResponse> {

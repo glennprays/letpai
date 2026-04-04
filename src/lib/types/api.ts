@@ -50,8 +50,6 @@ export interface Contact {
 export interface CreateContactRequest {
   name: string;
   whatsapp_number: string;
-  group_id?: string;
-  avatar_url?: string;
   notes?: string;
 }
 
@@ -122,5 +120,211 @@ export interface ApiError {
   error: {
     code: string;
     message: string;
+  };
+}
+
+// Session Detail Types
+export interface SessionDetail {
+  session_id: string;
+  host_id: string;
+  session_name: string;
+  session_description?: string;
+  total_amount: number;
+  currency: string;
+  status: 'draft' | 'pending' | 'in_progress' | 'completed' | 'cancelled';
+  participant_count: number;
+  paid_count: number;
+  created_at: string;
+  participants: Participant[];
+  bill_items: BillItem[];
+}
+
+export interface SessionResponse {
+  success: boolean;
+  data: Session;
+  message?: string;
+}
+
+export interface SessionDetailResponse {
+  success: boolean;
+  data: SessionDetail;
+}
+
+export interface UpdateSessionRequest {
+  session_name?: string;
+  session_description?: string;
+  currency?: string;
+  status?: string;
+}
+
+// Participant Types
+export interface AddParticipantsRequest {
+  participants: Array<{
+    contact_id?: string;
+    name: string;
+    whatsapp_number: string;
+  }>;
+}
+
+export interface UpdateParticipantRequest {
+  payment_status: 'paid' | 'rejected';
+  rejection_reason?: string;
+}
+
+// Bill Item Types
+export interface CreateBillItemRequest {
+  name: string;
+  description?: string;
+  amount: number;
+  category?: string;
+}
+
+export interface UpdateBillItemRequest {
+  name?: string;
+  description?: string;
+  amount?: number;
+  category?: string;
+}
+
+export interface BillItemResponse {
+  success: boolean;
+  data: BillItem;
+  message?: string;
+}
+
+export interface UpdateBillItemResponse {
+  success: boolean;
+  data: BillItem;
+  message: string;
+}
+
+// Contacts Types
+export interface ContactsResponse {
+  success: boolean;
+  data: Contact[];
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+  };
+}
+
+export interface CreateContactRequest {
+  name: string;
+  whatsapp_number: string;
+  group_id?: string;
+  avatar_url?: string;
+  notes?: string;
+}
+
+export interface UpdateContactRequest {
+  name?: string;
+  whatsapp_number?: string;
+  group_id?: string;
+  avatar_url?: string;
+  notes?: string;
+  is_favorite?: boolean;
+}
+
+export interface ContactResponse {
+  success: boolean;
+  data: Contact;
+  message?: string;
+}
+
+// Contact Groups
+export interface ContactGroup {
+  group_id: string;
+  name: string;
+  color: string;
+  contact_count: number;
+  created_at: string;
+}
+
+export interface CreateGroupRequest {
+  name: string;
+  color: string;
+}
+
+export interface UpdateGroupRequest {
+  name?: string;
+  color?: string;
+}
+
+export interface GroupResponse {
+  success: boolean;
+  data: ContactGroup;
+  message?: string;
+}
+
+export interface GroupsResponse {
+  success: boolean;
+  data: ContactGroup[];
+}
+
+// Bulk Operations
+export type BulkOperationType = 'delete' | 'update';
+
+export interface BulkImportRequest {
+  contacts: Array<{
+    name: string;
+    whatsapp_number: string;
+    group_id?: string;
+  }>;
+}
+
+export interface BulkDeleteRequest {
+  contact_ids: string[];
+}
+
+export interface BulkUpdateRequest {
+  contact_ids: string[];
+  updates: {
+    group_id?: string;
+    is_favorite?: boolean;
+  };
+}
+
+export interface BulkOperationRequest {
+  operation: BulkOperationType;
+  contact_ids: string[];
+  updates?: {
+    group_id?: string;
+    is_favorite?: boolean;
+  };
+}
+
+export interface BulkOperationResponse {
+  success: boolean;
+  data: {
+    succeeded: number;
+    failed: number;
+    errors: Array<{
+      contact_id: string;
+      error: string;
+    }>;
+  };
+  message: string;
+}
+
+// Device Import Preview
+export interface DeviceContact {
+  id: string;
+  name: string;
+  phone_numbers: string[];
+}
+
+export interface ImportPreviewResponse {
+  success: boolean;
+  data: {
+    total: number;
+    new_contacts: number;
+    existing_contacts: number;
+    contacts: Array<{
+      name: string;
+      whatsapp_number: string;
+      status: 'new' | 'existing';
+      existing_id?: string;
+    }>;
   };
 }

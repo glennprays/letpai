@@ -33,15 +33,32 @@
 	// Initialize auth store from server-provided data
 	onMount(() => {
 		// Use server-provided auth state if available, otherwise check localStorage
-		if (data.isAuthenticated) {
+		if (data.isAuthenticated && data.token) {
+			// IMPORTANT: Sync server token to localStorage for client-side API calls
+			if (!localStorage.getItem('token')) {
+				localStorage.setItem('token', data.token);
+			}
+			if (data.user && !localStorage.getItem('user')) {
+				localStorage.setItem('user', JSON.stringify(data.user));
+			}
+
 			auth.set({
 				token: data.token,
 				user: data.user,
 				isAuthenticated: true
 			});
 		} else {
-			// Fallback to localStorage for client-only navigation
-			initAuth();
+			// Fallback to cookies for client-side navigation
+			const cookieToken = document.cookie
+				.split('; ')
+				.find(row => row.startsWith('token='))
+				?.split('=')[1];
+			const cookieUser = document.cookie
+				.split('; ')
+				.find(row => row.startsWith('user='))
+				?.split('=')[1];
+
+			initAuth(cookieToken || null, cookieUser || null);
 		}
 	});
 

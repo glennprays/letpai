@@ -151,7 +151,7 @@
       <div class="flex items-center gap-1 mb-6 overflow-x-auto">
         <button
           onclick={() => activeFilter = 'all'}
-          class="px-4 py-2 text-sm font-medium rounded-lg transition-colors"
+          class="px-4 py-3 text-sm font-medium rounded-lg transition-colors min-h-[44px]"
           class:bg-gray-900={activeFilter === 'all'}
           class:text-white={activeFilter === 'all'}
           class:text-gray-600={activeFilter !== 'all'}
@@ -161,7 +161,7 @@
         </button>
         <button
           onclick={() => activeFilter = 'active'}
-          class="px-4 py-2 text-sm font-medium rounded-lg transition-colors"
+          class="px-4 py-3 text-sm font-medium rounded-lg transition-colors min-h-[44px]"
           class:bg-gray-900={activeFilter === 'active'}
           class:text-white={activeFilter === 'active'}
           class:text-gray-600={activeFilter !== 'active'}
@@ -171,7 +171,7 @@
         </button>
         <button
           onclick={() => activeFilter = 'completed'}
-          class="px-4 py-2 text-sm font-medium rounded-lg transition-colors"
+          class="px-4 py-3 text-sm font-medium rounded-lg transition-colors min-h-[44px]"
           class:bg-gray-900={activeFilter === 'completed'}
           class:text-white={activeFilter === 'completed'}
           class:text-gray-600={activeFilter !== 'completed'}
@@ -181,7 +181,7 @@
         </button>
         <button
           onclick={() => activeFilter = 'cancelled'}
-          class="px-4 py-2 text-sm font-medium rounded-lg transition-colors"
+          class="px-4 py-3 text-sm font-medium rounded-lg transition-colors min-h-[44px]"
           class:bg-gray-900={activeFilter === 'cancelled'}
           class:text-white={activeFilter === 'cancelled'}
           class:text-gray-600={activeFilter !== 'cancelled'}
