@@ -3,7 +3,7 @@ import { writable, derived } from 'svelte/store';
 interface User {
   user_id: string;
   whatsapp_number: string;
-  full_name: string;
+  full_name?: string;
   avatar_url?: string;
 }
 

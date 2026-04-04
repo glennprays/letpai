@@ -36,7 +36,7 @@
 
   // Get avatar URL with fallback
   function getUserAvatar(avatarUrl: string | undefined | null, fullName: string | undefined | null): string {
-    return getAvatarWithFallback(avatarUrl, fullName, $auth.user?.user_id);
+    return getAvatarWithFallback(avatarUrl, fullName, $auth.user?.whatsapp_number, $auth.user?.user_id);
   }
 </script>
 
@@ -85,11 +85,11 @@
             <div class="user-avatar">
               <img
                 src={getUserAvatar($auth.user?.avatar_url, $auth.user?.full_name)}
-                alt={getFirstName($auth.user?.full_name)}
+                alt={getFirstName($auth.user?.full_name, $auth.user?.whatsapp_number)}
                 class="w-full h-full rounded-full object-cover"
               />
             </div>
-            <span class="user-name">{getFirstName($auth.user?.full_name)}</span>
+            <span class="user-name">{getFirstName($auth.user?.full_name, $auth.user?.whatsapp_number)}</span>
           </button>
 
           {#if userMenuOpen}
@@ -98,12 +98,12 @@
                 <div class="user-avatar-large">
                   <img
                     src={getUserAvatar($auth.user?.avatar_url, $auth.user?.full_name)}
-                    alt={getFirstName($auth.user?.full_name)}
+                    alt={getFirstName($auth.user?.full_name, $auth.user?.whatsapp_number)}
                     class="w-full h-full rounded-full object-cover"
                   />
                 </div>
                 <div class="user-details">
-                  <span class="user-display-name">{getFirstName($auth.user?.full_name)}</span>
+                  <span class="user-display-name">{getFirstName($auth.user?.full_name, $auth.user?.whatsapp_number)}</span>
                   <span class="user-phone">{$auth.user?.whatsapp_number || ''}</span>
                 </div>
               </div>

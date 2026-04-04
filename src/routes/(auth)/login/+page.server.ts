@@ -27,6 +27,9 @@ export const actions: Actions = {
       const data = await response.json();
 
       if (data.success) {
+        // Debug: log the actual backend response
+        console.log('Backend login response:', JSON.stringify(data, null, 2));
+
         // Set token cookie for SSR
         cookies.set('token', data.token, {
           path: '/',
@@ -37,7 +40,16 @@ export const actions: Actions = {
         });
 
         // Store user data in cookie for client-side access
-        cookies.set('user', JSON.stringify(data.user), {
+        // Handle case where backend might not return full_name
+        const userData = data.user || {
+          user_id: data.user_id,
+          whatsapp_number: data.whatsapp_number,
+          full_name: data.full_name
+        };
+
+        console.log('User data being stored:', JSON.stringify(userData, null, 2));
+
+        cookies.set('user', JSON.stringify(userData), {
           path: '/',
           httpOnly: false,
           secure: false,

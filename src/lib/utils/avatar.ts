@@ -27,41 +27,74 @@ const AVATAR_COLORS = [
 ] as const;
 
 /**
- * Get user initials from full name
- * @param fullName - User's full name
- * @returns 1-2 character initials
+ * Format phone number for display (e.g., 628123456789 → +62 812-3456-789)
  */
-export function getInitials(fullName: string | undefined | null): string {
-  if (!fullName) return 'U';
-  const trimmed = fullName.trim();
-  if (trimmed.length === 0) return 'U';
-
-  const parts = trimmed.split(' ').filter(p => p.length > 0);
-  if (parts.length === 1) {
-    return parts[0].charAt(0).toUpperCase();
+function formatPhoneNumberForDisplay(phone: string): string {
+  if (!phone) return 'User';
+  // Remove leading 0 if present and add +62
+  let formatted = phone.replace(/^0/, '');
+  if (!formatted.startsWith('62')) {
+    formatted = '62' + formatted;
   }
-  // First + last initial
-  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+  return '+' + formatted;
 }
 
 /**
- * Get first name from full name
+ * Get user initials from full name or phone number
  * @param fullName - User's full name
- * @returns First name only
+ * @param phoneNumber - Fallback to phone number if no name
+ * @returns 1-2 character initials
  */
-export function getFirstName(fullName: string | undefined | null): string {
-  if (!fullName) return 'User';
-  const trimmed = fullName.trim();
-  if (trimmed.length === 0) return 'User';
+export function getInitials(fullName: string | undefined | null, phoneNumber?: string | undefined | null): string {
+  if (fullName && fullName.trim().length > 0) {
+    const trimmed = fullName.trim();
+    const parts = trimmed.split(' ').filter(p => p.length > 0);
+    if (parts.length === 1) {
+      return parts[0].charAt(0).toUpperCase();
+    }
+    return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+  }
 
-  const parts = trimmed.split(' ');
-  return parts[0];
+  // Fallback to phone number last 4 digits
+  if (phoneNumber) {
+    return phoneNumber.slice(-4);
+  }
+
+  return 'U';
+}
+
+/**
+ * Get display name from full name or phone number
+ * @param fullName - User's full name
+ * @param phoneNumber - Fallback to phone number if no name
+ * @returns Display name (first name or formatted phone)
+ */
+export function getDisplayName(fullName: string | undefined | null, phoneNumber?: string | undefined | null): string {
+  if (fullName && fullName.trim().length > 0) {
+    const trimmed = fullName.trim();
+    const parts = trimmed.split(' ');
+    return parts[0];
+  }
+
+  // Fallback to formatted phone number
+  if (phoneNumber) {
+    return formatPhoneNumberForDisplay(phoneNumber);
+  }
+
+  return 'User';
+}
+
+/**
+ * @deprecated Use getDisplayName instead - this alias for backward compatibility
+ */
+export function getFirstName(fullName: string | undefined | null, phoneNumber?: string | undefined | null): string {
+  return getDisplayName(fullName, phoneNumber);
 }
 
 /**
  * Get consistent color based on user identifier
  * Uses simple hash for deterministic color assignment
- * @param identifier - User ID, name, or email
+ * @param identifier - User ID, name, email
  * @returns Hex color from palette
  */
 export function getAvatarColor(identifier: string | undefined | null): string {
@@ -82,17 +115,19 @@ export function getAvatarColor(identifier: string | undefined | null): string {
  * Generate SVG data URL for avatar fallback
  * Modern design: solid color, centered initials, no gradient
  * @param fullName - User's full name for initials
+ * @param phoneNumber - Fallback phone number for initials
  * @param identifier - User identifier for consistent color
  * @param size - Avatar size in pixels (default 40)
  * @returns Data URL for SVG image
  */
 export function generateAvatarUrl(
   fullName: string | undefined | null,
+  phoneNumber: string | undefined | null,
   identifier: string | undefined | null,
   size: number = 40
 ): string {
-  const initials = getInitials(fullName);
-  const color = getAvatarColor(identifier || fullName);
+  const initials = getInitials(fullName, phoneNumber);
+  const color = getAvatarColor(identifier || fullName || phoneNumber);
 
   // Modern SVG: solid background, centered white text
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">
@@ -110,6 +145,7 @@ export function generateAvatarUrl(
  * Get avatar URL with automatic fallback generation
  * @param avatarUrl - User's uploaded avatar URL (optional)
  * @param fullName - User's full name
+ * @param phoneNumber - Fallback phone number
  * @param identifier - User identifier for consistent color
  * @param size - Avatar size in pixels
  * @returns Avatar URL or generated SVG data URL
@@ -117,8 +153,9 @@ export function generateAvatarUrl(
 export function getAvatarWithFallback(
   avatarUrl: string | undefined | null,
   fullName: string | undefined | null,
-  identifier?: string | null,
+  phoneNumber: string | undefined | null,
+  identifier: string | undefined | null,
   size: number = 40
 ): string {
-  return avatarUrl || generateAvatarUrl(fullName, identifier || fullName, size);
+  return avatarUrl || generateAvatarUrl(fullName, phoneNumber, identifier || fullName || phoneNumber, size);
 }
