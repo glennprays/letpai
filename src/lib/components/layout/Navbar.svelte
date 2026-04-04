@@ -32,6 +32,40 @@
       userMenuOpen = false;
     }
   }
+
+  // Extract first name from full name
+  function getFirstName(fullName: string | undefined | null): string {
+    if (!fullName) return 'User';
+    return fullName.trim().split(' ')[0];
+  }
+
+  // Get initials for avatar fallback
+  function getInitials(fullName: string | undefined | null): string {
+    if (!fullName) return 'U';
+    const names = fullName.trim().split(' ');
+    if (names.length === 1) return names[0].charAt(0).toUpperCase();
+    return (names[0].charAt(0) + names[names.length - 1].charAt(0)).toUpperCase();
+  }
+
+  // Get user avatar URL or generate SVG with initials
+  function getUserAvatarUrl(avatarUrl: string | undefined | null, fullName: string | undefined | null): string {
+    if (avatarUrl) return avatarUrl;
+    // Return data URL for SVG with initials
+    const initials = getInitials(fullName);
+    // Use unique gradient ID to avoid conflicts
+    const gradientId = `avatar-gradient-${initials}`;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40">
+      <defs>
+        <linearGradient id="${gradientId}" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style="stop-color:#FF6B6B"/>
+          <stop offset="100%" style="stop-color:#14B8A6"/>
+        </linearGradient>
+      </defs>
+      <rect width="40" height="40" fill="url(#${gradientId})"/>
+      <text x="50%" y="52%" text-anchor="middle" fill="white" font-size="14" font-weight="600">${initials}</text>
+    </svg>`;
+    return `data:image/svg+xml;base64,${btoa(svg)}`;
+  }
 </script>
 
 <svelte:window onclick={handleClickOutside} />
@@ -77,28 +111,36 @@
         <div class="user-menu-container">
           <button class="user-avatar-btn" onclick={toggleUserMenu} aria-label="User menu">
             <div class="user-avatar">
-              <User size={18} color="#374151" />
+              <img
+                src={getUserAvatarUrl($auth.user?.avatar_url, $auth.user?.full_name)}
+                alt={getFirstName($auth.user?.full_name)}
+                class="w-full h-full rounded-full object-cover"
+              />
             </div>
-            <span class="user-name">{$auth.user?.full_name || 'User'}</span>
+            <span class="user-name">{getFirstName($auth.user?.full_name)}</span>
           </button>
 
           {#if userMenuOpen}
             <div class="user-dropdown">
               <div class="user-info">
                 <div class="user-avatar-large">
-                  <User size={20} color="#374151" />
+                  <img
+                    src={getUserAvatarUrl($auth.user?.avatar_url, $auth.user?.full_name)}
+                    alt={getFirstName($auth.user?.full_name)}
+                    class="w-full h-full rounded-full object-cover"
+                  />
                 </div>
                 <div class="user-details">
-                  <span class="user-display-name">{$auth.user?.full_name || 'User'}</span>
+                  <span class="user-display-name">{getFirstName($auth.user?.full_name)}</span>
                   <span class="user-phone">{$auth.user?.whatsapp_number || ''}</span>
                 </div>
               </div>
               <div class="dropdown-divider"></div>
-              <a href="/profile" class="dropdown-item" onclick={closeMobileMenu}>
+              <a href="/profile" class="dropdown-item" onclick={() => userMenuOpen = false}>
                 <User size={16} />
                 Profile
               </a>
-              <a href="/settings" class="dropdown-item" onclick={closeMobileMenu}>
+              <a href="/settings" class="dropdown-item" onclick={() => userMenuOpen = false}>
                 <Settings size={16} />
                 Settings
               </a>
@@ -205,7 +247,9 @@
     background: none;
     border: none;
     cursor: pointer;
-    padding: 4px;
+    padding: 10px;
+    min-height: 44px;
+    min-width: 44px;
   }
 
   .btn-coral {
