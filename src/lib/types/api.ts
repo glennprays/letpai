@@ -124,3 +124,111 @@ export interface ApiError {
     message: string;
   };
 }
+
+// Session Detail Types
+export interface SessionDetail {
+  session_id: string;
+  host_id: string;
+  session_name: string;
+  session_description?: string;
+  total_amount: number;
+  currency: string;
+  status: 'draft' | 'pending' | 'in_progress' | 'completed' | 'cancelled';
+  participant_count: number;
+  paid_count: number;
+  created_at: string;
+  participants: Participant[];
+  bill_items: BillItem[];
+}
+
+export interface SessionResponse {
+  success: boolean;
+  data: Session;
+  message?: string;
+}
+
+export interface SessionDetailResponse {
+  success: boolean;
+  data: SessionDetail;
+}
+
+export interface UpdateSessionRequest {
+  session_name?: string;
+  session_description?: string;
+  currency?: string;
+  status?: string;
+}
+
+// Participant Types
+export interface AddParticipantsRequest {
+  participants: Array<{
+    contact_id?: string;
+    name: string;
+    whatsapp_number: string;
+  }>;
+}
+
+export interface UpdateParticipantRequest {
+  payment_status: 'paid' | 'rejected';
+  rejection_reason?: string;
+}
+
+// Bill Item Types
+export interface CreateBillItemRequest {
+  name: string;
+  description?: string;
+  amount: number;
+  category?: string;
+}
+
+export interface UpdateBillItemRequest {
+  name?: string;
+  description?: string;
+  amount?: number;
+  category?: string;
+}
+
+export interface BillItemResponse {
+  success: boolean;
+  data: BillItem;
+  message?: string;
+}
+
+export interface UpdateBillItemResponse {
+  success: boolean;
+  data: BillItem;
+  message: string;
+}
+
+// Contacts Types
+export interface ContactsResponse {
+  success: boolean;
+  data: Contact[];
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+  };
+}
+
+export interface CreateContactRequest {
+  name: string;
+  whatsapp_number: string;
+  group_id?: string;
+  avatar_url?: string;
+  notes?: string;
+}
+
+export interface UpdateContactRequest {
+  name?: string;
+  whatsapp_number?: string;
+  group_id?: string;
+  avatar_url?: string;
+  notes?: string;
+}
+
+export interface ContactResponse {
+  success: boolean;
+  data: Contact;
+  message?: string;
+}
