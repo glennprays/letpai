@@ -27,16 +27,21 @@
   } from '$lib/services/contacts';
   import type { Contact, ContactGroup, CreateContactRequest, UpdateContactRequest } from '$lib/types/api';
 
-  interface PageData {
+  // In SvelteKit + Svelte 5, server load data comes directly as props
+  let { contacts: initialContacts, groups: initialGroups }: {
     contacts: Contact[];
     groups: ContactGroup[];
+  } = $props();
+
+  // Debug logging to check data
+  if (import.meta.env.DEV) {
+    console.log('[Contacts Page] Initial contacts:', initialContacts);
+    console.log('[Contacts Page] Initial groups:', initialGroups);
   }
 
-  let { data }: { data: PageData } = $props();
-
   // State - Initialize with server data
-  let contacts = $state<Contact[]>(data?.contacts || []);
-  let groups = $state<ContactGroup[]>(data?.groups || []);
+  let contacts = $state<Contact[]>(initialContacts || []);
+  let groups = $state<ContactGroup[]>(initialGroups || []);
   let filteredContacts = $state<Contact[]>([]);
 
   let searchQuery = $state('');
@@ -61,9 +66,10 @@
 
   // Initial filter application
   $effect(() => {
-    if (contacts.length > 0 || data?.contacts) {
-      applyFilters();
+    if (import.meta.env.DEV) {
+      console.log('[Contacts Page] Filtering contacts:', contacts.length, 'groups:', groups.length);
     }
+    applyFilters();
   });
 
   // Refresh data (for after mutations)
