@@ -93,19 +93,21 @@
 		<!-- Form -->
 		<form
 			method="POST"
-			use:enhance(({ formElement }) => {
-				return async ({ action, formData, cancel, submitter }) => {
+			use:enhance={() => {
+				return async ({ action, formData }) => {
 					// Set loading state
 					isSubmitting = true;
 
-					// Submit the form
-					const response = await action(formData, submitter);
+					try {
+						// Submit the form
+						const response = await action(formData);
 
-					// Reset loading state
-					isSubmitting = false;
-
-					// Return the response to let SvelteKit handle it
-					return response;
+						// Return the response to let SvelteKit handle it
+						return response;
+					} finally {
+						// Reset loading state
+						isSubmitting = false;
+					}
 				};
 			})}
 			class="bg-white rounded-xl border border-gray-200 p-6 space-y-6"
