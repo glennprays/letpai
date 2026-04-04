@@ -23,12 +23,18 @@ export const load: PageServerLoad = async ({ cookies, depends }) => {
     console.log('[Contacts Server Load] Contacts response:', contactsResponse);
     console.log('[Contacts Server Load] Groups response:', groupsResponse);
 
+    // Extract actual data from paginated response
+    const contacts = contactsResponse?.data?.contacts || contactsResponse?.contacts || [];
+    const groups = groupsResponse?.data?.groups || groupsResponse?.groups || [];
+
     const data = {
-      contacts: contactsResponse.success ? contactsResponse.data : [],
-      groups: groupsResponse.success ? groupsResponse.data : []
+      contacts,
+      groups
     };
 
     console.log('[Contacts Server Load] Returning data:', data);
+    console.log('[Contacts Server Load] Contacts count:', contacts.length);
+    console.log('[Contacts Server Load] Groups count:', groups.length);
 
     return data;
   } catch (error) {

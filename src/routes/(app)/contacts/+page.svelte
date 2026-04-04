@@ -46,8 +46,11 @@
     const serverGroups = $page.data?.groups as ContactGroup[] | undefined;
 
     if (import.meta.env.DEV) {
+      console.log('[Contacts Page] $page.data:', $page.data);
       console.log('[Contacts Page] Server contacts:', serverContacts);
       console.log('[Contacts Page] Server groups:', serverGroups);
+      console.log('[Contacts Page] Server contacts length:', serverContacts?.length);
+      console.log('[Contacts Page] Server groups length:', serverGroups?.length);
     }
 
     if (serverContacts) {
