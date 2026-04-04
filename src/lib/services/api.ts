@@ -26,6 +26,12 @@ export async function get(endpoint: string, customFetch?: typeof fetch, serverTo
     },
   });
 
+  const result = await response.json();
+
+  if (import.meta.env.DEV) {
+    console.log('[API GET] Response from', endpoint, ':', result);
+  }
+
   if (!response.ok) {
     if (response.status === 401) {
       console.error('[API] 401 Unauthorized for', endpoint);
@@ -37,11 +43,10 @@ export async function get(endpoint: string, customFetch?: typeof fetch, serverTo
       }
       throw new Error('Unauthorized. Please login again.');
     }
-    const error = await response.json();
-    throw new Error(error.error?.message || response.statusText);
+    throw new Error(result.error?.message || response.statusText);
   }
 
-  return response.json();
+  return result;
 }
 
 export async function post(endpoint: string, data: unknown, customFetch?: typeof fetch, serverToken?: string) {
