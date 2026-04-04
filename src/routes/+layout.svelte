@@ -33,7 +33,15 @@
 	// Initialize auth store from server-provided data
 	onMount(() => {
 		// Use server-provided auth state if available, otherwise check localStorage
-		if (data.isAuthenticated) {
+		if (data.isAuthenticated && data.token) {
+			// IMPORTANT: Sync server token to localStorage for client-side API calls
+			if (!localStorage.getItem('token')) {
+				localStorage.setItem('token', data.token);
+			}
+			if (data.user && !localStorage.getItem('user')) {
+				localStorage.setItem('user', JSON.stringify(data.user));
+			}
+
 			auth.set({
 				token: data.token,
 				user: data.user,

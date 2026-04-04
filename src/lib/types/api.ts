@@ -50,8 +50,6 @@ export interface Contact {
 export interface CreateContactRequest {
   name: string;
   whatsapp_number: string;
-  group_id?: string;
-  avatar_url?: string;
   notes?: string;
 }
 

@@ -109,13 +109,14 @@ export function initAuth(cookieToken?: string | null, cookieUser?: string | null
   const userStr = cookieUser || localStorage.getItem('user');
   const user = userStr ? JSON.parse(userStr) : null;
 
-  // If we have a cookie token but no localStorage token, sync it
-  if (cookieToken && !localStorage.getItem('token')) {
+  // IMPORTANT: Always sync cookie token to localStorage if available
+  // This ensures client-side API calls have access to the token
+  if (cookieToken && cookieToken !== localStorage.getItem('token')) {
     localStorage.setItem('token', cookieToken);
   }
 
-  // If we have a cookie user but no localStorage user, sync it
-  if (cookieUser && !localStorage.getItem('user')) {
+  // Sync cookie user to localStorage if available
+  if (cookieUser && cookieUser !== localStorage.getItem('user')) {
     localStorage.setItem('user', cookieUser);
   }
 

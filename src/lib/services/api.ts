@@ -57,13 +57,16 @@ export async function post(endpoint: string, data: unknown, customFetch?: typeof
     body: JSON.stringify(data),
   });
 
+  console.log(`[API POST] ${endpoint} - Status: ${response.status} - Has Token: ${!!token}`);
+
   if (!response.ok) {
     if (response.status === 401) {
-      if (browser) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        window.location.href = '/login';
-      }
+      console.error(`[API POST] 401 Unauthorized for ${endpoint}`);
+      // if (browser) {
+      //   localStorage.removeItem('token');
+      //   localStorage.removeItem('user');
+      //   window.location.href = '/login';
+      // }
       throw new Error('Unauthorized. Please login again.');
     }
     const error = await response.json();
