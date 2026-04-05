@@ -34,7 +34,6 @@
 </script>
 
 {#if open}
-	<svelte:window />
 	<div
 		bind:this={dialogElement}
 		onkeydown={handleKeydown}
