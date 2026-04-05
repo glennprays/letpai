@@ -34,17 +34,18 @@
 </script>
 
 {#if open}
+	<svelte:window />
 	<div
 		bind:this={dialogElement}
 		onkeydown={handleKeydown}
 		onclick={handleBackdropClick}
-		class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+		class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto"
 		role="dialog"
 		aria-modal="true"
 		aria-labelledby="modal-title"
 	>
 		<div
-			class="w-full max-w-md bg-white rounded-xl shadow-xl transition-all max-h-[90vh] flex flex-col"
+			class="w-full max-w-md bg-white rounded-xl shadow-xl transition-all max-h-[90vh] flex flex-col my-8"
 			transition:fly={{ y: 20, duration: 200 }}
 		>
 			<!-- Header -->

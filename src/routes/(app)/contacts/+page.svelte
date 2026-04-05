@@ -440,79 +440,80 @@
       ontogglefavorite={handleBulkToggleFavorite}
     />
   </main>
-
-  <!-- Add Contact Modal -->
-  <Modal open={showAddModal} title="Add Contact" onclose={() => showAddModal = false}>
-    <ContactForm
-      {groups}
-      loading={isSaving}
-      onsubmit={handleCreateContact}
-      oncancel={() => showAddModal = false}
-      submitText="Add Contact"
-    />
-  </Modal>
-
-  <!-- Edit Contact Modal -->
-  <Modal open={showEditModal} title="Edit Contact" onclose={() => showEditModal = false}>
-    <ContactForm
-      contact={editingContact}
-      {groups}
-      loading={isSaving}
-      onsubmit={handleUpdateContact}
-      oncancel={() => {
-        showEditModal = false;
-        editingContact = null;
-      }}
-      submitText="Save Changes"
-    />
-  </Modal>
-
-  <!-- Import Modal -->
-  <Modal open={showImportModal} title="Import Contacts" onclose={() => showImportModal = false}>
-    <ContactImport
-      existingContacts={existingContactsMap}
-      {groups}
-      loading={isSaving}
-      onimport={handleImportContacts}
-      oncancel={() => showImportModal = false}
-    />
-  </Modal>
-
-  <!-- Groups Modal -->
-  <Modal open={showGroupsModal} title="Manage Groups" onclose={() => showGroupsModal = false}>
-    <ContactGroups
-      {groups}
-      loading={isSaving}
-      oncreate={handleCreateGroup}
-      onupdate={handleUpdateGroup}
-      ondelete={handleDeleteGroup}
-    />
-  </Modal>
-
-  <!-- Delete Contact Confirmation -->
-  <ConfirmDialog
-    open={showDeleteDialog}
-    title="Delete Contact?"
-    message={`Are you sure you want to delete ${deletingContact?.name}? This action cannot be undone.`}
-    confirmText="Delete"
-    cancelText="Cancel"
-    variant="danger"
-    onconfirm={handleDeleteContact}
-    oncancel={() => {
-      showDeleteDialog = false;
-      deletingContact = null;
-    }}
-  />
-
-  <!-- Bulk Delete Confirmation -->
-  <ConfirmDialog
-    open={showBulkDeleteDialog}
-    title="Delete Contacts?"
-    message={`Are you sure you want to delete ${selectedContacts.size} contacts? This action cannot be undone.`}
-    confirmText="Delete"
-    cancelText="Cancel"
-    variant="danger"
-    onconfirm={handleBulkDelete}
-    oncancel={() => showBulkDeleteDialog = false}
-  />
 </div>
+
+<!-- Modals - Rendered outside main container to avoid overflow constraints -->
+<!-- Add Contact Modal -->
+<Modal open={showAddModal} title="Add Contact" onclose={() => showAddModal = false}>
+  <ContactForm
+    {groups}
+    loading={isSaving}
+    onsubmit={handleCreateContact}
+    oncancel={() => showAddModal = false}
+    submitText="Add Contact"
+  />
+</Modal>
+
+<!-- Edit Contact Modal -->
+<Modal open={showEditModal} title="Edit Contact" onclose={() => showEditModal = false}>
+  <ContactForm
+    contact={editingContact}
+    {groups}
+    loading={isSaving}
+    onsubmit={handleUpdateContact}
+    oncancel={() => {
+      showEditModal = false;
+      editingContact = null;
+    }}
+    submitText="Save Changes"
+  />
+</Modal>
+
+<!-- Import Modal -->
+<Modal open={showImportModal} title="Import Contacts" onclose={() => showImportModal = false}>
+  <ContactImport
+    existingContacts={existingContactsMap}
+    {groups}
+    loading={isSaving}
+    onimport={handleImportContacts}
+    oncancel={() => showImportModal = false}
+  />
+</Modal>
+
+<!-- Groups Modal -->
+<Modal open={showGroupsModal} title="Manage Groups" onclose={() => showGroupsModal = false}>
+  <ContactGroups
+    {groups}
+    loading={isSaving}
+    oncreate={handleCreateGroup}
+    onupdate={handleUpdateGroup}
+    ondelete={handleDeleteGroup}
+  />
+</Modal>
+
+<!-- Delete Contact Confirmation -->
+<ConfirmDialog
+  open={showDeleteDialog}
+  title="Delete Contact?"
+  message={`Are you sure you want to delete ${deletingContact?.name}? This action cannot be undone.`}
+  confirmText="Delete"
+  cancelText="Cancel"
+  variant="danger"
+  onconfirm={handleDeleteContact}
+  oncancel={() => {
+    showDeleteDialog = false;
+    deletingContact = null;
+  }}
+/>
+
+<!-- Bulk Delete Confirmation -->
+<ConfirmDialog
+  open={showBulkDeleteDialog}
+  title="Delete Contacts?"
+  message={`Are you sure you want to delete ${selectedContacts.size} contacts? This action cannot be undone.`}
+  confirmText="Delete"
+  cancelText="Cancel"
+  variant="danger"
+  onconfirm={handleBulkDelete}
+  oncancel={() => showBulkDeleteDialog = false}
+/>
