@@ -340,9 +340,9 @@
   }
 </script>
 
-<div class="min-h-screen bg-gray-50 pb-20 md:pb-0">
+<div class="h-screen flex flex-col bg-gray-50">
   <!-- Header -->
-  <header class="bg-white border-b border-gray-200 sticky top-0 z-30">
+  <header class="bg-white border-b border-gray-200 flex-shrink-0 z-30">
     <div class="container mx-auto px-4 py-4">
       <div class="flex items-center justify-between gap-4">
         <!-- Back Button & Title -->
@@ -403,9 +403,9 @@
   </header>
 
   <!-- Main Content -->
-  <main class="container mx-auto px-4 py-6">
+  <main class="container mx-auto px-4 py-6 flex-1 flex flex-col min-h-0">
     <!-- Search & Filters -->
-    <div class="mb-6">
+    <div class="mb-6 flex-shrink-0">
       <ContactSearch
         bind:searchQuery
         bind:activeFilter
@@ -414,7 +414,7 @@
     </div>
 
     <!-- Contact List -->
-    <div class="mb-4">
+    <div class="flex-1 min-h-0 mb-4">
       <ContactList
         contacts={filteredContacts}
         {selectedContacts}
@@ -426,19 +426,22 @@
         onCall={handleCall}
         onMessage={handleMessage}
         showCheckbox={isBulkMode}
+        class="h-full"
       />
     </div>
 
     <!-- Bulk Actions Bar -->
-    <BulkActionsBar
-      selectedCount={selectedContacts.size}
-      {groups}
-      loading={isSaving}
-      onclear={handleClearSelection}
-      ondelete={() => showBulkDeleteDialog = true}
-      onassigngroup={handleBulkAssignGroup}
-      ontogglefavorite={handleBulkToggleFavorite}
-    />
+    <div class="flex-shrink-0">
+      <BulkActionsBar
+        selectedCount={selectedContacts.size}
+        {groups}
+        loading={isSaving}
+        onclear={handleClearSelection}
+        ondelete={() => showBulkDeleteDialog = true}
+        onassigngroup={handleBulkAssignGroup}
+        ontogglefavorite={handleBulkToggleFavorite}
+      />
+    </div>
   </main>
 </div>
 

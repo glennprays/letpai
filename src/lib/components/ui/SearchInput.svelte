@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { cn } from '$lib/utils/cn';
-  import { Search, X } from 'lucide-svelte';
-  import Input from './Input.svelte';
+  import { cn } from "$lib/utils/cn";
+  import { Search, X } from "lucide-svelte";
+  import Input from "./Input.svelte";
 
   interface Props {
     placeholder?: string;
@@ -13,8 +13,8 @@
   }
 
   let {
-    placeholder = 'Search...',
-    value = $bindable(''),
+    placeholder = "Search...",
+    value = $bindable(""),
     disabled = false,
     class: className,
     oninput,
@@ -23,8 +23,8 @@
   }: Props = $props();
 
   function handleClear() {
-    value = '';
-    if (oninput) oninput('');
+    value = "";
+    if (oninput) oninput("");
     if (onclear) onclear();
   }
 
@@ -33,15 +33,18 @@
   }
 </script>
 
-<div class={cn('relative', className)}>
-  <Search class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={18} />
+<div class={cn("relative", className)}>
+  <Search
+    class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+    size={18}
+  />
 
   <Input
     bind:value
     {placeholder}
     {disabled}
     {oninput}
-    class="pl-11 pr-10"
+    class="!pl-11 pr-10"
     {...props}
   />
 

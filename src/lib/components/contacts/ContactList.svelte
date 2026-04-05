@@ -52,7 +52,7 @@
   bind:this={listElement}
   onscroll={handleScroll}
   class={cn(
-    'space-y-3 overflow-y-auto',
+    'space-y-3 overflow-y-auto h-full pb-20 md:pb-0',
     'scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 hover:scrollbar-thumb-gray-400',
     className
   )}
