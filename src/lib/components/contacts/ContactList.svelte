@@ -16,7 +16,6 @@
     onToggleFavorite?: (contact: Contact) => void;
     onCall?: (contact: Contact) => void;
     onMessage?: (contact: Contact) => void;
-    showCheckbox?: boolean;
     emptyTitle?: string;
     emptyDescription?: string;
     class?: string;
@@ -32,7 +31,6 @@
     onToggleFavorite,
     onCall,
     onMessage,
-    showCheckbox = false,
     emptyTitle = 'No contacts found',
     emptyDescription = 'Try adjusting your search or add a new contact.',
     class: className,
@@ -90,7 +88,6 @@
         onCall={onCall ? () => onCall(contact) : undefined}
         onMessage={onMessage ? () => onMessage(contact) : undefined}
         showActions={true}
-        showCheckbox={showCheckbox}
       />
     {/each}
   {/if}

@@ -16,7 +16,6 @@
     onCall?: (contact: Contact) => void;
     onMessage?: (contact: Contact) => void;
     showActions?: boolean;
-    showCheckbox?: boolean;
     class?: string;
   }
 
@@ -30,7 +29,6 @@
     onCall,
     onMessage,
     showActions = true,
-    showCheckbox = false,
     class: className,
     ...props
   }: Props = $props();
@@ -109,24 +107,22 @@
 <div
   class={cn(
     'group relative flex items-center gap-3 p-4 bg-white rounded-xl border-2 transition-all duration-150',
-    selected ? 'border-[#FF6B6B] shadow-sm' : 'border-gray-200 hover:border-[#FF6B6B] hover:shadow-md',
-    onSelect && 'cursor-pointer',
+    selected
+      ? 'border-[#FF6B6B] shadow-md bg-red-50/40'
+      : 'border-gray-200 hover:border-[#FF6B6B] hover:shadow-sm',
     className
   )}
-  onclick={onSelect}
   {...props}
 >
-  <!-- Checkbox for bulk selection -->
-  {#if showCheckbox}
-    <div class="flex-shrink-0" onclick={(e) => e.stopPropagation()}>
-      <input
-        type="checkbox"
-        checked={selected}
-        onchange={onSelect}
-        class="w-5 h-5 rounded border-2 border-gray-300 text-[#FF6B6B] focus:ring-[#FF6B6B] focus:ring-offset-0"
-      />
-    </div>
-  {/if}
+  <!-- Checkbox for selection -->
+  <div class="flex-shrink-0">
+    <input
+      type="checkbox"
+      checked={selected}
+      onchange={onSelect}
+      class="w-5 h-5 rounded-md border-2 border-gray-300 text-[#FF6B6B] focus:ring-2 focus:ring-[#FF6B6B] focus:ring-offset-2 cursor-pointer transition-all duration-150"
+    />
+  </div>
 
   <!-- Avatar -->
   <Avatar

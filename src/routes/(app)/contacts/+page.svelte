@@ -425,7 +425,6 @@
         onToggleFavorite={handleToggleFavorite}
         onCall={handleCall}
         onMessage={handleMessage}
-        showCheckbox={isBulkMode}
         class="h-full"
       />
     </div>
