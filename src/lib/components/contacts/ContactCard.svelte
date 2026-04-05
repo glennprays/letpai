@@ -106,22 +106,42 @@
 
 <div
   class={cn(
-    'group relative flex items-center gap-3 p-4 bg-white rounded-xl border-2 transition-all duration-150',
+    'group relative flex items-center gap-3 p-4 bg-white rounded-2xl border-2 transition-all duration-300 ease-out',
     selected
-      ? 'border-[#FF6B6B] shadow-md bg-red-50/40'
-      : 'border-gray-200 hover:border-[#FF6B6B] hover:shadow-sm',
+      ? 'border-[#FF6B6B] shadow-lg shadow-red-500/10 bg-gradient-to-r from-red-50/50 to-pink-50/50 scale-[1.01]'
+      : 'border-gray-200 hover:border-[#FF6B6B]/50 hover:shadow-md hover:scale-[1.005]',
     className
   )}
   {...props}
 >
-  <!-- Checkbox for selection -->
-  <div class="flex-shrink-0">
-    <input
-      type="checkbox"
-      checked={selected}
-      onchange={onSelect}
-      class="w-5 h-5 rounded-md border-2 border-gray-300 text-[#FF6B6B] focus:ring-2 focus:ring-[#FF6B6B] focus:ring-offset-2 cursor-pointer transition-all duration-150"
-    />
+  <!-- Modern Checkbox with enhanced UX -->
+  <div class="flex-shrink-0 relative">
+    <!-- Touch target wrapper -->
+    <label class="relative flex items-center justify-center min-h-[44px] min-w-[44px] cursor-pointer group/check">
+      <input
+        type="checkbox"
+        checked={selected}
+        onchange={onSelect}
+        class="peer appearance-none w-6 h-6 rounded-lg border-2 border-gray-300 bg-white checked:border-[#FF6B6B] checked:bg-[#FF6B6B] checked:shadow-md checked:shadow-red-500/20 transition-all duration-200 ease-out cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:ring-offset-2 hover:border-[#FF6B6B]"
+        aria-label="Select {contact.name}"
+      />
+
+      <!-- Custom checkmark with animation -->
+      <svg
+        class="absolute inset-0 m-auto w-4 h-4 text-white pointer-events-none opacity-0 peer-checked:opacity-100 transition-all duration-200 ease-out peer-checked:scale-100 scale-50"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        stroke-width="3"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M5 13l4 4L19 7" />
+      </svg>
+
+      <!-- Subtle glow effect when checked -->
+      <div class="absolute inset-0 rounded-lg bg-[#FF6B6B] opacity-0 peer-checked:opacity-20 blur-sm transition-opacity duration-300 -z-10 peer-checked:scale-110 scale-100"></div>
+    </label>
   </div>
 
   <!-- Avatar -->
