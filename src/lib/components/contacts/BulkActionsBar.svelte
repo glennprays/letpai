@@ -70,7 +70,7 @@
     <div class="flex items-center justify-between gap-4 p-4 md:p-0">
       <!-- Selection Info -->
       <div class="flex items-center gap-3">
-        <span class="text-sm font-medium text-gray-900">
+        <span class="text-sm font-medium text-white md:text-[#251818]">
           {selectedCount} {selectedCount === 1 ? 'contact' : 'contacts'} selected
         </span>
       </div>
@@ -102,19 +102,19 @@
             </Button>
 
             {#if showFavoriteMenu}
-              <div class="absolute bottom-full mb-2 left-0 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
+              <div class="absolute bottom-full mb-2 left-0 w-48 bg-white rounded-2xl shadow-[0_24px_48px_-4px_rgba(37,24,24,0.12)] py-1 z-10">
                 <button
                   onclick={() => handleToggleFavorite(true)}
-                  class="w-full px-4 py-2 text-left text-sm hover:bg-[#fff0ef] flex items-center gap-3"
+                  class="w-full px-4 py-2 text-left text-sm text-[#251818] hover:bg-[#fff0ef] flex items-center gap-3"
                 >
-                  <Star class="w-4 h-4 text-amber-500 fill-amber-500" />
+                  <Star class="w-4 h-4 text-[#F59E0B] fill-[#F59E0B]" />
                   <span>Add to favorites</span>
                 </button>
                 <button
                   onclick={() => handleToggleFavorite(false)}
-                  class="w-full px-4 py-2 text-left text-sm hover:bg-[#fff0ef] flex items-center gap-3"
+                  class="w-full px-4 py-2 text-left text-sm text-[#251818] hover:bg-[#fff0ef] flex items-center gap-3"
                 >
-                  <StarOff class="w-4 h-4 text-gray-400" />
+                  <StarOff class="w-4 h-4 text-[#584140]/60" />
                   <span>Remove from favorites</span>
                 </button>
               </div>
@@ -136,18 +136,18 @@
             </Button>
 
             {#if showGroupMenu}
-              <div class="absolute bottom-full mb-2 left-0 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10 max-h-64 overflow-y-auto">
+              <div class="absolute bottom-full mb-2 left-0 w-56 bg-white rounded-2xl shadow-[0_24px_48px_-4px_rgba(37,24,24,0.12)] py-1 z-10 max-h-64 overflow-y-auto">
                 <button
                   onclick={() => handleAssignGroup('')}
-                  class="w-full px-4 py-2 text-left text-sm hover:bg-[#fff0ef] text-gray-600"
+                  class="w-full px-4 py-2 text-left text-sm hover:bg-[#fff0ef] text-[#584140]"
                 >
                   Remove from group
                 </button>
-                <div class="border-t border-gray-200 my-1"></div>
+                <div class="h-2"></div>
                 {#each groups as group}
                   <button
                     onclick={() => handleAssignGroup(group.group_id)}
-                    class="w-full px-4 py-2 text-left text-sm hover:bg-[#fff0ef] flex items-center gap-3"
+                    class="w-full px-4 py-2 text-left text-sm text-[#251818] hover:bg-[#fff0ef] flex items-center gap-3"
                   >
                     <span
                       class="w-3 h-3 rounded-full flex-shrink-0"

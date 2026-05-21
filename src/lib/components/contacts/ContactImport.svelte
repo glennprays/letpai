@@ -164,26 +164,26 @@
   {#if step === 'intro'}
     <!-- Intro Step -->
     <div class="text-center py-8">
-      <div class="w-16 h-16 bg-gradient-to-br from-[#FF6B6B] to-[#FF8E8E] rounded-2xl flex items-center justify-center mx-auto mb-4">
+      <div class="w-16 h-16 bg-gradient-to-br from-[#ae2f34] to-[#FF6B6B] rounded-2xl flex items-center justify-center mx-auto mb-4">
         <Upload class="w-8 h-8 text-white" />
       </div>
 
-      <h3 class="text-xl font-bold text-gray-900 mb-2">
+      <h3 class="text-xl font-bold text-[#251818] mb-2">
         Import from Device
       </h3>
 
-      <p class="text-gray-600 mb-6 max-w-md mx-auto">
+      <p class="text-[#584140] mb-6 max-w-md mx-auto">
         Select contacts from your device to import. You can edit them before saving and assign them to groups.
       </p>
 
-      <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 text-left">
+      <div class="bg-[#F59E0B]/15 rounded-2xl p-4 mb-6 text-left">
         <div class="flex gap-3">
-          <AlertCircle class="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+          <AlertCircle class="w-5 h-5 text-[#92400E] flex-shrink-0 mt-0.5" />
           <div>
-            <p class="text-sm font-medium text-amber-900">
+            <p class="text-sm font-medium text-[#92400E]">
               Contact Picker API
             </p>
-            <p class="text-xs text-amber-700 mt-1">
+            <p class="text-xs text-[#92400E]/80 mt-1">
               This feature only works on Chrome or Edge browsers on Android. Other browsers are not supported yet.
             </p>
           </div>
@@ -194,7 +194,7 @@
         {#if oncancel}
           <button
             onclick={handleCancel}
-            class="h-10 px-6 text-[15px] font-bold rounded-full border-[1.5px] border-[#F0F0F0] text-[#6B7280] hover:border-[#FF6B6B] hover:text-[#FF6B6B] transition-colors"
+            class="h-11 px-5 text-[15px] font-bold rounded-2xl bg-[#f5dddb] text-[#584140] hover:bg-[#fbe3e1] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6]"
           >
             Cancel
           </button>
@@ -210,7 +210,7 @@
       </div>
 
       {#if importError}
-        <p class="text-sm text-red-600 mt-4">{importError}</p>
+        <p class="text-sm text-[#991B1B] mt-4">{importError}</p>
       {/if}
     </div>
 
@@ -220,30 +220,30 @@
       <!-- Header -->
       <div class="flex items-center justify-between">
         <div>
-          <h3 class="font-semibold text-gray-900">
+          <h3 class="font-semibold text-[#251818]">
             Review Contacts
           </h3>
-          <p class="text-sm text-gray-500">
+          <p class="text-sm text-[#584140]">
             {newContactsCount} new, {existingContactsCount} already exist
           </p>
         </div>
         <button
           onclick={handleCancel}
-          class="p-2 rounded-full hover:bg-gray-100 transition-colors"
+          class="p-2 rounded-full hover:bg-[#fbe3e1] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6]"
         >
-          <X class="w-5 h-5 text-gray-500" />
+          <X class="w-5 h-5 text-[#584140]" />
         </button>
       </div>
 
       <!-- Group Assignment -->
       {#if groups && groups.length > 0}
         <div>
-          <label class="block text-sm font-semibold text-gray-700 mb-2">
+          <label class="block text-sm font-semibold text-[#584140] mb-2">
             Assign to Group (Optional)
           </label>
           <select
             bind:value={selectedGroupId}
-            class="w-full h-11 px-4 border-[1.5px] border-gray-300 rounded-[12px] font-medium text-[15px] focus:border-[#FF6B6B] focus:shadow-[0_0_0_3px_rgba(255,107,107,0.12)] transition-all duration-150 focus:outline-none"
+            class="w-full h-11 px-4 bg-[#f5dddb] rounded-2xl font-medium text-[15px] text-[#251818] focus:ring-2 focus:ring-[#ae2f34]/30 transition-all duration-150 focus:outline-none"
           >
             <option value="">No group</option>
             {#each groups as group}
@@ -257,19 +257,21 @@
       {#if newContactsCount > 0}
         <button
           onclick={handleToggleAll}
-          class="text-sm font-medium text-[#FF6B6B] hover:underline"
+          class="text-sm font-medium text-[#ae2f34] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6] rounded"
         >
           {allSelected ? 'Deselect All' : 'Select All New'}
         </button>
       {/if}
 
       <!-- Contact List -->
-      <div class="max-h-96 overflow-y-auto space-y-2 pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+      <div class="max-h-96 overflow-y-auto space-y-2 pr-2 social-ledger-scrollbar">
         {#each importContacts as contact (contact.id)}
           <div
             class={cn(
-              'bg-white rounded-xl border-2 p-3 transition-all',
-              contact.selected ? 'border-[#FF6B6B]' : 'border-gray-200',
+              'bg-white rounded-2xl p-3 transition-all',
+              contact.selected
+                ? 'ring-2 ring-[#ae2f34]/30'
+                : '',
               contact.status === 'existing' && 'opacity-60'
             )}
           >
@@ -280,11 +282,11 @@
                   type="checkbox"
                   checked={contact.selected}
                   onchange={() => handleToggleSelect(contact.id)}
-                  class="mt-1 w-4 h-4 rounded border-2 border-gray-300 text-[#FF6B6B] focus:ring-[#FF6B6B]"
+                  class="mt-1 w-4 h-4 rounded-[6px] border-2 border-[#e0bfbd] text-[#ae2f34] focus:ring-[#ae2f34]/30"
                 />
               {:else}
                 <div class="mt-1 w-4 h-4 flex items-center justify-center">
-                  <CheckCircle class="w-4 h-4 text-gray-400" />
+                  <CheckCircle class="w-4 h-4 text-[#584140]/60" />
                 </div>
               {/if}
 
@@ -298,14 +300,14 @@
                     class="mb-2"
                   />
                 {:else}
-                  <h4 class="font-medium text-gray-900 truncate">
+                  <h4 class="font-medium text-[#251818] truncate">
                     {contact.name || 'Unknown'}
                   </h4>
                 {/if}
 
                 <div class="space-y-1">
                   {#each contact.phone_numbers as phone}
-                    <div class="flex items-center gap-2 text-sm text-gray-600">
+                    <div class="flex items-center gap-2 text-sm text-[#584140]">
                       <Phone class="w-3 h-3 flex-shrink-0" />
                       <span>{phone}</span>
                     </div>
@@ -313,7 +315,7 @@
                 </div>
 
                 {#if contact.status === 'existing'}
-                  <p class="text-xs text-amber-600 mt-1">
+                  <p class="text-xs text-[#92400E] mt-1">
                     Already in your contacts
                   </p>
                 {/if}
@@ -323,10 +325,10 @@
               {#if contact.status === 'new'}
                 <button
                   onclick={() => handleToggleEdit(contact.id)}
-                  class="p-1.5 rounded-full hover:bg-gray-100 transition-colors"
+                  class="p-1.5 rounded-full hover:bg-[#fbe3e1] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6]"
                   aria-label="Edit contact"
                 >
-                  <Edit2 class="w-4 h-4 text-gray-500" />
+                  <Edit2 class="w-4 h-4 text-[#584140]" />
                 </button>
               {/if}
             </div>
@@ -357,22 +359,22 @@
       </div>
 
       {#if importError}
-        <p class="text-sm text-red-600 text-center">{importError}</p>
+        <p class="text-sm text-[#991B1B] text-center">{importError}</p>
       {/if}
     </div>
 
   {:else if step === 'success'}
     <!-- Success Step -->
     <div class="text-center py-8">
-      <div class="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-        <CheckCircle class="w-8 h-8 text-green-600" />
+      <div class="w-16 h-16 bg-[#10B981]/15 rounded-2xl flex items-center justify-center mx-auto mb-4">
+        <CheckCircle class="w-8 h-8 text-[#047857]" />
       </div>
 
-      <h3 class="text-xl font-bold text-gray-900 mb-2">
+      <h3 class="text-xl font-bold text-[#251818] mb-2">
         Import Complete!
       </h3>
 
-      <p class="text-gray-600 mb-6">
+      <p class="text-[#584140] mb-6">
         {successCount} {successCount === 1 ? 'contact has' : 'contacts have'} been imported successfully.
       </p>
 
@@ -396,21 +398,26 @@
 </div>
 
 <style>
-  .scrollbar-thin {
+  .social-ledger-scrollbar {
     scrollbar-width: thin;
+    scrollbar-color: #e0bfbd #fff0ef;
   }
 
-  .scrollbar-thin::-webkit-scrollbar {
+  .social-ledger-scrollbar::-webkit-scrollbar {
     width: 6px;
   }
 
-  .scrollbar-thin::-webkit-scrollbar-track {
-    background: #f1f1f1;
+  .social-ledger-scrollbar::-webkit-scrollbar-track {
+    background: #fff0ef;
     border-radius: 3px;
   }
 
-  .scrollbar-thumb-gray-300::-webkit-scrollbar-thumb {
-    background: #d1d5db;
+  .social-ledger-scrollbar::-webkit-scrollbar-thumb {
+    background: #e0bfbd;
     border-radius: 3px;
+  }
+
+  .social-ledger-scrollbar:hover::-webkit-scrollbar-thumb {
+    background: #8c706f;
   }
 </style>

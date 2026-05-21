@@ -154,7 +154,7 @@
   <!-- Phone Number -->
   <div>
     <div class="relative">
-      <span class="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-gray-500 pointer-events-none z-10">
+      <span class="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-[#584140] pointer-events-none z-10">
         +62
       </span>
       <Input
@@ -175,7 +175,7 @@
   <!-- Groups (Multiple Selection) -->
   {#if groups && groups.length > 0}
     <div>
-      <label class="block text-sm font-semibold text-gray-700 mb-2">
+      <label class="block text-sm font-semibold text-[#584140] mb-2">
         Groups {selectedGroupIds.length > 0 ? `(${selectedGroupIds.length})` : ''}
       </label>
 
@@ -214,11 +214,11 @@
       </div>
 
       {#if selectedGroupIds.length === 0}
-        <p class="text-xs text-gray-400 mt-1">
+        <p class="text-xs text-[#584140]/60 mt-1">
           Select groups to organize this contact
         </p>
       {:else}
-        <p class="text-xs text-gray-500 mt-1">
+        <p class="text-xs text-[#584140] mt-1">
           {selectedGroupIds.length} group{selectedGroupIds.length === 1 ? '' : 's'} selected
         </p>
       {/if}
@@ -229,7 +229,7 @@
   <div>
     <label
       for="contact-notes"
-      class="block text-sm font-semibold text-gray-700 mb-2"
+      class="block text-sm font-semibold text-[#584140] mb-2"
     >
       Notes (Optional)
     </label>
@@ -240,10 +240,10 @@
       placeholder="Add notes about this contact..."
       rows="3"
       maxlength={500}
-      class="w-full px-4 py-3 bg-[#f5dddb] rounded-2xl font-medium text-[15px] focus:ring-2 focus:ring-[#ae2f34]/20 focus:shadow-[0_0_0_3px_rgba(174,47,52,0.08)] transition-all duration-150 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed resize-none placeholder:text-gray-400"
+      class="w-full px-4 py-3 bg-[#f5dddb] rounded-2xl font-medium text-[15px] text-[#251818] focus:ring-2 focus:ring-[#ae2f34]/30 transition-all duration-150 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed resize-none placeholder:text-[#584140]/50"
     ></textarea>
     {#if notes}
-      <div class="text-right text-xs text-gray-400 mt-1">
+      <div class="text-right text-xs text-[#584140]/60 mt-1">
         {notes.length}/500
       </div>
     {/if}

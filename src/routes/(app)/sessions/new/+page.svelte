@@ -77,8 +77,8 @@
 
 		<!-- Server Error -->
 		{#if form?.error}
-			<div class="mb-6 p-4 bg-red-50 rounded-2xl">
-				<p class="text-sm text-red-700">{form.error}</p>
+			<div class="mb-6 p-4 bg-[#EF4444]/15 rounded-2xl">
+				<p class="text-sm text-[#991B1B]">{form.error}</p>
 			</div>
 		{/if}
 
@@ -87,7 +87,7 @@
 			<!-- Session Name -->
 			<div>
 				<label for="session_name" class="block text-sm font-medium text-[#251818] mb-2">
-					Session Name <span class="text-red-500">*</span>
+					Session Name <span class="text-[#ae2f34]">*</span>
 				</label>
 				<input
 					type="text"
@@ -102,7 +102,7 @@
 					disabled={isSubmitting}
 				/>
 				{#if errors.sessionName && touched.sessionName}
-					<p class="mt-2 text-sm text-red-600">{errors.sessionName}</p>
+					<p class="mt-2 text-sm text-[#991B1B]">{errors.sessionName}</p>
 				{/if}
 			</div>
 

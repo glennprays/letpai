@@ -51,7 +51,7 @@
   onscroll={handleScroll}
   class={cn(
     'space-y-3 overflow-y-auto h-full pb-20 md:pb-0',
-    'scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 hover:scrollbar-thumb-gray-400',
+    'social-ledger-scrollbar',
     className
   )}
   {...props}
@@ -59,11 +59,11 @@
   {#if loading}
     <!-- Skeleton Loading -->
     {#each Array(5) as _}
-      <div class="flex items-center gap-3 p-4 bg-white rounded-xl border-2 border-gray-200">
-        <div class="w-12 h-12 rounded-full bg-gray-200 animate-pulse"></div>
+      <div class="flex items-center gap-3 p-4 bg-white rounded-2xl">
+        <div class="w-12 h-12 rounded-full bg-[#f5dddb] animate-pulse"></div>
         <div class="flex-1 space-y-2">
-          <div class="h-4 bg-gray-200 rounded w-32 animate-pulse"></div>
-          <div class="h-3 bg-gray-200 rounded w-40 animate-pulse"></div>
+          <div class="h-4 bg-[#f5dddb] rounded w-32 animate-pulse"></div>
+          <div class="h-3 bg-[#f5dddb] rounded w-40 animate-pulse"></div>
         </div>
       </div>
     {/each}
@@ -94,26 +94,27 @@
 </div>
 
 <style>
-  /* Custom scrollbar for WebKit browsers */
-  :global(.scrollbar-thin) {
+  /* Social Ledger tonal scrollbar */
+  .social-ledger-scrollbar {
     scrollbar-width: thin;
+    scrollbar-color: #e0bfbd #fff0ef;
   }
 
-  :global(.scrollbar-thin::-webkit-scrollbar) {
+  .social-ledger-scrollbar::-webkit-scrollbar {
     width: 6px;
   }
 
-  :global(.scrollbar-thin::-webkit-scrollbar-track) {
-    background: #f1f1f1;
+  .social-ledger-scrollbar::-webkit-scrollbar-track {
+    background: #fff0ef;
     border-radius: 3px;
   }
 
-  :global(.scrollbar-thumb-gray-300::-webkit-scrollbar-thumb) {
-    background: #d1d5db;
+  .social-ledger-scrollbar::-webkit-scrollbar-thumb {
+    background: #e0bfbd;
     border-radius: 3px;
   }
 
-  :global(.hover\:scrollbar-thumb-gray-400:hover::-webkit-scrollbar-thumb) {
-    background: #9ca3af;
+  .social-ledger-scrollbar:hover::-webkit-scrollbar-thumb {
+    background: #8c706f;
   }
 </style>

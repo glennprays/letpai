@@ -52,12 +52,12 @@
   const variantStyles = {
     danger: {
       icon: 'text-[#EF4444]',
-      iconBg: 'bg-[#fef2f2]',
+      iconBg: 'bg-[#EF4444]/15',
       button: 'bg-gradient-to-br from-[#dc2626] to-[#EF4444] text-white'
     },
     warning: {
-      icon: 'text-amber-500',
-      iconBg: 'bg-amber-50',
+      icon: 'text-[#92400E]',
+      iconBg: 'bg-[#F59E0B]/15',
       button: 'bg-gradient-to-br from-[#ae2f34] to-[#FF6B6B] text-white'
     },
     info: {
@@ -75,7 +75,7 @@
     bind:this={dialogElement}
     onkeydown={handleKeydown}
     onclick={handleBackdropClick}
-    class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm"
+    class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-[#251818]/30 backdrop-blur-sm"
     role="dialog"
     aria-modal="true"
     aria-labelledby="confirm-dialog-title"

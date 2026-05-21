@@ -58,11 +58,11 @@
 	}
 
 	function getStatusColor(status: string): string {
-		if (status === 'draft') return 'text-gray-600 bg-gray-50';
-		if (status === 'pending') return 'text-amber-600 bg-amber-50';
-		if (status === 'in_progress') return 'text-blue-600 bg-blue-50';
-		if (status === 'completed') return 'text-emerald-600 bg-emerald-50';
-		return 'text-red-600 bg-red-50';
+		if (status === 'draft') return 'text-[#584140] bg-[#fff0ef]';
+		if (status === 'pending') return 'text-[#92400E] bg-[#F59E0B]/15';
+		if (status === 'in_progress') return 'text-[#1E40AF] bg-[#3B82F6]/15';
+		if (status === 'completed') return 'text-[#047857] bg-[#10B981]/15';
+		return 'text-[#991B1B] bg-[#EF4444]/15';
 	}
 
 	function getStatusIcon(status: string) {
@@ -351,8 +351,8 @@
 
 			<div class="bg-white rounded-3xl p-5 shadow-[0_1px_3px_rgba(37,24,24,0.04)]">
 				<div class="flex items-center gap-3">
-					<div class="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center">
-						<CheckCircle2 class="w-5 h-5 text-emerald-600" />
+					<div class="w-10 h-10 bg-[#10B981]/15 rounded-2xl flex items-center justify-center">
+						<CheckCircle2 class="w-5 h-5 text-[#047857]" />
 					</div>
 					<div>
 						<p class="text-sm text-[#584140]">Paid</p>
@@ -478,7 +478,7 @@
 									<p class="text-sm font-semibold text-[#251818]">{formatIDR(item.amount)}</p>
 									<button
 										onclick={() => handleDeleteBill(item.bill_item_id)}
-										class="p-2.5 text-[#584140] hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+										class="p-2.5 text-[#584140] hover:text-[#991B1B] hover:bg-[#EF4444]/10 rounded-2xl transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6]"
 										title="Delete bill"
 									>
 										<Trash2 class="w-5 h-5" />
@@ -589,7 +589,7 @@
 	<div class="space-y-4">
 		<div>
 			<label for="bill_name" class="block text-sm font-medium text-[#251818] mb-1">
-				Bill Name <span class="text-red-500">*</span>
+				Bill Name <span class="text-[#ae2f34]">*</span>
 			</label>
 			<input
 				type="text"
@@ -615,7 +615,7 @@
 
 		<div>
 			<label for="bill_amount" class="block text-sm font-medium text-[#251818] mb-1">
-				Amount ({getCurrencySymbol(data.session.currency)}) <span class="text-red-500">*</span>
+				Amount ({getCurrencySymbol(data.session.currency)}) <span class="text-[#ae2f34]">*</span>
 			</label>
 			<input
 				type="number"
@@ -630,7 +630,7 @@
 
 		<div>
 			<label for="bill_participant" class="block text-sm font-medium text-[#251818] mb-1">
-				Assign to <span class="text-red-500">*</span>
+				Assign to <span class="text-[#ae2f34]">*</span>
 			</label>
 			<div class="relative">
 				<User class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#584140]" />
