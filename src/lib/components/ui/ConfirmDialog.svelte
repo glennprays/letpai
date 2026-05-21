@@ -1,8 +1,6 @@
 <script lang="ts">
   import { cn } from '$lib/utils/cn';
-  import { AlertTriangle, X } from 'lucide-svelte';
-  import Button from './Button.svelte';
-  type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'destructive' | 'whatsapp';
+  import { AlertTriangle } from 'lucide-svelte';
 
   interface Props {
     open?: boolean;
@@ -51,21 +49,21 @@
     }
   }
 
-  const variantStyles: Record<string, { icon: string; iconBg: string; button: ButtonVariant }> = {
+  const variantStyles = {
     danger: {
-      icon: 'text-red-500',
-      iconBg: 'bg-red-100',
-      button: 'destructive'
+      icon: 'text-[#EF4444]',
+      iconBg: 'bg-[#fef2f2]',
+      button: 'bg-gradient-to-br from-[#dc2626] to-[#EF4444] text-white'
     },
     warning: {
       icon: 'text-amber-500',
-      iconBg: 'bg-amber-100',
-      button: 'primary'
+      iconBg: 'bg-amber-50',
+      button: 'bg-gradient-to-br from-[#ae2f34] to-[#FF6B6B] text-white'
     },
     info: {
-      icon: 'text-blue-500',
-      iconBg: 'bg-blue-100',
-      button: 'secondary'
+      icon: 'text-[#006b5f]',
+      iconBg: 'bg-[#6df5e1]/20',
+      button: 'bg-[#6df5e1] text-[#006b5f]'
     }
   };
 
@@ -77,19 +75,19 @@
     bind:this={dialogElement}
     onkeydown={handleKeydown}
     onclick={handleBackdropClick}
-    class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+    class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm"
     role="dialog"
     aria-modal="true"
     aria-labelledby="confirm-dialog-title"
     tabindex="-1"
   >
     <div
-      class="w-full max-w-sm bg-white rounded-xl shadow-xl p-6 animate-in fade-in slide-in-from-bottom-4 sm:slide-in-from-bottom-0 sm:animate-in"
+      class="w-full max-w-sm bg-white rounded-3xl shadow-[0_8px_32px_-4px_rgba(37,24,24,0.12)] p-6"
       {...props}
     >
       <!-- Icon -->
       <div class="flex justify-center mb-4">
-        <div class={cn('w-12 h-12 rounded-full flex items-center justify-center', currentStyle.iconBg)}>
+        <div class={cn('w-12 h-12 rounded-2xl flex items-center justify-center', currentStyle.iconBg)}>
           <AlertTriangle class={cn('w-6 h-6', currentStyle.icon)} />
         </div>
       </div>
@@ -98,11 +96,11 @@
       <div class="text-center mb-6">
         <h3
           id="confirm-dialog-title"
-          class="text-lg font-semibold text-gray-900 mb-2"
+          class="text-lg font-semibold text-[#251818] mb-2"
         >
           {title}
         </h3>
-        <p class="text-sm text-gray-600">
+        <p class="text-sm text-[#584140]">
           {message}
         </p>
       </div>
@@ -111,13 +109,13 @@
       <div class="flex gap-3">
         <button
           onclick={handleCancel}
-          class="flex-1 h-10 px-6 text-[15px] font-bold rounded-full border-[1.5px] border-[#F0F0F0] text-[#6B7280] hover:border-[#FF6B6B] hover:text-[#FF6B6B] transition-colors"
+          class="flex-1 h-10 px-6 text-[15px] font-bold rounded-2xl bg-[#f5dddb] text-[#584140] hover:bg-[#fbe3e1] transition-colors"
         >
           {cancelText}
         </button>
         <button
           onclick={handleConfirm}
-          class="flex-1 h-10 px-6 text-[15px] font-bold rounded-full bg-[#EF4444] hover:bg-[#DC2626] text-white transition-colors"
+          class={cn('flex-1 h-10 px-6 text-[15px] font-bold rounded-2xl transition-all', currentStyle.button)}
         >
           {confirmText}
         </button>

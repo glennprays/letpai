@@ -46,11 +46,11 @@
       disabled={tab.disabled}
       onclick={() => handleChange(tab.value)}
       class={cn(
-        'relative inline-flex items-center gap-2 px-4 py-2 rounded-full font-medium text-sm transition-all duration-150 whitespace-nowrap',
-        'focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:ring-offset-2',
+        'relative inline-flex items-center gap-2 px-4 py-2 rounded-full font-medium text-sm transition-all duration-200 whitespace-nowrap',
+        'focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]/30 focus:ring-offset-2 focus:ring-offset-[#fff8f7]',
         value === tab.value
-          ? 'bg-[#FF6B6B] text-white shadow-sm'
-          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100',
+          ? 'bg-gradient-to-br from-[#ae2f34] to-[#FF6B6B] text-white shadow-sm'
+          : 'text-[#584140] hover:bg-[#fbe3e1]',
         tab.disabled && 'opacity-50 cursor-not-allowed'
       )}
     >
@@ -66,7 +66,7 @@
             'text-xs px-1.5 py-0.5 rounded-full',
             value === tab.value
               ? 'bg-white/20 text-white'
-              : 'bg-gray-200 text-gray-600'
+              : 'bg-[#ffe9e7] text-[#584140]'
           )}
         >
           {tab.count}

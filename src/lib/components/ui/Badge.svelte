@@ -16,18 +16,19 @@
     ...props
   }: Props = $props();
 
+  // Social Ledger badges: low-opacity tint background + saturated text.
   const variants = {
-    pending: 'bg-[#F59E0B] text-gray-900',
-    submitted: 'bg-[#3B82F6] text-white',
-    paid: 'bg-[#10B981] text-white',
-    rejected: 'bg-[#EF4444] text-white',
-    active: 'bg-yellow-100 text-yellow-700 border border-yellow-200',
-    completed: 'bg-green-100 text-green-700 border border-green-200',
-    cancelled: 'bg-red-100 text-red-700 border border-red-200'
+    pending:   'bg-[#F59E0B]/15 text-[#92400E]',
+    submitted: 'bg-[#3B82F6]/15 text-[#1E40AF]',
+    paid:      'bg-[#10B981]/15 text-[#047857]',
+    rejected:  'bg-[#EF4444]/15 text-[#991B1B]',
+    active:    'bg-[#fff0ef] text-[#ae2f34]',
+    completed: 'bg-[#6df5e1]/30 text-[#006b5f]',
+    cancelled: 'bg-[#ecd5d3] text-[#584140]',
   };
 
   const baseClasses = cn(
-    'inline-flex items-center px-3 py-1 rounded-full text-xs font-medium uppercase',
+    'inline-flex items-center px-3 py-1 rounded-full text-xs font-medium',
     variants[variant],
     className
   );

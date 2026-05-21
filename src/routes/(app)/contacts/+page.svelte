@@ -340,20 +340,20 @@
   }
 </script>
 
-<div class="h-screen flex flex-col bg-gray-50">
+<div class="h-screen flex flex-col bg-[#fff8f7]">
   <!-- Header -->
-  <header class="bg-white border-b border-gray-200 flex-shrink-0 z-30">
+  <header class="bg-[#fff0ef] flex-shrink-0 z-30">
     <div class="container mx-auto px-4 py-4">
       <div class="flex items-center justify-between gap-4">
         <!-- Back Button & Title -->
         <div class="flex items-center gap-3 flex-shrink-0">
           <button
             onclick={() => goto('/dashboard')}
-            class="p-2 rounded-full hover:bg-gray-100 transition-colors"
+            class="p-2 rounded-full hover:bg-[#fbe3e1] transition-colors"
           >
-            <ArrowLeft class="w-5 h-5 text-gray-600" />
+            <ArrowLeft class="w-5 h-5 text-[#584140]" />
           </button>
-          <h1 class="text-xl font-bold text-gray-900">Contacts</h1>
+          <h1 class="text-xl font-bold text-[#251818]">Contacts</h1>
         </div>
 
         <!-- Actions -->

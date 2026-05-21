@@ -19,6 +19,7 @@
     oninput?: (value: string) => void;
     onfocus?: () => void;
     onblur?: () => void;
+    // lucide-svelte icons — broad typing for consumer compatibility.
     leftIcon?: any;
     showClear?: boolean;
     helperText?: string;
@@ -64,13 +65,12 @@
 
   const baseClasses = $derived(
     cn(
-      'w-full border-[1.5px] rounded-[12px] font-medium transition-all duration-150 font-sans',
-      'placeholder:text-gray-400',
+      'w-full rounded-2xl font-medium transition-all duration-200 font-sans',
+      'bg-[#f5dddb] text-[#251818] placeholder:text-[#584140]/50',
+      'focus:outline-none focus:ring-2 focus:ring-[#ae2f34]/30 focus:bg-[#fbe3e1]',
       disabled && 'opacity-50 cursor-not-allowed',
-      error
-        ? 'border-red-500 focus:border-red-500 focus:shadow-[0_0_0_3px_rgba(239,68,68,0.12)]'
-        : 'border-gray-300 focus:border-[#FF6B6B] focus:shadow-[0_0_0_3px_rgba(255,107,107,0.12)]',
-      success && 'border-green-500 focus:border-green-500 focus:shadow-[0_0_0_3px_rgba(16,185,129,0.12)]',
+      error && 'ring-2 ring-[#EF4444]/40 bg-[#EF4444]/10',
+      success && 'ring-2 ring-[#10B981]/40 bg-[#10B981]/10',
       sizes[size],
       className
     )
@@ -104,28 +104,23 @@
   }
 
   const hasValue = $derived(value && value.length > 0);
+  const LeftIconComp = $derived(leftIcon);
 </script>
 
-<div class="input-wrapper">
+<div class="flex flex-col gap-1.5">
   {#if label}
     <label
       for={id || name}
-      style="
-        display: block;
-        font-size: 13px;
-        font-weight: 600;
-        color: #374151;
-        margin-bottom: 6px;
-      "
+      class="block text-[13px] font-semibold text-[#584140] mb-1.5"
     >
       {label}
     </label>
   {/if}
 
-  <div class="input-container">
-    {#if leftIcon}
-      <div class="input-left-icon">
-        <svelte:component this={leftIcon} size={18} style="color: #9CA3AF;" />
+  <div class="relative flex items-center">
+    {#if LeftIconComp}
+      <div class="absolute left-4 flex items-center justify-center pointer-events-none text-[#584140]">
+        <LeftIconComp size={18} />
       </div>
     {/if}
 
@@ -148,14 +143,14 @@
     {#if type === 'password' && hasValue}
       <button
         type="button"
-        class="input-right-icon password-toggle"
+        class="absolute right-12 flex items-center justify-center p-1 rounded-[10px] text-[#584140] hover:bg-[#fbe3e1] transition-colors"
         onclick={togglePassword}
         aria-label={showPassword ? 'Hide password' : 'Show password'}
       >
         {#if showPassword}
-          <EyeOff size={18} style="color: #6B7280;" />
+          <EyeOff size={18} />
         {:else}
-          <Eye size={18} style="color: #6B7280;" />
+          <Eye size={18} />
         {/if}
       </button>
     {/if}
@@ -163,118 +158,34 @@
     {#if showClear && hasValue}
       <button
         type="button"
-        class="input-right-icon clear-button"
+        class="absolute right-4 flex items-center justify-center p-1 rounded-[10px] text-[#584140] hover:bg-[#fbe3e1] transition-colors"
         onclick={clearInput}
         aria-label="Clear input"
       >
-        <X size={16} style="color: #9CA3AF;" />
+        <X size={16} />
       </button>
     {/if}
   </div>
 
   {#if errorText && error}
-    <div class="input-error">
+    <div class="flex items-center gap-1.5 text-xs mt-1 text-[#EF4444]">
       <AlertCircle size={14} />
       <span>{errorText}</span>
     </div>
   {:else if successText && success}
-    <div class="input-success">
+    <div class="flex items-center gap-1.5 text-xs mt-1 text-[#10B981]">
       <CheckCircle size={14} />
       <span>{successText}</span>
     </div>
   {:else if helperText}
-    <div class="input-helper">{helperText}</div>
+    <div class="flex items-center gap-1.5 text-xs mt-1 text-[#584140]">{helperText}</div>
   {/if}
 
   {#if showCount && maxLength !== undefined}
-    <div class="input-count">
-      <span style="color: {value.length > maxLength ? '#EF4444' : '#9CA3AF'};">
+    <div class="flex justify-end text-xs mt-1">
+      <span class={value.length > maxLength ? 'text-[#EF4444]' : 'text-[#584140]'}>
         {value.length}/{maxLength}
       </span>
     </div>
   {/if}
 </div>
-
-<style>
-  .input-wrapper {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .input-container {
-    position: relative;
-    display: flex;
-    align-items: center;
-  }
-
-  .input-left-icon {
-    position: absolute;
-    left: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    pointer-events: none;
-  }
-
-  .input-right-icon {
-    position: absolute;
-    right: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: none;
-    border: none;
-    padding: 4px;
-    cursor: pointer;
-    transition: all 0.15s;
-    border-radius: 8px;
-  }
-
-  .input-right-icon:hover {
-    background: #F3F4F6;
-  }
-
-  .input-right-icon.password-toggle {
-    right: 48px;
-  }
-
-  .clear-button {
-    right: 16px;
-  }
-
-  .input-error,
-  .input-success,
-  .input-helper,
-  .input-count {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 12px;
-    margin-top: 4px;
-  }
-
-  .input-error {
-    color: #EF4444;
-  }
-
-  .input-success {
-    color: #10B981;
-  }
-
-  .input-helper {
-    color: #9CA3AF;
-  }
-
-  .input-count {
-    justify-content: flex-end;
-  }
-
-  input:focus {
-    outline: none;
-  }
-
-  input::placeholder {
-    color: #9CA3AF;
-  }
-</style>

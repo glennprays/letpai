@@ -54,7 +54,7 @@
 
 <span
   class={baseClasses}
-  style="background-color: {colorValue}15; color: {colorValue};"
+  style="background-color: {colorValue}20; color: {colorValue};"
   {...props}
 >
   <span

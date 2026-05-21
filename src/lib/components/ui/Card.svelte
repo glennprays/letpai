@@ -15,9 +15,9 @@
   }: Props = $props();
 
   const baseClasses = cn(
-    'bg-white border-2 border-gray-200 rounded-lg p-6',
-    'hover:border-[#FF6B6B] transition-colors duration-150',
-    onclick && 'cursor-pointer',
+    'bg-white rounded-3xl p-6 transition-all duration-200',
+    'shadow-[0_1px_3px_rgba(37,24,24,0.04)]',
+    onclick && 'cursor-pointer hover:bg-[#fff0ef] hover:shadow-[0_4px_12px_rgba(37,24,24,0.06)]',
     className
   );
 </script>

@@ -27,7 +27,7 @@
     display: flex;
     flex-direction: column;
     font-family: 'Plus Jakarta Sans', sans-serif;
-    background: #FAFAFA;
+    background: #fff8f7;
   }
 
   .decorative-background {
@@ -114,11 +114,11 @@
   }
 
   .auth-card {
-    background: #FFFFFF;
-    border: 1.5px solid #F0F0F0;
+    background: #ffffff;
+    border: none;
     border-radius: 24px;
     padding: 40px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 8px 32px -4px rgba(37, 24, 24, 0.08);
     animation: pageEntrance 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
   }
 

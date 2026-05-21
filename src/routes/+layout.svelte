@@ -14,27 +14,9 @@
 
 	let { children, data }: Props = $props();
 
-	// Create reactive state for auth data
-	let authData = $state({
-		isAuthenticated: data.isAuthenticated,
-		token: data.token,
-		user: data.user
-	});
-
-	// Update authData when data prop changes
-	$effect(() => {
-		authData = {
-			isAuthenticated: data.isAuthenticated,
-			token: data.token,
-			user: data.user
-		};
-	});
-
 	// Initialize auth store from server-provided data
 	onMount(() => {
-		// Use server-provided auth state if available, otherwise check localStorage
 		if (data.isAuthenticated && data.token) {
-			// IMPORTANT: Sync server token to localStorage for client-side API calls
 			if (!localStorage.getItem('token')) {
 				localStorage.setItem('token', data.token);
 			}
@@ -48,7 +30,6 @@
 				isAuthenticated: true
 			});
 		} else {
-			// Fallback to cookies for client-side navigation
 			const cookieToken = document.cookie
 				.split('; ')
 				.find(row => row.startsWith('token='))
@@ -62,20 +43,17 @@
 		}
 	});
 
-	// Determine navbar variant based on route and auth state
-	const navbarVariant = $derived.by(() => {
-		const pathname = $page.url.pathname;
+	// Only show Navbar for public/auth pages (not app pages which have Sidebar)
+	const isAppPage = $derived($page.route.id?.startsWith('/(app)') ?? false);
 
-		// Auth pages get minimal navbar
+	const navbarVariant = $derived.by(() => {
+		if (isAppPage) return null;
+		const pathname = $page.url.pathname;
 		if (pathname.startsWith('/login') || pathname.startsWith('/register')) {
 			return 'auth';
-		}
-		// Protected pages get logged-in navbar if authenticated
-		else if (authData.isAuthenticated && authData.token) {
+		} else if (data.isAuthenticated && data.token) {
 			return 'loggedIn';
-		}
-		// Default to full navbar
-		else {
+		} else {
 			return 'full';
 		}
 	});
@@ -85,6 +63,8 @@
 	<link rel="icon" href={favicon} />
 </svelte:head>
 
-<Navbar variant={navbarVariant} />
+{#if navbarVariant}
+	<Navbar variant={navbarVariant} />
+{/if}
 
 {@render children()}

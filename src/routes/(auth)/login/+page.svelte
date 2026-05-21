@@ -195,14 +195,14 @@
   .login-title {
     font-size: 28px;
     font-weight: 800;
-    color: #111827;
+    color: #251818;
     margin: 0 0 12px;
     letter-spacing: -0.02em;
   }
 
   .login-subtitle {
     font-size: 15px;
-    color: #6B7280;
+    color: #584140;
     margin: 0;
     line-height: 1.6;
   }
@@ -213,9 +213,9 @@
     justify-content: center;
     gap: 8px;
     padding: 12px 16px;
-    background: #FEF2F2;
-    border: 1px solid #FECACA;
-    border-radius: 12px;
+    background: #fef2f2;
+    border: none;
+    border-radius: 16px;
     color: #DC2626;
     font-size: 14px;
     font-weight: 500;
@@ -236,7 +236,7 @@
   .form-label {
     font-size: 13px;
     font-weight: 600;
-    color: #374151;
+    color: #251818;
     margin-bottom: 6px;
     display: block;
   }
@@ -245,48 +245,44 @@
     display: flex;
     align-items: stretch;
     gap: 0;
-    transition: all 0.15s;
+    background: #f5dddb;
+    border-radius: 16px;
+    overflow: hidden;
+    transition: all 0.2s;
   }
 
-  .phone-input-group.error .country-selector,
-  .phone-input-group.error .phone-input {
-    border-color: #EF4444;
+  .phone-input-group.error {
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.3);
+    background: #fef2f2;
   }
 
   .country-selector {
     width: auto;
     min-width: 90px;
     padding: 12px 8px;
-    border: 2px solid #D1D5DB;
-    border-right: none;
-    border-radius: 8px 0 0 8px;
-    background: #F9FAFB;
+    border: none;
+    border-right: 1px solid #fbe3e1;
+    background: transparent;
     font: 14px 'Plus Jakarta Sans', sans-serif;
-    color: #374151;
+    color: #251818;
     cursor: pointer;
-    transition: border-color 0.15s;
+    transition: all 0.15s;
   }
 
   .phone-input {
     flex: 1;
     padding: 12px 16px;
-    border: 2px solid #D1D5DB;
-    border-left: none;
-    border-radius: 0 8px 8px 0;
+    border: none;
     font: 14px 'Plus Jakarta Sans', sans-serif;
-    color: #374151;
-    background: white;
-    transition: border-color 0.15s;
+    color: #251818;
+    background: transparent;
+    transition: all 0.15s;
   }
 
   .country-selector:focus,
   .phone-input:focus {
     outline: none;
-    border-color: #FF6B6B;
-  }
-
-  .country-selector:focus + .phone-input {
-    border-color: #FF6B6B;
+    box-shadow: inset 0 -2px 0 #ae2f34;
   }
 
   .error-message {
@@ -314,13 +310,13 @@
   .forgot-link {
     font-size: 13px;
     font-weight: 600;
-    color: #FF6B6B;
+    color: #006b5f;
     text-decoration: none;
     transition: color 0.15s;
   }
 
   .forgot-link:hover {
-    color: #FF5252;
+    color: #14B8A6;
   }
 
   .checkbox-label {
@@ -335,7 +331,7 @@
   .checkbox {
     width: 18px;
     height: 18px;
-    accent-color: #FF6B6B;
+    accent-color: #ae2f34;
     cursor: pointer;
   }
 
@@ -345,19 +341,20 @@
     font-size: 16px;
     font-weight: 600;
     color: white;
-    background: #FF6B6B;
+    background: linear-gradient(135deg, #ae2f34, #FF6B6B);
     border: none;
-    border-radius: 12px;
+    border-radius: 16px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.15s;
+    transition: all 0.2s;
+    box-shadow: 0 4px 14px rgba(174, 47, 52, 0.25);
   }
 
   .submit-button:hover {
-    background: #FF5252;
     transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(174, 47, 52, 0.35);
   }
 
   .submit-button:active {
@@ -368,7 +365,6 @@
     text-align: center;
     margin-top: 8px;
     padding-top: 16px;
-    border-top: 1px solid #F0F0F0;
   }
 
   .footer-text {
@@ -383,7 +379,7 @@
     gap: 6px;
     font-size: 14px;
     font-weight: 600;
-    color: #FF6B6B;
+    color: #ae2f34;
     text-decoration: none;
     transition: all 0.15s;
   }
@@ -405,7 +401,7 @@
   }
 
   .terms-link {
-    color: #FF6B6B;
+    color: #ae2f34;
     text-decoration: none;
   }
 

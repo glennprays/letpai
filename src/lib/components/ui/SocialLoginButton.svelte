@@ -46,7 +46,7 @@
   onclick={onclick}
   disabled={loading}
   class={cn(
-    'w-full flex items-center justify-center gap-3 bg-white border-[1.5px] border-[#F0F0F0] rounded-full h-10 px-6 text-[15px] font-bold text-[#374151] transition-all duration-150 font-sans hover:border-[#FF6B6B] hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden',
+    'w-full flex items-center justify-center gap-3 bg-[#fff0ef] rounded-2xl h-10 px-6 text-[15px] font-bold text-[#251818] transition-all duration-150 font-sans hover:bg-[#fbe3e1] hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden',
     className
   )}
 >

@@ -60,8 +60,8 @@
   <div
     bind:this={menuElement}
     class={cn(
-      'fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-40',
-      'md:static md:border md:rounded-xl md:shadow-md md:p-3',
+      'fixed bottom-0 left-0 right-0 bg-[#251818]/90 backdrop-blur-xl shadow-lg z-40',
+      'md:static md:rounded-2xl md:shadow-md md:p-3',
       'animate-in slide-in-from-bottom-4 duration-200',
       className
     )}
@@ -105,14 +105,14 @@
               <div class="absolute bottom-full mb-2 left-0 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
                 <button
                   onclick={() => handleToggleFavorite(true)}
-                  class="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-3"
+                  class="w-full px-4 py-2 text-left text-sm hover:bg-[#fff0ef] flex items-center gap-3"
                 >
                   <Star class="w-4 h-4 text-amber-500 fill-amber-500" />
                   <span>Add to favorites</span>
                 </button>
                 <button
                   onclick={() => handleToggleFavorite(false)}
-                  class="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-3"
+                  class="w-full px-4 py-2 text-left text-sm hover:bg-[#fff0ef] flex items-center gap-3"
                 >
                   <StarOff class="w-4 h-4 text-gray-400" />
                   <span>Remove from favorites</span>
@@ -139,7 +139,7 @@
               <div class="absolute bottom-full mb-2 left-0 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10 max-h-64 overflow-y-auto">
                 <button
                   onclick={() => handleAssignGroup('')}
-                  class="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 text-gray-600"
+                  class="w-full px-4 py-2 text-left text-sm hover:bg-[#fff0ef] text-gray-600"
                 >
                   Remove from group
                 </button>
@@ -147,7 +147,7 @@
                 {#each groups as group}
                   <button
                     onclick={() => handleAssignGroup(group.group_id)}
-                    class="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-3"
+                    class="w-full px-4 py-2 text-left text-sm hover:bg-[#fff0ef] flex items-center gap-3"
                   >
                     <span
                       class="w-3 h-3 rounded-full flex-shrink-0"

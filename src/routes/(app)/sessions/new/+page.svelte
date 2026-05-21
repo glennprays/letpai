@@ -58,35 +58,35 @@
 	});
 </script>
 
-<div class="min-h-screen bg-gray-50/50">
+<div class="min-h-screen">
 	<div class="max-w-lg mx-auto px-4 py-8 sm:py-12">
 		<!-- Header -->
 		<header class="mb-8">
 			<button
 				onclick={handleCancel}
-				class="inline-flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors mb-4 text-sm"
+				class="inline-flex items-center gap-2 text-[#584140] hover:text-[#251818] transition-colors mb-4 text-sm"
 			>
 				<X class="w-4 h-4" />
 				<span>Cancel</span>
 			</button>
-			<h1 class="text-2xl font-semibold text-gray-900 tracking-tight">Create New Session</h1>
-			<p class="text-sm text-gray-500 mt-1"
+			<h1 class="text-2xl font-semibold text-[#251818] tracking-tight">Create New Session</h1>
+			<p class="text-sm text-[#584140] mt-1"
 				>Start a new bill splitting session. You can add contacts and bills after creating.</p
 			>
 		</header>
 
 		<!-- Server Error -->
 		{#if form?.error}
-			<div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+			<div class="mb-6 p-4 bg-red-50 rounded-2xl">
 				<p class="text-sm text-red-700">{form.error}</p>
 			</div>
 		{/if}
 
 		<!-- Form -->
-		<form method="POST" class="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
+		<form method="POST" class="bg-white rounded-3xl shadow-[0_1px_3px_rgba(37,24,24,0.04)] p-6 space-y-6">
 			<!-- Session Name -->
 			<div>
-				<label for="session_name" class="block text-sm font-medium text-gray-700 mb-2">
+				<label for="session_name" class="block text-sm font-medium text-[#251818] mb-2">
 					Session Name <span class="text-red-500">*</span>
 				</label>
 				<input
@@ -98,7 +98,7 @@
 					oninput={() => handleInput('sessionName', sessionName)}
 					placeholder="e.g., Lunch at Warung"
 					required
-					class="w-full px-4 py-3 border border-gray-200 rounded-lg text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent transition-all disabled:bg-gray-50 disabled:cursor-not-allowed"
+					class="w-full px-4 py-3 bg-[#fff0ef]/50 rounded-xl text-[#251818] placeholder:text-[#584140]/50 focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent transition-all disabled:bg-[#fff0ef] disabled:cursor-not-allowed"
 					disabled={isSubmitting}
 				/>
 				{#if errors.sessionName && touched.sessionName}
@@ -108,8 +108,8 @@
 
 			<!-- Session Description -->
 			<div>
-				<label for="session_description" class="block text-sm font-medium text-gray-700 mb-2">
-					Description <span class="text-gray-400 font-normal">(optional)</span>
+				<label for="session_description" class="block text-sm font-medium text-[#251818] mb-2">
+					Description <span class="text-[#584140]/50 font-normal">(optional)</span>
 				</label>
 				<textarea
 					id="session_description"
@@ -117,21 +117,21 @@
 					bind:value={sessionDescription}
 					placeholder="Add a description to help everyone remember what this session is for..."
 					rows="3"
-					class="w-full px-4 py-3 border border-gray-200 rounded-lg text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent transition-all resize-none disabled:bg-gray-50 disabled:cursor-not-allowed"
+					class="w-full px-4 py-3 bg-[#fff0ef]/50 rounded-xl text-[#251818] placeholder:text-[#584140]/50 focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent transition-all resize-none disabled:bg-[#fff0ef] disabled:cursor-not-allowed"
 					disabled={isSubmitting}
 				></textarea>
 			</div>
 
 			<!-- Currency -->
 			<div>
-				<label for="currency" class="block text-sm font-medium text-gray-700 mb-2">
+				<label for="currency" class="block text-sm font-medium text-[#251818] mb-2">
 					Currency
 				</label>
 				<select
 					id="currency"
 					name="currency"
 					bind:value={currency}
-					class="w-full px-4 py-3 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent transition-all disabled:bg-gray-50 disabled:cursor-not-allowed appearance-none bg-white"
+					class="w-full px-4 py-3 bg-[#fff0ef]/50 rounded-xl text-[#251818] focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent transition-all disabled:bg-[#fff0ef] disabled:cursor-not-allowed appearance-none bg-white"
 					disabled={isSubmitting}
 				>
 					{#each currencies as curr}
@@ -141,18 +141,18 @@
 			</div>
 
 			<!-- Actions -->
-			<div class="flex gap-3 pt-4 border-t border-gray-100">
+			<div class="flex gap-3 pt-4">
 				<button
 					type="button"
 					onclick={handleCancel}
-					class="flex-1 px-6 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+					class="flex-1 px-6 py-3 text-sm font-medium text-[#251818] bg-white rounded-xl hover:bg-[#fff0ef] transition-colors focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
 					disabled={isSubmitting}
 				>
 					Cancel
 				</button>
 				<button
 					type="submit"
-					class="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-medium text-white bg-[#FF6B6B] rounded-lg hover:bg-[#FF5252] transition-colors focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+					class="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-medium text-white bg-gradient-to-br from-[#ae2f34] to-[#FF6B6B] rounded-xl hover:from-[#9a282c] hover:to-[#FF5252] transition-colors focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
 					disabled={isSubmitting || !isFormValid()}
 				>
 					{#if isSubmitting}
@@ -167,7 +167,7 @@
 		</form>
 
 		<!-- Help Text -->
-		<p class="text-center text-xs text-gray-400 mt-6">
+		<p class="text-center text-xs text-[#584140] mt-6">
 			After creating, you can add contacts and split bills equally or assign specific amounts.
 		</p>
 	</div>

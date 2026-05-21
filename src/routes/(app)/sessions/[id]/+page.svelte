@@ -290,25 +290,25 @@
 	}
 </script>
 
-<div class="min-h-screen bg-gray-50/50">
+<div class="min-h-screen">
 	<div class="max-w-4xl mx-auto px-4 py-8">
 		<!-- Header -->
 		<header class="flex items-center gap-4 mb-8">
 			<button
 				onclick={handleBack}
-				class="inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition-colors"
+				class="inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded-xl bg-white hover:bg-[#fff0ef] transition-colors"
 			>
-				<ArrowLeft class="w-5 h-5 text-gray-600" />
+				<ArrowLeft class="w-5 h-5 text-[#584140]" />
 			</button>
 			<div class="flex-1">
-				<h1 class="text-xl font-semibold text-gray-900 tracking-tight">
+				<h1 class="text-xl font-semibold text-[#251818] tracking-tight">
 					{data.session.session_name}
 				</h1>
-				<p class="text-sm text-gray-500 mt-0.5">
+				<p class="text-sm text-[#584140] mt-0.5">
 					Created {formatRelativeTime(data.session.created_at)}
 				</p>
 			</div>
-			<span class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg {getStatusColor(data.session.status)}">
+			<span class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-xl {getStatusColor(data.session.status)}">
 				<svelte:component this={getStatusIcon(data.session.status)} class="w-3.5 h-3.5" />
 				{data.session.status}
 			</span>
@@ -316,59 +316,59 @@
 
 		<!-- Description -->
 		{#if data.session.session_description}
-			<p class="text-gray-600 mb-6">{data.session.session_description}</p>
+			<p class="text-[#584140] mb-6">{data.session.session_description}</p>
 		{/if}
 
 		<!-- Quick Stats -->
 		<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-			<div class="bg-white rounded-xl border border-gray-200 p-5">
+			<div class="bg-white rounded-3xl p-5 shadow-[0_1px_3px_rgba(37,24,24,0.04)]">
 				<div class="flex items-center gap-3">
-					<div class="w-10 h-10 bg-[#FF6B6B]/10 rounded-lg flex items-center justify-center">
+					<div class="w-10 h-10 bg-[#FF6B6B]/10 rounded-xl flex items-center justify-center">
 						<Receipt class="w-5 h-5 text-[#FF6B6B]" />
 					</div>
 					<div>
-						<p class="text-sm text-gray-500">Total</p>
-						<p class="text-lg font-semibold text-gray-900">
+						<p class="text-sm text-[#584140]">Total</p>
+						<p class="text-lg font-semibold text-[#251818]">
 							{getCurrencySymbol(data.session.currency)} {(data.session.total_amount / 100).toLocaleString()}
 						</p>
 					</div>
 				</div>
 			</div>
 
-			<div class="bg-white rounded-xl border border-gray-200 p-5">
+			<div class="bg-white rounded-3xl p-5 shadow-[0_1px_3px_rgba(37,24,24,0.04)]">
 				<div class="flex items-center gap-3">
-					<div class="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
+					<div class="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
 						<Users class="w-5 h-5 text-blue-600" />
 					</div>
 					<div>
-						<p class="text-sm text-gray-500">Participants</p>
-						<p class="text-lg font-semibold text-gray-900">
+						<p class="text-sm text-[#584140]">Participants</p>
+						<p class="text-lg font-semibold text-[#251818]">
 							{data.session.participants?.length || 0}
 						</p>
 					</div>
 				</div>
 			</div>
 
-			<div class="bg-white rounded-xl border border-gray-200 p-5">
+			<div class="bg-white rounded-3xl p-5 shadow-[0_1px_3px_rgba(37,24,24,0.04)]">
 				<div class="flex items-center gap-3">
-					<div class="w-10 h-10 bg-emerald-50 rounded-lg flex items-center justify-center">
+					<div class="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center">
 						<CheckCircle2 class="w-5 h-5 text-emerald-600" />
 					</div>
 					<div>
-						<p class="text-sm text-gray-500">Paid</p>
-						<p class="text-lg font-semibold text-gray-900">{data.session.paid_count}</p>
+						<p class="text-sm text-[#584140]">Paid</p>
+						<p class="text-lg font-semibold text-[#251818]">{data.session.paid_count}</p>
 					</div>
 				</div>
 			</div>
 		</div>
 
 		<!-- Participants Section -->
-		<section class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+		<section class="bg-white rounded-2xl p-6 mb-6 shadow-[0_1px_3px_rgba(37,24,24,0.04)]">
 			<div class="flex items-center justify-between mb-4">
-				<h2 class="text-lg font-semibold text-gray-900">Participants</h2>
+				<h2 class="text-lg font-semibold text-[#251818]">Participants</h2>
 				<button
 					onclick={() => (showAddContactModal = true)}
-					class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#FF6B6B] hover:bg-[#FF6B6B]/10 rounded-lg transition-colors"
+					class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#FF6B6B] hover:bg-[#FF6B6B]/10 rounded-xl transition-colors"
 				>
 					<UserPlus class="w-4 h-4" />
 					Add Contact
@@ -377,11 +377,11 @@
 
 			<!-- Equal Split Action -->
 			{#if data.session.participants && data.session.participants.length > 0}
-				<div class="mb-4 p-4 bg-amber-50 rounded-lg border border-amber-200">
+				<div class="mb-4 p-4 bg-[#fff0ef] rounded-xl">
 					<div class="flex items-center justify-between">
 						<div>
-							<h3 class="text-sm font-medium text-gray-900">Equal Split</h3>
-							<p class="text-xs text-gray-600 mt-0.5">
+							<h3 class="text-sm font-medium text-[#251818]">Equal Split</h3>
+							<p class="text-xs text-[#584140] mt-0.5">
 								{selectedContacts.size > 0
 									? `${selectedContacts.size} selected`
 									: 'Select participants below to split total equally'}
@@ -390,7 +390,7 @@
 						<button
 							onclick={handleEqualSplit}
 							disabled={selectedContacts.size === 0 || isLoading}
-							class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-amber-500 rounded-lg hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+							class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-gradient-to-br from-[#ae2f34] to-[#FF6B6B] rounded-xl hover:from-[#9a282c] hover:to-[#FF5252] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
 						>
 							{#if isLoading}
 								<Loader2 class="w-4 h-4 animate-spin" />
@@ -405,35 +405,35 @@
 
 			<!-- Participants List -->
 			{#if !data.session.participants || data.session.participants.length === 0}
-				<div class="text-center py-8 text-gray-500">
-					<Users class="w-12 h-12 mx-auto text-gray-300 mb-3" />
+				<div class="text-center py-8 text-[#584140]">
+					<Users class="w-12 h-12 mx-auto text-[#584140]/30 mb-3" />
 					<p class="text-sm">No participants yet. Add contacts to get started.</p>
 				</div>
 			{:else}
 				<div class="space-y-2">
 					{#each data.session.participants as participant}
 						<div
-							class="flex items-center justify-between p-3 rounded-lg border transition-all cursor-pointer
+							class="flex items-center justify-between p-3 rounded-xl transition-all cursor-pointer
 							{selectedContacts.has(participant.participant_id)
-								? 'bg-[#FF6B6B]/10 border-[#FF6B6B]'
-								: 'bg-gray-50 border-gray-200 hover:border-gray-300'}"
+								? 'bg-[#FF6B6B]/10'
+								: 'bg-[#fff0ef]/50 hover:bg-[#fff0ef]'}"
 							onclick={() => toggleContactSelection(participant.participant_id)}
 						>
 							<div class="flex items-center gap-3">
-								<div class="w-10 h-10 bg-white rounded-full flex items-center justify-center text-sm font-medium text-gray-700 border border-gray-200">
+								<div class="w-10 h-10 bg-[#fff0ef] rounded-full flex items-center justify-center text-sm font-medium text-[#251818]">
 									{participant.name.charAt(0).toUpperCase()}
 								</div>
 								<div>
-									<p class="text-sm font-medium text-gray-900">{participant.name}</p>
-									<p class="text-xs text-gray-500">{participant.whatsapp_number}</p>
+									<p class="text-sm font-medium text-[#251818]">{participant.name}</p>
+									<p class="text-xs text-[#584140]">{participant.whatsapp_number}</p>
 								</div>
 							</div>
 							<div class="flex items-center gap-3">
 								<div class="text-right">
-									<p class="text-sm font-medium text-gray-900">
+									<p class="text-sm font-medium text-[#251818]">
 										{formatIDR(participant.share_amount)}
 									</p>
-									<p class="text-xs text-gray-500">{participant.payment_status}</p>
+									<p class="text-xs text-[#584140]">{participant.payment_status}</p>
 								</div>
 							</div>
 						</div>
@@ -443,12 +443,12 @@
 		</section>
 
 		<!-- Bill Items Section -->
-		<section class="bg-white rounded-xl border border-gray-200 p-6">
+		<section class="bg-white rounded-2xl p-6 shadow-[0_1px_3px_rgba(37,24,24,0.04)]">
 			<div class="flex items-center justify-between mb-4">
-				<h2 class="text-lg font-semibold text-gray-900">Bill Items</h2>
+				<h2 class="text-lg font-semibold text-[#251818]">Bill Items</h2>
 				<button
 					onclick={openAddBillModal}
-					class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#FF6B6B] hover:bg-[#FF6B6B]/10 rounded-lg transition-colors"
+					class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#FF6B6B] hover:bg-[#FF6B6B]/10 rounded-xl transition-colors"
 				>
 					<Plus class="w-4 h-4" />
 					Add Bill
@@ -456,29 +456,29 @@
 			</div>
 
 			{#if !data.session.bill_items || data.session.bill_items.length === 0}
-				<div class="text-center py-8 text-gray-500">
-					<Receipt class="w-12 h-12 mx-auto text-gray-300 mb-3" />
+				<div class="text-center py-8 text-[#584140]">
+					<Receipt class="w-12 h-12 mx-auto text-[#584140]/30 mb-3" />
 					<p class="text-sm">No bill items yet. Add bills to track expenses.</p>
 				</div>
 			{:else}
 				<div class="space-y-3">
 					{#each data.session.bill_items as item}
-						<div class="p-4 rounded-lg bg-gray-50 border border-gray-200">
+						<div class="p-4 rounded-xl bg-[#fff0ef]/50">
 							<div class="flex items-start justify-between gap-4">
 								<div class="flex-1 min-w-0">
 									<div class="flex items-center gap-2">
-										<Receipt class="w-4 h-4 text-gray-400 flex-shrink-0" />
-										<p class="text-sm font-medium text-gray-900 truncate">{item.name}</p>
+										<Receipt class="w-4 h-4 text-[#584140] flex-shrink-0" />
+										<p class="text-sm font-medium text-[#251818] truncate">{item.name}</p>
 									</div>
 									{#if item.description}
-										<p class="text-xs text-gray-500 mt-1 ml-6">{item.description}</p>
+										<p class="text-xs text-[#584140] mt-1 ml-6">{item.description}</p>
 									{/if}
 								</div>
 								<div class="flex items-center gap-3 flex-shrink-0">
-									<p class="text-sm font-semibold text-gray-900">{formatIDR(item.amount)}</p>
+									<p class="text-sm font-semibold text-[#251818]">{formatIDR(item.amount)}</p>
 									<button
 										onclick={() => handleDeleteBill(item.bill_item_id)}
-										class="p-2.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+										class="p-2.5 text-[#584140] hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
 										title="Delete bill"
 									>
 										<Trash2 class="w-5 h-5" />
@@ -492,10 +492,10 @@
 
 			<!-- Total Summary -->
 			{#if data.session.bill_items && data.session.bill_items.length > 0}
-				<div class="mt-4 pt-4 border-t border-gray-200">
+				<div class="mt-4 pt-4">
 					<div class="flex items-center justify-between">
-						<span class="text-sm font-medium text-gray-700">Total Bills</span>
-						<span class="text-lg font-semibold text-gray-900">
+						<span class="text-sm font-medium text-[#584140]">Total Bills</span>
+						<span class="text-lg font-semibold text-[#251818]">
 							{formatIDR(data.session.total_amount)}
 						</span>
 					</div>
@@ -512,52 +512,52 @@
 		{#if contactsPickerSupported}
 			<button
 				onclick={openContactsPicker}
-				class="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-[#FF6B6B] hover:bg-[#FF6B6B]/5 transition-colors group"
+				class="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-[#584140]/30 rounded-xl hover:border-[#FF6B6B] hover:bg-[#FF6B6B]/5 transition-colors group"
 			>
-				<Phone class="w-5 h-5 text-gray-400 group-hover:text-[#FF6B6B]" />
-				<span class="text-sm font-medium text-gray-700 group-hover:text-[#FF6B6B]">
+				<Phone class="w-5 h-5 text-[#584140] group-hover:text-[#FF6B6B]" />
+				<span class="text-sm font-medium text-[#251818] group-hover:text-[#FF6B6B]">
 					Import from Device Contacts
 				</span>
 			</button>
 			<div class="relative">
 				<div class="absolute inset-0 flex items-center">
-					<div class="w-full border-t border-gray-200"></div>
+					<div class="w-full border-t border-[#584140]/10"></div>
 				</div>
 				<div class="relative flex justify-center text-sm">
-					<span class="px-2 bg-white text-gray-500">or add manually</span>
+					<span class="px-2 bg-white text-[#584140]">or add manually</span>
 				</div>
 			</div>
 		{/if}
 
 		<!-- Manual Entry -->
 		<div>
-			<label for="contact_name" class="block text-sm font-medium text-gray-700 mb-1">
+			<label for="contact_name" class="block text-sm font-medium text-[#251818] mb-1">
 				Name
 			</label>
 			<div class="relative">
-				<Type class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+				<Type class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#584140]" />
 				<input
 					type="text"
 					id="contact_name"
 					bind:value={newContactName}
 					placeholder="Enter name"
-					class="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent"
+					class="w-full pl-10 pr-4 py-2.5 bg-[#fff0ef]/50 rounded-xl text-sm text-[#251818] focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent"
 				/>
 			</div>
 		</div>
 
 		<div>
-			<label for="contact_phone" class="block text-sm font-medium text-gray-700 mb-1">
+			<label for="contact_phone" class="block text-sm font-medium text-[#251818] mb-1">
 				WhatsApp Number
 			</label>
 			<div class="relative">
-				<Phone class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+				<Phone class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#584140]" />
 				<input
 					type="tel"
 					id="contact_phone"
 					bind:value={newContactPhone}
 					placeholder="+6281234567890"
-					class="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent"
+					class="w-full pl-10 pr-4 py-2.5 bg-[#fff0ef]/50 rounded-xl text-sm text-[#251818] focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent"
 				/>
 			</div>
 		</div>
@@ -565,14 +565,14 @@
 		<div class="flex gap-3 pt-2">
 			<button
 				onclick={() => (showAddContactModal = false)}
-				class="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+				class="flex-1 px-4 py-2.5 text-sm font-medium text-[#251818] bg-white rounded-xl hover:bg-[#fff0ef] transition-colors"
 			>
 				Cancel
 			</button>
 			<button
 				onclick={handleManualAddContact}
 				disabled={isLoading || !newContactName.trim() || !newContactPhone.trim()}
-				class="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-[#FF6B6B] rounded-lg hover:bg-[#FF5252] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+				class="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-gradient-to-br from-[#ae2f34] to-[#FF6B6B] rounded-xl hover:from-[#9a282c] hover:to-[#FF5252] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
 			>
 				{#if isLoading}
 					<Loader2 class="w-4 h-4 animate-spin mx-auto" />
@@ -588,7 +588,7 @@
 <Modal open={showAddBillModal} title="Add Bill Item">
 	<div class="space-y-4">
 		<div>
-			<label for="bill_name" class="block text-sm font-medium text-gray-700 mb-1">
+			<label for="bill_name" class="block text-sm font-medium text-[#251818] mb-1">
 				Bill Name <span class="text-red-500">*</span>
 			</label>
 			<input
@@ -596,25 +596,25 @@
 				id="bill_name"
 				bind:value={newBillName}
 				placeholder="e.g., Nasi Goreng"
-				class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent"
+				class="w-full px-4 py-2.5 bg-[#fff0ef]/50 rounded-xl text-sm text-[#251818] focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent"
 			/>
 		</div>
 
 		<div>
-			<label for="bill_description" class="block text-sm font-medium text-gray-700 mb-1">
-				Description <span class="text-gray-400 font-normal">(optional)</span>
+			<label for="bill_description" class="block text-sm font-medium text-[#251818] mb-1">
+				Description <span class="text-[#584140]/50 font-normal">(optional)</span>
 			</label>
 			<textarea
 				id="bill_description"
 				bind:value={newBillDescription}
 				placeholder="Add details about this bill..."
 				rows="2"
-				class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent resize-none"
+				class="w-full px-4 py-2.5 bg-[#fff0ef]/50 rounded-xl text-sm text-[#251818] focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent resize-none"
 			></textarea>
 		</div>
 
 		<div>
-			<label for="bill_amount" class="block text-sm font-medium text-gray-700 mb-1">
+			<label for="bill_amount" class="block text-sm font-medium text-[#251818] mb-1">
 				Amount ({getCurrencySymbol(data.session.currency)}) <span class="text-red-500">*</span>
 			</label>
 			<input
@@ -624,20 +624,20 @@
 				placeholder="0"
 				step="0.01"
 				min="0"
-				class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent"
+				class="w-full px-4 py-2.5 bg-[#fff0ef]/50 rounded-xl text-sm text-[#251818] focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent"
 			/>
 		</div>
 
 		<div>
-			<label for="bill_participant" class="block text-sm font-medium text-gray-700 mb-1">
+			<label for="bill_participant" class="block text-sm font-medium text-[#251818] mb-1">
 				Assign to <span class="text-red-500">*</span>
 			</label>
 			<div class="relative">
-				<User class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+				<User class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#584140]" />
 				<select
 					id="bill_participant"
 					bind:value={selectedBillParticipant}
-					class="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent appearance-none bg-white"
+					class="w-full pl-10 pr-4 py-2.5 bg-[#fff0ef]/50 rounded-xl text-sm text-[#251818] focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent appearance-none bg-white"
 				>
 					<option value="">Select participant</option>
 					{#each data.session.participants || [] as participant}
@@ -645,14 +645,14 @@
 					{/each}
 				</select>
 			</div>
-			<p class="text-xs text-gray-500 mt-1.5">
+			<p class="text-xs text-[#584140] mt-1.5">
 				This bill will be added to the selected participant's share.
 			</p>
 		</div>
 
 		<!-- Preview -->
 		{#if newBillAmount && selectedBillParticipant}
-			<div class="p-3 bg-blue-50 rounded-lg border border-blue-200">
+			<div class="p-3 bg-blue-50 rounded-xl">
 				<p class="text-xs text-blue-700 font-medium mb-1">Preview</p>
 				<div class="flex items-center justify-between text-sm">
 					<span class="text-blue-600">
@@ -669,14 +669,14 @@
 		<div class="flex gap-3 pt-2">
 			<button
 				onclick={() => (showAddBillModal = false)}
-				class="flex-1 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+				class="flex-1 px-4 py-2.5 text-sm font-medium text-[#251818] bg-white rounded-xl hover:bg-[#fff0ef] transition-colors"
 			>
 				Cancel
 			</button>
 			<button
 				onclick={handleAddBill}
 				disabled={isLoading || !newBillName.trim() || !newBillAmount.trim() || !selectedBillParticipant}
-				class="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-[#FF6B6B] rounded-lg hover:bg-[#FF5252] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+				class="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-gradient-to-br from-[#ae2f34] to-[#FF6B6B] rounded-xl hover:from-[#9a282c] hover:to-[#FF5252] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
 			>
 				{#if isLoading}
 					<Loader2 class="w-4 h-4 animate-spin mx-auto" />

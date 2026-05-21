@@ -38,30 +38,30 @@
 
 <div
   class={cn(
-    'flex flex-col items-center justify-center text-center',
+    'flex flex-col items-center justify-center text-center bg-[#fff0ef] rounded-3xl',
     sizes[size],
     className
   )}
   {...props}
 >
   {#if icon}
-    <div class="mb-4 text-gray-300">
+    <div class="mb-4 text-[#584140]/30">
       <svelte:component this={icon} size={iconSizes[size]} />
     </div>
   {/if}
 
-  <h3 class="text-lg font-semibold text-gray-900 mb-2">
+  <h3 class="text-lg font-semibold text-[#251818] mb-2">
     {title}
   </h3>
 
-  <p class="text-sm text-gray-500 max-w-sm mb-6">
+  <p class="text-sm text-[#584140] max-w-sm mb-6">
     {description}
   </p>
 
   {#if action}
     <button
       onclick={action.onclick}
-      class="inline-flex items-center gap-2 px-4 py-2 bg-[#FF6B6B] text-white rounded-full font-medium hover:bg-[#FF5252] transition-colors"
+      class="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-br from-[#ae2f34] to-[#FF6B6B] text-white rounded-2xl font-medium hover:shadow-md transition-all"
     >
       {action.label}
     </button>

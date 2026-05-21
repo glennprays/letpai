@@ -106,10 +106,10 @@
 
 <div
   class={cn(
-    'group relative flex items-center gap-3 p-4 bg-white rounded-2xl border-2 transition-all duration-300 ease-out',
+    'group relative flex items-center gap-3 p-4 bg-white rounded-2xl transition-all duration-300 ease-out',
     selected
-      ? 'border-[#FF6B6B] shadow-lg shadow-red-500/10 bg-gradient-to-r from-red-50/50 to-pink-50/50 scale-[1.01]'
-      : 'border-gray-200 hover:border-[#FF6B6B]/50 hover:shadow-md hover:scale-[1.005]',
+      ? 'bg-[#fff0ef] ring-2 ring-[#ae2f34]/20 shadow-lg shadow-red-500/10 scale-[1.01]'
+      : 'hover:shadow-md hover:scale-[1.005]',
     className
   )}
   {...props}
@@ -158,7 +158,7 @@
   <!-- Contact Info -->
   <div class="flex-1 min-w-0">
     <div class="flex items-center gap-2 mb-0.5">
-      <h3 class="font-semibold text-gray-900 truncate">
+      <h3 class="font-semibold text-[#251818] truncate">
         {contact.name}
       </h3>
       {#if contact.is_favorite}
@@ -166,7 +166,7 @@
       {/if}
     </div>
 
-    <div class="flex items-center gap-2 text-sm text-gray-600">
+    <div class="flex items-center gap-2 text-sm text-[#584140]">
       <Phone class="w-3.5 h-3.5 flex-shrink-0" />
       <span class="truncate">{formatPhoneNumber(contact.whatsapp_number)}</span>
     </div>
@@ -185,7 +185,7 @@
       {#if onCall}
         <button
           onclick={handleCall}
-          class="p-2 rounded-full hover:bg-green-50 text-green-600 transition-colors"
+          class="p-2 rounded-full hover:bg-[#6df5e1]/20 text-green-600 transition-colors"
           aria-label="Call {contact.name}"
         >
           <Phone class="w-4 h-4" />
@@ -206,18 +206,18 @@
       <div class="relative" bind:this={menuElement}>
         <button
           onclick={handleMenuClick}
-          class="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-colors"
+          class="p-2 rounded-full hover:bg-[#fbe3e1] text-[#584140] transition-colors"
           aria-label="More options"
         >
           <MoreVertical class="w-4 h-4" />
         </button>
 
         {#if showMenu}
-          <div class="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
+          <div class="absolute right-0 top-full mt-1 w-48 bg-white rounded-2xl shadow-[0_8px_32px_-4px_rgba(37,24,24,0.12)] py-1 z-10">
             {#if onToggleFavorite}
               <button
                 onclick={handleFavorite}
-                class="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-3"
+                class="w-full px-4 py-2 text-left text-sm hover:bg-[#fff0ef] flex items-center gap-3"
               >
                 {#if contact.is_favorite}
                   <StarOff class="w-4 h-4 text-gray-500" />
@@ -245,7 +245,7 @@
               <div class="border-t border-gray-200 my-1"></div>
               <button
                 onclick={handleDelete}
-                class="w-full px-4 py-2 text-left text-sm hover:bg-red-50 flex items-center gap-3 text-red-600"
+                class="w-full px-4 py-2 text-left text-sm hover:bg-[#fef2f2] flex items-center gap-3 text-red-600"
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />

@@ -160,7 +160,7 @@
     <div class="space-y-2">
       {#each groups as group (group.group_id)}
         <div
-          class="group/item flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-xl hover:border-[#FF6B6B] hover:shadow-sm transition-all duration-150"
+          class="group/item flex items-center gap-3 p-3 rounded-2xl bg-[#fff0ef] hover:shadow-sm transition-all duration-150"
         >
           <!-- Color Indicator -->
           <div

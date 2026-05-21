@@ -1,48 +1,65 @@
 export const colors = {
-  // Primary - Coral Red (action-oriented)
+  // Primary - Coral Red (gradient pair: deep → bright)
   primary: {
     DEFAULT: '#FF6B6B',
     hover: '#EE5A5A',
     contrast: '#CC4444',
+    deep: '#ae2f34',
   },
-  
-  // Secondary - Teal Blue (secondary actions)
+
+  // Secondary - Teal Blue
   secondary: {
     DEFAULT: '#14B8A6',
     hover: '#10A392',
+    deep: '#006b5f',
+    light: '#6df5e1',
   },
-  
+
+  // Tertiary - Purple (premium/settled)
+  tertiary: {
+    DEFAULT: '#842bd2',
+  },
+
   // Accents
   accent: {
     purple: '#8B5CF6',
     yellow: '#F59E0B',
   },
-  
-  // Status Colors (high contrast)
+
+  // Status Colors (functional only — never decorative)
   status: {
-    pending: '#F59E0B',      // Yellow - attention
-    submitted: '#3B82F6',    // Blue - in progress
-    paid: '#10B981',         // Green - success
-    rejected: '#EF4444',     // Red - needs action
+    pending: '#F59E0B',
+    submitted: '#3B82F6',
+    paid: '#10B981',
+    rejected: '#EF4444',
   },
-  
-  // Neutral (high contrast)
+
+  // Social Ledger Surface Colors (tonal layering)
+  surfaces: {
+    surface: '#fff8f7',
+    containerLow: '#fff0ef',
+    containerLowest: '#ffffff',
+    container: '#ffe9e7',
+    containerHigh: '#fbe3e1',
+    containerHighest: '#f5dddb',
+    dim: '#ecd5d3',
+  },
+
+  // Social Ledger On-Surface Colors
+  onSurface: {
+    DEFAULT: '#251818',
+    variant: '#584140',
+  },
+
+  outline: {
+    variant: '#e0bfbd',
+  },
+
+  // Pure neutrals (use sparingly — prefer surface/onSurface tokens above)
   neutral: {
     white: '#FFFFFF',
     black: '#000000',
-    gray: {
-      50: '#F8FAFC',
-      100: '#F1F5F9',
-      200: '#E2E8F0',
-      300: '#CBD5E1',
-      400: '#94A3B8',
-      500: '#64748B',
-      600: '#475569',
-      700: '#334155',
-      800: '#1E293B',
-      900: '#0F172A',
-    }
-  }
+  },
 };
 
 export const spacing = {
@@ -55,19 +72,23 @@ export const spacing = {
   '3xl': '64px',
 };
 
+// Mirror of --radius-* in src/app.css. Keep these in sync.
 export const borderRadius = {
-  none: '0',
   sm: '4px',
-  DEFAULT: '8px',
-  lg: '12px',
-  xl: '16px',
-  full: '9999px',
+  md: '10px',
+  icon: '14px',
+  DEFAULT: '18px',
+  card: '20px',
+  lg: '24px',
+  xl: '28px',
+  full: '100px',
 };
 
+// Social Ledger ambient shadows — tinted with on-surface, low opacity.
+// Never pure black, never above 12% opacity.
 export const shadows = {
   none: 'none',
-  sm: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
-  DEFAULT: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-  lg: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-  bold: '4px 4px 0 0 rgba(0, 0, 0, 1)',
+  card: '0 1px 3px rgba(37, 24, 24, 0.04)',
+  cardHover: '0 10px 30px rgba(37, 24, 24, 0.06)',
+  modal: '0 24px 48px -4px rgba(37, 24, 24, 0.12)',
 };

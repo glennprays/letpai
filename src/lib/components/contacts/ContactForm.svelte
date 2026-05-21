@@ -193,15 +193,15 @@
               }
             }}
             class={cn(
-              'inline-flex items-center gap-2 px-3 py-2 rounded-full text-sm font-medium border-2 transition-all duration-150',
+              'inline-flex items-center gap-2 px-3 py-2 rounded-2xl text-sm font-medium bg-[#f5dddb] transition-all duration-150',
               'hover:scale-105 active:scale-95',
               isSelected
                 ? 'bg-opacity-100'
-                : 'bg-white hover:bg-gray-50'
+                : 'bg-[#fff0ef] hover:bg-[#f5dddb]'
             )}
             style={isSelected
-              ? `background-color: ${group.color}; border-color: ${group.color}; color: white;`
-              : `border-color: ${group.color}30%; color: ${group.color};`}
+              ? `background-color: ${group.color}; color: white;`
+              : `background-color: ${group.color}15; color: ${group.color};`}
           >
             {#if isSelected}
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -240,7 +240,7 @@
       placeholder="Add notes about this contact..."
       rows="3"
       maxlength={500}
-      class="w-full px-4 py-3 border-[1.5px] border-gray-300 rounded-[12px] font-medium text-[15px] focus:border-[#FF6B6B] focus:shadow-[0_0_0_3px_rgba(255,107,107,0.12)] transition-all duration-150 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed resize-none placeholder:text-gray-400"
+      class="w-full px-4 py-3 bg-[#f5dddb] rounded-2xl font-medium text-[15px] focus:ring-2 focus:ring-[#ae2f34]/20 focus:shadow-[0_0_0_3px_rgba(174,47,52,0.08)] transition-all duration-150 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed resize-none placeholder:text-gray-400"
     ></textarea>
     {#if notes}
       <div class="text-right text-xs text-gray-400 mt-1">
