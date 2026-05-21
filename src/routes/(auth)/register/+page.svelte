@@ -362,7 +362,7 @@
             class="otp-input"
             class:error={!!errors.otp}
             value={digit}
-            oninput={(e) => handleOTPInput(index, e.target.value)}
+            oninput={(e) => handleOTPInput(index, (e.currentTarget as HTMLInputElement).value)}
             onkeydown={(e) => handleOTPKeyDown(e, index)}
             onpaste={handleOTPPaste}
           />

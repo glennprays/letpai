@@ -100,13 +100,32 @@ export interface DashboardStats {
   total_pending: number;
 }
 
+// Backend may wrap the list as `{ data: Session[] }` (top-level pagination),
+// `{ data: { sessions, page, limit, total } }`, or `{ sessions: [] }`.
+// Keep the type permissive so the server load can narrow at runtime.
 export interface SessionsResponse {
-  data: Session[];
-  pagination: {
+  success?: boolean;
+  data?: Session[] | {
+    sessions: Session[];
+    page?: number;
+    limit?: number;
+    total?: number;
+  };
+  sessions?: Session[];
+  pagination?: {
     page: number;
     limit: number;
     total: number;
   };
+}
+
+// Response wrapper for AddParticipants
+export interface ParticipantsResponse {
+  success: boolean;
+  data: {
+    participants: Participant[];
+  };
+  message?: string;
 }
 
 export interface ApiResponse<T> {
@@ -199,9 +218,12 @@ export interface UpdateBillItemResponse {
 }
 
 // Contacts Types
+// Backend may return `{ data: Contact[] }`, `{ data: { contacts: [] } }`,
+// or `{ contacts: [] }`. Keep permissive so server loads can narrow.
 export interface ContactsResponse {
-  success: boolean;
-  data: Contact[];
+  success?: boolean;
+  data?: Contact[] | { contacts: Contact[] };
+  contacts?: Contact[];
   pagination?: {
     page: number;
     limit: number;
@@ -257,9 +279,11 @@ export interface GroupResponse {
   message?: string;
 }
 
+// Permissive shape: matches `{ data: [] }`, `{ data: { groups: [] } }`, or `{ groups: [] }`.
 export interface GroupsResponse {
-  success: boolean;
-  data: ContactGroup[];
+  success?: boolean;
+  data?: ContactGroup[] | { groups: ContactGroup[] };
+  groups?: ContactGroup[];
 }
 
 // Bulk Operations

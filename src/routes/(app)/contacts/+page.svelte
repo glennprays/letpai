@@ -73,6 +73,28 @@
     applyFilters();
   });
 
+  function pickContacts(response: unknown): Contact[] | null {
+    if (!response || typeof response !== 'object') return null;
+    const r = response as Record<string, unknown>;
+    if (Array.isArray(r.contacts)) return r.contacts as Contact[];
+    if (Array.isArray(r.data)) return r.data as Contact[];
+    if (r.data && typeof r.data === 'object' && Array.isArray((r.data as Record<string, unknown>).contacts)) {
+      return (r.data as { contacts: Contact[] }).contacts;
+    }
+    return null;
+  }
+
+  function pickGroups(response: unknown): ContactGroup[] | null {
+    if (!response || typeof response !== 'object') return null;
+    const r = response as Record<string, unknown>;
+    if (Array.isArray(r.groups)) return r.groups as ContactGroup[];
+    if (Array.isArray(r.data)) return r.data as ContactGroup[];
+    if (r.data && typeof r.data === 'object' && Array.isArray((r.data as Record<string, unknown>).groups)) {
+      return (r.data as { groups: ContactGroup[] }).groups;
+    }
+    return null;
+  }
+
   // Refresh data (for after mutations)
   async function refreshData() {
     isLoading = true;
@@ -81,12 +103,10 @@
         getContacts(),
         getContactGroups()
       ]);
-      if (contactsResponse.success) {
-        contacts = contactsResponse.data;
-      }
-      if (groupsResponse.success) {
-        groups = groupsResponse.data;
-      }
+      const nextContacts = pickContacts(contactsResponse);
+      const nextGroups = pickGroups(groupsResponse);
+      if (nextContacts) contacts = nextContacts;
+      if (nextGroups) groups = nextGroups;
       applyFilters();
     } catch (error) {
       console.error('Failed to refresh data:', error);
@@ -121,10 +141,12 @@
   });
 
   // Contact CRUD
-  async function handleCreateContact(data: CreateContactRequest) {
+  // Widen to the union ContactForm declares for onsubmit. The Add modal
+  // only ever passes new contacts, so name/whatsapp_number are present.
+  async function handleCreateContact(data: CreateContactRequest | UpdateContactRequest) {
     isSaving = true;
     try {
-      const response = await createContact(data);
+      const response = await createContact(data as CreateContactRequest);
       if (response.success) {
         contacts = [...contacts, response.data];
         showAddModal = false;
@@ -137,14 +159,15 @@
   }
 
   async function handleUpdateContact(data: UpdateContactRequest) {
-    if (!editingContact) return;
+    const editing = editingContact;
+    if (!editing) return;
 
     isSaving = true;
     try {
-      const response = await updateContact(editingContact.contact_id, data);
+      const response = await updateContact(editing.contact_id, data);
       if (response.success) {
         contacts = contacts.map(c =>
-          c.contact_id === editingContact.contact_id ? response.data : c
+          c.contact_id === editing.contact_id ? response.data : c
         );
         showEditModal = false;
         editingContact = null;
@@ -157,12 +180,13 @@
   }
 
   async function handleDeleteContact() {
-    if (!deletingContact) return;
+    const deleting = deletingContact;
+    if (!deleting) return;
 
     isSaving = true;
     try {
-      await deleteContact(deletingContact.contact_id);
-      contacts = contacts.filter(c => c.contact_id !== deletingContact.contact_id);
+      await deleteContact(deleting.contact_id);
+      contacts = contacts.filter(c => c.contact_id !== deleting.contact_id);
       showDeleteDialog = false;
       deletingContact = null;
     } catch (error) {

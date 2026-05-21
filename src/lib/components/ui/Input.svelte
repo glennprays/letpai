@@ -19,6 +19,7 @@
     oninput?: (value: string) => void;
     onfocus?: () => void;
     onblur?: () => void;
+    required?: boolean;
     // lucide-svelte icons — broad typing for consumer compatibility.
     leftIcon?: any;
     showClear?: boolean;

@@ -114,11 +114,11 @@
                 gap: 4px;
               "
               onmouseenter={(e) => {
-                const arrow = e.currentTarget.querySelector(".link-arrow");
+                const arrow = e.currentTarget.querySelector<HTMLElement>(".link-arrow");
                 if (arrow) arrow.style.transform = "translateX(4px)";
               }}
               onmouseleave={(e) => {
-                const arrow = e.currentTarget.querySelector(".link-arrow");
+                const arrow = e.currentTarget.querySelector<HTMLElement>(".link-arrow");
                 if (arrow) arrow.style.transform = "translateX(0)";
               }}
             >
@@ -161,11 +161,11 @@
                 gap: 4px;
               "
               onmouseenter={(e) => {
-                const arrow = e.currentTarget.querySelector(".link-arrow");
+                const arrow = e.currentTarget.querySelector<HTMLElement>(".link-arrow");
                 if (arrow) arrow.style.transform = "translateX(4px)";
               }}
               onmouseleave={(e) => {
-                const arrow = e.currentTarget.querySelector(".link-arrow");
+                const arrow = e.currentTarget.querySelector<HTMLElement>(".link-arrow");
                 if (arrow) arrow.style.transform = "translateX(0)";
               }}
             >
@@ -208,11 +208,11 @@
                 gap: 4px;
               "
               onmouseenter={(e) => {
-                const arrow = e.currentTarget.querySelector(".link-arrow");
+                const arrow = e.currentTarget.querySelector<HTMLElement>(".link-arrow");
                 if (arrow) arrow.style.transform = "translateX(4px)";
               }}
               onmouseleave={(e) => {
-                const arrow = e.currentTarget.querySelector(".link-arrow");
+                const arrow = e.currentTarget.querySelector<HTMLElement>(".link-arrow");
                 if (arrow) arrow.style.transform = "translateX(0)";
               }}
             >

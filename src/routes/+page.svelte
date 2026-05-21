@@ -1,6 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { user } from "$lib/stores/auth";
+  import { auth } from "$lib/stores/auth";
   import Button from "$lib/components/ui/Button.svelte";
   import SharedFooter from "$lib/components/layout/SharedFooter.svelte";
   import {
@@ -10,10 +10,9 @@
     CheckCircle,
     ArrowRight,
   } from "lucide-svelte";
-  import { initAuth } from "$lib/stores/auth";
 
   $effect(() => {
-    if ($user.isAuthenticated) {
+    if ($auth.isAuthenticated) {
       goto("/dashboard");
     }
   });
