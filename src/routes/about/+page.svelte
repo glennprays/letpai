@@ -54,7 +54,7 @@
             <Button
               variant="primary"
               size="lg"
-              onbuttonclick={handleGetStarted}
+              onclick={handleGetStarted}
               rightIcon={ArrowRight}
             >
               Get Started Free
@@ -325,7 +325,7 @@
           <Button
             variant="primary"
             size="lg"
-            onbuttonclick={handleGetStarted}
+            onclick={handleGetStarted}
             rightIcon={ArrowRight}
           >
             Get Started Free

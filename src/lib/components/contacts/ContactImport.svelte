@@ -202,7 +202,7 @@
 
         <Button
           variant="primary"
-          onbuttonclick={handleSelectContacts}
+          onclick={handleSelectContacts}
           leftIcon={Upload}
         >
           Select Contacts
@@ -340,7 +340,7 @@
       <div class="flex gap-3 pt-2">
         <Button
           variant="secondary"
-          onbuttonclick={handleCancel}
+          onclick={handleCancel}
           disabled={loading}
           class="flex-1"
         >
@@ -349,7 +349,7 @@
 
         <Button
           variant="primary"
-          onbuttonclick={handleImport}
+          onclick={handleImport}
           disabled={selectedCount === 0 || loading}
           loading={loading}
           class="flex-1"
@@ -381,14 +381,14 @@
       <div class="flex gap-3 justify-center">
         <Button
           variant="secondary"
-          onbuttonclick={handleReset}
+          onclick={handleReset}
         >
           Import More
         </Button>
 
         <Button
           variant="primary"
-          onbuttonclick={handleCancel}
+          onclick={handleCancel}
         >
           Done
         </Button>

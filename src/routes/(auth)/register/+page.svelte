@@ -322,7 +322,7 @@
       </div>
 
       <Button
-        onbuttonclick={handleStep1Submit}
+        onclick={handleStep1Submit}
         variant="primary"
         size="default"
         class="submit-button"
@@ -388,7 +388,7 @@
       </button>
 
       <Button
-        onbuttonclick={handleOTPSubmit}
+        onclick={handleOTPSubmit}
         variant="primary"
         size="default"
         class="submit-button"

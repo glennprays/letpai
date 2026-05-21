@@ -12,7 +12,7 @@
     loading?: boolean;
     class?: string;
     type?: 'button' | 'submit' | 'reset';
-    onbuttonclick?: () => void;
+    onclick?: (event: MouseEvent) => void;
     // lucide-svelte icons are class components — broad typing for compatibility with both old & new consumer call sites.
     leftIcon?: any;
     rightIcon?: any;
@@ -26,9 +26,10 @@
     loading = false,
     type = 'button',
     class: className,
-    onbuttonclick,
+    onclick,
     leftIcon,
     rightIcon,
+    children,
     ...props
   }: Props = $props();
 
@@ -62,18 +63,13 @@
     )
   );
 
-  function handleClick() {
-    if (!disabled && !loading && onbuttonclick) {
-      onbuttonclick();
-    }
-  }
 </script>
 
 <button
   type={type}
   disabled={disabled || loading}
   class={baseClasses}
-  onclick={handleClick}
+  {onclick}
   {...props}
 >
   {#if loading}

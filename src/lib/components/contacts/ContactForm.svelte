@@ -255,7 +255,7 @@
       <Button
         type="button"
         variant="secondary"
-        onbuttonclick={handleCancel}
+        onclick={handleCancel}
         disabled={loading}
         class="flex-1"
       >

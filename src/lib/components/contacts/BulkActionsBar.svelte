@@ -81,7 +81,7 @@
         <Button
           variant="ghost"
           size="sm"
-          onbuttonclick={onclear}
+          onclick={onclear}
           disabled={loading}
           leftIcon={X}
         >
@@ -94,7 +94,7 @@
             <Button
               variant="secondary"
               size="sm"
-              onbuttonclick={() => showFavoriteMenu = !showFavoriteMenu}
+              onclick={() => showFavoriteMenu = !showFavoriteMenu}
               disabled={loading}
               leftIcon={Star}
             >
@@ -128,7 +128,7 @@
             <Button
               variant="secondary"
               size="sm"
-              onbuttonclick={() => showGroupMenu = !showGroupMenu}
+              onclick={() => showGroupMenu = !showGroupMenu}
               disabled={loading}
               leftIcon={FolderOpen}
             >
@@ -166,7 +166,7 @@
           <Button
             variant="destructive"
             size="sm"
-            onbuttonclick={ondelete}
+            onclick={ondelete}
             disabled={loading}
             leftIcon={Trash2}
           >
