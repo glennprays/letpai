@@ -318,12 +318,13 @@
           <div class="steps-connector"></div>
 
           {#each [{ n: "01", icon: Smartphone, bg: "#ae2f34", title: "Create Session", body: "Add participants and bills. Set equal or custom splits in seconds." }, { n: "02", icon: MessageCircle, bg: "#ae2f34", title: "Send via WhatsApp", body: "One click notifies everyone with their personal payment link." }, { n: "03", icon: Camera, bg: "#ae2f34", title: "Track Payments", body: "Real-time status updates as proof uploads come in. Close when settled." }] as step}
+            {@const StepIcon = step.icon}
             <div class="step-card" style="position:relative; z-index:1;">
               <!-- Step dot -->
               <div
                 style="width:44px; height:44px; border-radius:14px; background:{step.bg}; display:flex; align-items:center; justify-content:center; margin-bottom:20px; box-shadow:0 4px 12px {step.bg}44;"
               >
-                <svelte:component this={step.icon} size={20} color="#fff" />
+                <StepIcon size={20} color="#fff" />
               </div>
               <span class="step-number">{step.n}</span>
               <h4
@@ -643,12 +644,6 @@
       flex-direction: column;
       text-align: center;
       border-radius: 20px;
-    }
-
-    .cta-banner .btn-coral,
-    .cta-banner .btn-white {
-      width: 100%;
-      justify-content: center;
     }
   }
 </style>

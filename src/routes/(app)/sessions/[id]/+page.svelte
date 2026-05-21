@@ -73,6 +73,8 @@
 		return XCircle;
 	}
 
+	const HeaderStatusIcon = $derived(getStatusIcon(data.session.status));
+
 	function toggleContactSelection(participantId: string) {
 		if (selectedContacts.has(participantId)) {
 			selectedContacts.delete(participantId);
@@ -308,8 +310,8 @@
 					Created {formatRelativeTime(data.session.created_at)}
 				</p>
 			</div>
-			<span class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-xl {getStatusColor(data.session.status)}">
-				<svelte:component this={getStatusIcon(data.session.status)} class="w-3.5 h-3.5" />
+			<span class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full {getStatusColor(data.session.status)}">
+				<HeaderStatusIcon class="w-3.5 h-3.5" />
 				{data.session.status}
 			</span>
 		</header>
@@ -412,8 +414,9 @@
 			{:else}
 				<div class="space-y-2">
 					{#each data.session.participants as participant}
-						<div
-							class="flex items-center justify-between p-3 rounded-xl transition-all cursor-pointer
+						<button
+							type="button"
+							class="w-full text-left flex items-center justify-between p-3 rounded-2xl transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6]
 							{selectedContacts.has(participant.participant_id)
 								? 'bg-[#FF6B6B]/10'
 								: 'bg-[#fff0ef]/50 hover:bg-[#fff0ef]'}"
@@ -436,7 +439,7 @@
 									<p class="text-xs text-[#584140]">{participant.payment_status}</p>
 								</div>
 							</div>
-						</div>
+						</button>
 					{/each}
 				</div>
 			{/if}

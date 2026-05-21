@@ -34,7 +34,7 @@
   }: Props = $props();
 
   let showMenu = $state(false);
-  let menuElement: HTMLElement;
+  let menuElement = $state<HTMLElement>();
 
   function handleMenuClick(e: MouseEvent) {
     e.stopPropagation();

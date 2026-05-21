@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import { cn } from '$lib/utils/cn';
   import Input from '../ui/Input.svelte';
   import Button from '../ui/Button.svelte';
@@ -25,11 +26,14 @@
     ...props
   }: Props = $props();
 
-  let name = $state(contact?.name || '');
-  let phone = $state(contact?.whatsapp_number || '');
-  let groupId = $state(contact?.group_id || '');
-  let selectedGroupIds = $state<string[]>(contact?.group_id ? [contact.group_id] : []);
-  let notes = $state(contact?.notes || '');
+  // Form fields are initialised from the `contact` prop at mount only;
+  // wrap in untrack() to make that explicit (otherwise Svelte warns that
+  // changes to the prop won't update these fields — which is by design).
+  let name = $state(untrack(() => contact?.name || ''));
+  let phone = $state(untrack(() => contact?.whatsapp_number || ''));
+  let groupId = $state(untrack(() => contact?.group_id || ''));
+  let selectedGroupIds = $state<string[]>(untrack(() => (contact?.group_id ? [contact.group_id] : [])));
+  let notes = $state(untrack(() => contact?.notes || ''));
   let errors = $state<{ name?: string; phone?: string }>({});
 
   function validate(): boolean {
@@ -175,12 +179,12 @@
   <!-- Groups (Multiple Selection) -->
   {#if groups && groups.length > 0}
     <div>
-      <label class="block text-sm font-semibold text-[#584140] mb-2">
+      <p id="contact-groups-label" class="block text-sm font-semibold text-[#584140] mb-2">
         Groups {selectedGroupIds.length > 0 ? `(${selectedGroupIds.length})` : ''}
-      </label>
+      </p>
 
       <!-- Group Chips Grid -->
-      <div class="flex flex-wrap gap-2">
+      <div class="flex flex-wrap gap-2" role="group" aria-labelledby="contact-groups-label">
         {#each groups as group (group.group_id)}
           {@const isSelected = selectedGroupIds.includes(group.group_id)}
           <button

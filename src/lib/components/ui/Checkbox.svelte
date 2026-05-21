@@ -27,7 +27,7 @@
     if (onchange) onchange(checked);
   }
 
-  const baseClasses = cn(
+  const baseClasses = $derived(cn(
     'relative inline-flex items-center justify-center',
     'min-h-[44px] min-w-[44px]',
     'w-6 h-6 rounded-[10px] transition-all duration-200 ease-out',
@@ -38,7 +38,7 @@
       ? 'bg-[#ae2f34] border-[#ae2f34] shadow-[0_1px_3px_rgba(174,47,52,0.18)]'
       : 'border-2 border-[#e0bfbd] hover:border-[#ae2f34] bg-[#f5dddb]',
     className
-  );
+  ));
 
   const checkboxId = $derived(id || `checkbox-${Math.random().toString(36).slice(2, 9)}`);
 </script>
@@ -76,17 +76,16 @@
   </div>
 
   {#if label}
-    <label
-      for={checkboxId}
+    <!-- The visual checkbox is a div with role="checkbox"; users toggle by
+         clicking or focusing it directly. The label below is read-only text. -->
+    <span
       class={cn(
-        'text-sm font-medium text-[#251818] cursor-pointer select-none transition-colors',
-        'hover:text-[#ae2f34]',
-        disabled && 'opacity-50 cursor-not-allowed'
+        'text-sm font-medium text-[#251818] select-none transition-colors',
+        disabled && 'opacity-50'
       )}
-      onclick={!disabled ? handleChange : undefined}
     >
       {label}
-    </label>
+    </span>
   {/if}
 </div>
 

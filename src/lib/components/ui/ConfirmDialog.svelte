@@ -25,7 +25,7 @@
     ...props
   }: Props = $props();
 
-  let dialogElement: HTMLDivElement;
+  let dialogElement = $state<HTMLDivElement>();
 
   function handleConfirm() {
     if (onconfirm) onconfirm();

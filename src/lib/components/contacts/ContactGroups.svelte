@@ -236,10 +236,10 @@
 
       <!-- Color Selection -->
       <div>
-        <label class="block text-sm font-semibold text-[#584140] mb-3">
+        <p id="group-color-label" class="block text-sm font-semibold text-[#584140] mb-3">
           Choose Color
-        </label>
-        <div class="grid grid-cols-5 gap-3">
+        </p>
+        <div class="grid grid-cols-5 gap-3" role="radiogroup" aria-labelledby="group-color-label">
           {#each GROUP_COLORS as color (color.value)}
             {@const selected = inputGroupColor === color.value}
             <button
@@ -307,8 +307,3 @@
   />
 </div>
 
-<style>
-  .group\/item:hover .group\/item\:opacity-100 {
-    opacity: 1;
-  }
-</style>

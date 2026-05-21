@@ -45,11 +45,11 @@
       : color || GROUP_COLORS.coral
   );
 
-  const baseClasses = cn(
+  const baseClasses = $derived(cn(
     'inline-flex items-center gap-1.5 rounded-full font-medium whitespace-nowrap',
     sizes[size],
     className
-  );
+  ));
 </script>
 
 <span

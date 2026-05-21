@@ -53,11 +53,11 @@
 
   const initials = $derived(getInitials(fullName, phoneNumber));
 
-  const baseClasses = cn(
+  const baseClasses = $derived(cn(
     'rounded-full object-cover flex-shrink-0',
     sizes[size],
     className
-  );
+  ));
 </script>
 
 <img

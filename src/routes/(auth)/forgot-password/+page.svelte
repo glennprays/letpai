@@ -87,9 +87,9 @@
       <!-- Form -->
       <form onsubmit={handleSubmit}>
         <div class="form-group animate-in" style="animation-delay: 0.24s;">
-          <label style="font-size: 13px; font-weight: 600; color: #251818; margin-bottom: 6px; display: block;">
+          <span class="form-label" style="font-size: 13px; font-weight: 600; color: #251818; margin-bottom: 6px; display: block;">
             WhatsApp Number
-          </label>
+          </span>
           <div class="phone-input-group">
             <select class="country-selector" bind:value={formData.country_code}>
               {#each countryCodes as country}
@@ -328,10 +328,6 @@
     margin-top: 8px;
   }
 
-  .button-group button {
-    flex: 1;
-  }
-
   .tips-section {
     display: flex;
     flex-direction: column;
@@ -379,13 +375,6 @@
   .resend-button:hover {
     background: #fbe3e1;
     transform: translateY(-1px);
-  }
-
-  .submit-button {
-    width: 100%;
-    height: 44px;
-    font-size: 16px;
-    margin-top: 8px;
   }
 
   .help-section {

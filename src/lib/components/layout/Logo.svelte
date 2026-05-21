@@ -9,7 +9,7 @@
     lg: { icon: 48, text: 28, gap: 12 },
   };
 
-  const d = dimensions[size];
+  const d = $derived(dimensions[size]);
 </script>
 
 <button class="logo-wrap" style="height: {d.icon}px;" aria-label="Letpai">

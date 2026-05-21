@@ -27,11 +27,11 @@
     cancelled: 'bg-[#ecd5d3] text-[#584140]',
   };
 
-  const baseClasses = cn(
+  const baseClasses = $derived(cn(
     'inline-flex items-center px-3 py-1 rounded-full text-xs font-medium',
     variants[variant],
     className
-  );
+  ));
 </script>
 
 <span class={baseClasses} {...props}>

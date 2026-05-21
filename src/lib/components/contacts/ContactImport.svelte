@@ -238,10 +238,11 @@
       <!-- Group Assignment -->
       {#if groups && groups.length > 0}
         <div>
-          <label class="block text-sm font-semibold text-[#584140] mb-2">
+          <label for="import-assign-group" class="block text-sm font-semibold text-[#584140] mb-2">
             Assign to Group (Optional)
           </label>
           <select
+            id="import-assign-group"
             bind:value={selectedGroupId}
             class="w-full h-11 px-4 bg-[#f5dddb] rounded-2xl font-medium text-[15px] text-[#251818] focus:ring-2 focus:ring-[#ae2f34]/30 transition-all duration-150 focus:outline-none"
           >

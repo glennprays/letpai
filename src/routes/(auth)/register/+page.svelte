@@ -252,7 +252,7 @@
 
       <!-- Phone Number -->
       <div class="form-group">
-        <label class="form-label">WhatsApp Number</label>
+        <span class="form-label">WhatsApp Number</span>
         <div class="phone-input-group" class:error={!!errors.whatsapp_number}>
           <select class="country-selector" bind:value={formData.country_code}>
             {#each countryCodes as country}
@@ -673,12 +673,6 @@
   .resend-button:disabled {
     opacity: 0.6;
     cursor: not-allowed;
-  }
-
-  .submit-button {
-    width: 100%;
-    height: 44px;
-    font-size: 16px;
   }
 
   .back-button {

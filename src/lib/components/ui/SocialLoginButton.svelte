@@ -39,7 +39,7 @@
     },
   };
 
-  const currentProvider = providers[provider];
+  const currentProvider = $derived(providers[provider]);
 </script>
 
 <button

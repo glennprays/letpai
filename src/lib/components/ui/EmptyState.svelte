@@ -45,8 +45,9 @@
   {...props}
 >
   {#if icon}
+    {@const Icon = icon}
     <div class="mb-4 text-[#584140]/30">
-      <svelte:component this={icon} size={iconSizes[size]} />
+      <Icon size={iconSizes[size]} />
     </div>
   {/if}
 

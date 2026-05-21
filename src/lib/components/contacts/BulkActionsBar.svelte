@@ -29,7 +29,7 @@
 
   let showGroupMenu = $state(false);
   let showFavoriteMenu = $state(false);
-  let menuElement: HTMLElement;
+  let menuElement = $state<HTMLElement>();
 
   function handleAssignGroup(groupId: string) {
     if (onassigngroup) onassigngroup(groupId);

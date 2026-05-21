@@ -55,7 +55,8 @@
       )}
     >
       {#if tab.icon}
-        <svelte:component this={tab.icon} size={16} />
+        {@const TabIcon = tab.icon}
+        <TabIcon size={16} />
       {/if}
 
       <span>{tab.label}</span>

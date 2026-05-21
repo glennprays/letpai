@@ -92,7 +92,7 @@
   >
     <!-- Phone Number -->
     <div class="form-group animate-in" style="animation-delay: 0.24s;">
-      <label class="form-label">WhatsApp Number</label>
+      <span class="form-label">WhatsApp Number</span>
       <div class="phone-input-group" class:error={!!clientErrors.whatsapp_number}>
         <select class="country-selector" bind:value={formData.country_code}>
           {#each countryCodes as country}
