@@ -44,7 +44,7 @@
     {placeholder}
     {disabled}
     oninput={handleInput}
-    class="!pl-11 pr-10"
+    class="!pl-11 !pr-10"
     {...props}
   />
 

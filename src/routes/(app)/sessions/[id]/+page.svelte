@@ -636,11 +636,12 @@
 				Assign to <span class="text-[#ae2f34]">*</span>
 			</label>
 			<div class="relative">
-				<User class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#584140]" />
+				<User class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#584140] pointer-events-none" />
 				<select
 					id="bill_participant"
 					bind:value={selectedBillParticipant}
-					class="w-full pl-10 pr-4 py-2.5 bg-[#fff0ef]/50 rounded-xl text-sm text-[#251818] focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent appearance-none bg-white"
+					class="w-full pl-10 pr-10 py-2.5 bg-[#f5dddb] rounded-xl text-sm text-[#251818] focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent appearance-none bg-no-repeat bg-[length:1.25em_1.25em] bg-[right_0.75rem_center]"
+					style="background-image:url(&quot;data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23584140' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e&quot;);"
 				>
 					<option value="">Select participant</option>
 					{#each data.session.participants || [] as participant}

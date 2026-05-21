@@ -11,15 +11,16 @@
 
   let { children }: Props = $props();
 
-  // Redirect once if user is authenticated but missing a full name.
-  // (app)/ routes are the only ones this layout renders, so checking
-  // for /profile is sufficient — /login and /register live elsewhere.
-  let redirected = $state(false);
+  // Force users without a full name onto /profile until they fill it in.
+  // (app)/ routes are the only ones this layout renders, so checking the
+  // pathname against /profile is enough to avoid a self-redirect loop —
+  // /login and /register live under (auth)/+layout.svelte.
+  // (We intentionally do NOT cache a "redirected once" flag: SvelteKit
+  // reuses the layout instance across in-group navigations, so a flag
+  // would let users bypass the gate by clicking Sidebar/BottomTabBar links.)
   $effect(() => {
-    if (redirected) return;
     if ($auth.isAuthenticated && $auth.user && !$auth.user.full_name) {
       if ($page.url.pathname !== '/profile') {
-        redirected = true;
         goto('/profile', { replaceState: true });
       }
     }

@@ -29,7 +29,12 @@
 
   let showGroupMenu = $state(false);
   let showFavoriteMenu = $state(false);
-  let menuElement = $state<HTMLElement>();
+
+  // Separate refs per menu — sharing one ref across multiple bind:this
+  // targets means the last-mounted binding wins, so the click-outside
+  // handler would close whichever menu the user just clicked to open.
+  let favoriteMenuElement = $state<HTMLElement>();
+  let groupMenuElement = $state<HTMLElement>();
 
   function handleAssignGroup(groupId: string) {
     if (onassigngroup) onassigngroup(groupId);
@@ -41,13 +46,15 @@
     showFavoriteMenu = false;
   }
 
-  // Close menus when clicking outside
+  // Close each menu only when the click happens outside its own wrapper.
   $effect(() => {
     function handleClickOutside(e: MouseEvent) {
       const target = e.target as Node;
-      if (menuElement && !menuElement.contains(target)) {
-        showGroupMenu = false;
+      if (favoriteMenuElement && !favoriteMenuElement.contains(target)) {
         showFavoriteMenu = false;
+      }
+      if (groupMenuElement && !groupMenuElement.contains(target)) {
+        showGroupMenu = false;
       }
     }
 
@@ -58,10 +65,11 @@
 
 {#if selectedCount > 0}
   <div
-    bind:this={menuElement}
     class={cn(
-      'fixed bottom-0 left-0 right-0 bg-[#251818]/90 backdrop-blur-xl shadow-lg z-40',
-      'md:static md:rounded-2xl md:shadow-md md:p-3',
+      // z-50 on mobile so we sit above BottomTabBar (z-40) — otherwise the
+      // tab bar paints over us and bulk actions become unreachable.
+      'fixed bottom-0 left-0 right-0 bg-[#251818]/90 backdrop-blur-xl shadow-lg z-50',
+      'md:static md:z-auto md:rounded-2xl md:shadow-md md:p-3',
       'animate-in slide-in-from-bottom-4 duration-200',
       className
     )}
@@ -90,7 +98,7 @@
 
         <!-- Toggle Favorite -->
         {#if ontogglefavorite}
-          <div class="relative" bind:this={menuElement}>
+          <div class="relative" bind:this={favoriteMenuElement}>
             <Button
               variant="secondary"
               size="sm"
@@ -124,7 +132,7 @@
 
         <!-- Assign to Group -->
         {#if onassigngroup && groups.length > 0}
-          <div class="relative" bind:this={menuElement}>
+          <div class="relative" bind:this={groupMenuElement}>
             <Button
               variant="secondary"
               size="sm"
