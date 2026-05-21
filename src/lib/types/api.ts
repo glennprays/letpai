@@ -74,21 +74,26 @@ export interface CreateSessionRequest {
 
 export interface BillItem {
   bill_item_id: string;
-  name: string;
-  description?: string;
+  session_id?: string;
+  description: string;
   amount: number;
-  currency: string;
+  category?: string;
   created_at: string;
+  updated_at?: string;
 }
 
 export interface Participant {
   participant_id: string;
+  contact_id?: string;
   name: string;
   whatsapp_number: string;
+  avatar_url?: string;
   share_amount: number;
   payment_status: 'pending' | 'submitted' | 'paid' | 'rejected';
+  payment_proof_url?: string;
+  rejection_reason?: string;
   contact_avatar_url?: string;
-  notification_count: number;
+  notification_count?: number;
   last_notification_at?: string;
 }
 
@@ -177,29 +182,33 @@ export interface UpdateSessionRequest {
 }
 
 // Participant Types
+// Backend AddParticipantRequest uses `custom_name`/`custom_whatsapp` for new
+// custom participants, or `contact_id` to add a previously-saved contact.
 export interface AddParticipantsRequest {
   participants: Array<{
     contact_id?: string;
-    name: string;
-    whatsapp_number: string;
+    custom_name?: string;
+    custom_whatsapp?: string;
   }>;
 }
 
+// Edit a participant's custom name/whatsapp. Payment status transitions
+// (submit/approve/reject) go through the /payments/* endpoints.
 export interface UpdateParticipantRequest {
-  payment_status: 'paid' | 'rejected';
-  rejection_reason?: string;
+  custom_name?: string;
+  custom_whatsapp?: string;
 }
 
 // Bill Item Types
+// Backend stores a single `description` field as the primary label.
+// `amount` is in the session's base currency unit (e.g. IDR rupiah), NOT cents.
 export interface CreateBillItemRequest {
-  name: string;
-  description?: string;
+  description: string;
   amount: number;
   category?: string;
 }
 
 export interface UpdateBillItemRequest {
-  name?: string;
   description?: string;
   amount?: number;
   category?: string;

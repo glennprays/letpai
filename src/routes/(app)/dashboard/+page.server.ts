@@ -1,5 +1,6 @@
 import type { PageServerLoad } from './$types';
-import { getDashboardStats, getSessions } from '$lib/services/dashboard';
+import { getDashboardStats } from '$lib/services/dashboard';
+import { getSessions } from '$lib/services/sessions';
 import type { Session } from '$lib/types/api';
 
 type Pagination = { page?: number; limit?: number; total?: number } | null;

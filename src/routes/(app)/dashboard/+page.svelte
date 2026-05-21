@@ -248,17 +248,19 @@
                 {formatIDR(session.total_amount)}
               </div>
 
-              <!-- Progress -->
+              <!-- Live Split tracker: gradient (tertiary purple → secondary teal)
+                   marks the paid portion; the remainder is a softer surface tier
+                   so the split between paid and pending reads clearly. -->
               <div class="space-y-2">
-                <div class="h-1.5 bg-[#fff0ef] rounded-full overflow-hidden">
+                <div class="h-2 bg-[#f5dddb] rounded-full overflow-hidden relative">
                   <div
-                    class="h-full bg-[#FF6B6B] rounded-full transition-all duration-300"
+                    class="h-full rounded-full transition-all duration-300 bg-gradient-to-r from-[#842bd2] to-[#14B8A6]"
                     style="width: {getProgressWidth(session)}%"
                   ></div>
                 </div>
                 <div class="flex items-center justify-between text-xs text-[#584140]">
                   <span>{session.paid_count} of {session.participant_count} paid</span>
-                  <span>{getProgressWidth(session)}%</span>
+                  <span class="font-medium text-[#251818]">{getProgressWidth(session)}%</span>
                 </div>
               </div>
             </div>

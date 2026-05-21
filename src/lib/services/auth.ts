@@ -1,5 +1,5 @@
-import { get, post, put } from './api';
-import { setToken, setUser, logout as logoutStore } from '$lib/stores/auth';
+import { post, put } from './api';
+import { setToken, setUser } from '$lib/stores/auth';
 
 // API Response Types
 interface LoginResponse {
@@ -69,10 +69,6 @@ export async function login(data: { whatsapp_number: string; password: string })
     setUser(response.user);
   }
   return response;
-}
-
-export async function logout() {
-  logoutStore();
 }
 
 export async function updateProfile(data: { full_name?: string; avatar_url?: string }): Promise<UpdateProfileResponse | ErrorResponse> {

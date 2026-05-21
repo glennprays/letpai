@@ -1,7 +1,4 @@
 <script lang="ts">
-  import { auth } from '$lib/stores/auth';
-  import { goto } from '$app/navigation';
-  import { page } from '$app/stores';
   import Sidebar from '$lib/components/layout/Sidebar.svelte';
   import BottomTabBar from '$lib/components/layout/BottomTabBar.svelte';
 
@@ -11,20 +8,7 @@
 
   let { children }: Props = $props();
 
-  // Force users without a full name onto /profile until they fill it in.
-  // (app)/ routes are the only ones this layout renders, so checking the
-  // pathname against /profile is enough to avoid a self-redirect loop —
-  // /login and /register live under (auth)/+layout.svelte.
-  // (We intentionally do NOT cache a "redirected once" flag: SvelteKit
-  // reuses the layout instance across in-group navigations, so a flag
-  // would let users bypass the gate by clicking Sidebar/BottomTabBar links.)
-  $effect(() => {
-    if ($auth.isAuthenticated && $auth.user && !$auth.user.full_name) {
-      if ($page.url.pathname !== '/profile') {
-        goto('/profile', { replaceState: true });
-      }
-    }
-  });
+  // Auth + profile-completion gating happens server-side in +layout.server.ts.
 </script>
 
 <div class="min-h-screen bg-[#fff8f7]">

@@ -13,25 +13,14 @@ interface AuthState {
   isAuthenticated: boolean;
 }
 
-const getInitialState = (): AuthState => {
-  if (typeof window === 'undefined') {
-    return { token: null, user: null, isAuthenticated: false };
-  }
-  
-  const token = localStorage.getItem('token');
-  const userStr = localStorage.getItem('user');
-  const user = userStr ? JSON.parse(userStr) : null;
-  
-  return {
-    token,
-    user,
-    isAuthenticated: !!token
-  };
-};
+// The store starts empty. The canonical source of truth is the server's
+// cookie (set by login/+page.server.ts and read by routes/+layout.server.ts),
+// which is hydrated into the store on mount via initAuth(). Local storage
+// is only a write-through cache so client-side fetches can attach a bearer
+// header without async cookie parsing.
+const EMPTY_STATE: AuthState = { token: null, user: null, isAuthenticated: false };
 
-const initialState = getInitialState();
-
-export const auth = writable<AuthState>(initialState);
+export const auth = writable<AuthState>(EMPTY_STATE);
 
 export const isAuthenticated = derived(auth, ($auth) => $auth.isAuthenticated);
 export const user = derived(auth, ($auth) => $auth.user);

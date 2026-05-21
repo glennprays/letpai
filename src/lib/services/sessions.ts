@@ -65,10 +65,16 @@ export async function addParticipants(
 	return post(`/sessions/${sessionId}/participants`, data, customFetch, serverToken);
 }
 
+/**
+ * Update a participant's custom name / WhatsApp number. Only valid for
+ * custom (unlinked) participants — for linked contacts, edit the contact
+ * instead. Payment status transitions (submit / approve / reject) use the
+ * dedicated /payments/* endpoints, not this one.
+ */
 export async function updateParticipant(
 	sessionId: string,
 	participantId: string,
-	data: { payment_status: 'paid' | 'rejected'; rejection_reason?: string },
+	data: { custom_name?: string; custom_whatsapp?: string },
 	customFetch?: typeof fetch,
 	serverToken?: string
 ): Promise<{ success: boolean; data: unknown }> {
@@ -117,7 +123,7 @@ export async function calculateSplits(
 	customFetch?: typeof fetch,
 	serverToken?: string
 ): Promise<{ success: boolean; data: unknown; message: string }> {
-	return post(`/sessions/${sessionId}/calculate`, {}, customFetch, serverToken);
+	return put(`/sessions/${sessionId}/calculate-splits`, {}, customFetch, serverToken);
 }
 
 export async function sendNotifications(
@@ -125,5 +131,5 @@ export async function sendNotifications(
 	customFetch?: typeof fetch,
 	serverToken?: string
 ): Promise<{ success: boolean; message: string }> {
-	return post(`/sessions/${sessionId}/notify`, {}, customFetch, serverToken);
+	return post(`/sessions/${sessionId}/send-notifications`, {}, customFetch, serverToken);
 }

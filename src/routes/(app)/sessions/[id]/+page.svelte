@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
+	import { goto, invalidateAll } from '$app/navigation';
 	import {
 		ArrowLeft,
 		Plus,
@@ -14,11 +14,31 @@
 		Phone,
 		Type,
 		Trash2,
-		User
+		Send,
+		Bell,
+		ImageIcon,
+		ThumbsUp,
+		ThumbsDown
 	} from 'lucide-svelte';
 	import type { PageData } from './$types';
 	import { formatIDR, formatRelativeTime } from '$lib/utils/format';
+	import {
+		addParticipants,
+		addBillItem,
+		deleteBillItem,
+		calculateSplits,
+		sendNotifications,
+		cancelSession
+	} from '$lib/services/sessions';
+	import { sendParticipantReminder, sendBulkReminder } from '$lib/services/notifications';
+	import {
+		approvePayment,
+		rejectPayment,
+		bulkApprove
+	} from '$lib/services/payments';
 	import Modal from '$lib/components/ui/Modal.svelte';
+	import ConfirmDialog from '$lib/components/ui/ConfirmDialog.svelte';
+	import { toast } from '$lib/stores/toast';
 
 	interface Props {
 		data: PageData;
@@ -28,21 +48,29 @@
 
 	let showAddContactModal = $state(false);
 	let showAddBillModal = $state(false);
-	let selectedContacts = $state<Set<string>>(new Set());
+	let showCancelDialog = $state(false);
 	let isLoading = $state(false);
+	let isSplitting = $state(false);
+	let isNotifying = $state(false);
+	let isCancelling = $state(false);
+	let isBulkReminding = $state(false);
+	let remindingParticipantId = $state<string | null>(null);
+	let actingPaymentId = $state<string | null>(null);
+	let isBulkApproving = $state(false);
 	let contactsPickerSupported = $state(false);
+
+	const submittedProofs = $derived(
+		(data.session.participants || []).filter((p) => p.payment_status === 'submitted')
+	);
 
 	// Temporary state for adding contact
 	let newContactName = $state('');
 	let newContactPhone = $state('');
 
-	// Temporary state for adding bill
+	// Temporary state for adding bill (single `description` field — matches backend)
 	let newBillName = $state('');
 	let newBillAmount = $state('');
-	let newBillDescription = $state('');
-	let selectedBillParticipant = $state<string>('');
 
-	// Check if Contacts Picker API is supported
 	$effect(() => {
 		contactsPickerSupported = 'contacts' in navigator && 'ContactsManager' in window;
 	});
@@ -75,165 +103,111 @@
 
 	const HeaderStatusIcon = $derived(getStatusIcon(data.session.status));
 
-	function toggleContactSelection(participantId: string) {
-		if (selectedContacts.has(participantId)) {
-			selectedContacts.delete(participantId);
-		} else {
-			selectedContacts.add(participantId);
-		}
-		selectedContacts = new Set(selectedContacts);
-	}
-
 	async function openContactsPicker() {
 		if (!contactsPickerSupported) return;
 
 		try {
-			const contacts = await (navigator as any).contacts.select(['name', 'tel'], {
-				multiple: true
-			});
+			const contacts = await (navigator as { contacts?: { select: (fields: string[], opts: { multiple: boolean }) => Promise<Array<{ name?: string[]; tel?: string[] }>> } }).contacts!.select(
+				['name', 'tel'],
+				{ multiple: true }
+			);
 
 			if (contacts && contacts.length > 0) {
-				// Add each contact to the session
-				for (const contact of contacts) {
-					await addParticipantToSession(
-						contact.name || 'Unknown',
-						contact.tel?.[0] || ''
-					);
+				const payload = contacts
+					.map((c) => ({
+						custom_name: Array.isArray(c.name) ? c.name[0] : (c.name as string | undefined) || 'Unknown',
+						custom_whatsapp: c.tel?.[0] || ''
+					}))
+					.filter((p) => p.custom_whatsapp.length > 0);
+
+				if (payload.length > 0) {
+					isLoading = true;
+					try {
+						await addParticipants(data.session.session_id, { participants: payload });
+						await invalidateAll();
+					} finally {
+						isLoading = false;
+					}
 				}
-				// Reload to show new participants
-				window.location.reload();
 			}
 		} catch (error) {
 			console.error('Contacts picker error:', error);
+			toast.error('Failed to import contacts');
 		}
 	}
 
 	async function handleManualAddContact() {
 		if (!newContactName.trim() || !newContactPhone.trim()) return;
-
-		const success = await addParticipantToSession(
-			newContactName.trim(),
-			newContactPhone.trim()
-		);
-
-		if (success) {
+		isLoading = true;
+		try {
+			await addParticipants(data.session.session_id, {
+				participants: [
+					{ custom_name: newContactName.trim(), custom_whatsapp: newContactPhone.trim() }
+				]
+			});
 			newContactName = '';
 			newContactPhone = '';
 			showAddContactModal = false;
-			window.location.reload();
-		}
-	}
-
-	async function addParticipantToSession(name: string, phone: string): Promise<boolean> {
-		isLoading = true;
-		try {
-			const response = await fetch(`/api/v1/sessions/${data.session.session_id}/participants`, {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					Authorization: `Bearer ${localStorage.getItem('token')}`
-				},
-				body: JSON.stringify({
-					participants: [
-						{
-							name,
-							whatsapp_number: phone
-						}
-					]
-				})
-			});
-
-			return response.ok;
+			await invalidateAll();
 		} catch (error) {
-			console.error('Add contact error:', error);
-			return false;
+			console.error('Add participant error:', error);
+			toast.error('Failed to add participant');
 		} finally {
 			isLoading = false;
 		}
 	}
 
-	async function handleEqualSplit() {
-		if (selectedContacts.size === 0) return;
-
-		isLoading = true;
+	async function handleCalculateSplits() {
+		if (!data.session.participants?.length) {
+			toast.error('Add participants first');
+			return;
+		}
+		if (!data.session.bill_items?.length) {
+			toast.error('Add at least one bill item first');
+			return;
+		}
+		isSplitting = true;
 		try {
-			const totalPerPerson = data.session.total_amount / selectedContacts.size;
-
-			for (const participantId of selectedContacts) {
-				await fetch(`/api/v1/sessions/${data.session.session_id}/participants/${participantId}`, {
-					method: 'PUT',
-					headers: {
-						'Content-Type': 'application/json',
-						Authorization: `Bearer ${localStorage.getItem('token')}`
-					},
-					body: JSON.stringify({ share_amount: totalPerPerson })
-				});
-			}
-
-			selectedContacts = new Set();
-			window.location.reload();
+			await calculateSplits(data.session.session_id);
+			await invalidateAll();
+			toast.success('Splits calculated');
 		} catch (error) {
-			console.error('Equal split error:', error);
+			console.error('Calculate splits error:', error);
+			toast.error('Failed to calculate splits');
 		} finally {
-			isLoading = false;
+			isSplitting = false;
 		}
 	}
 
 	async function handleAddBill() {
-		if (!newBillName.trim() || !newBillAmount.trim() || !selectedBillParticipant) return;
+		if (!newBillName.trim() || !newBillAmount.trim()) return;
+		const amount = parseFloat(newBillAmount);
+		if (!Number.isFinite(amount) || amount <= 0) {
+			toast.error('Enter a valid amount');
+			return;
+		}
 
 		isLoading = true;
 		try {
-			const amountInCents = Math.round(parseFloat(newBillAmount) * 100);
-
-			// Add the bill item
-			const billResponse = await fetch(`/api/v1/sessions/${data.session.session_id}/bills`, {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					Authorization: `Bearer ${localStorage.getItem('token')}`
-				},
-				body: JSON.stringify({
-					name: newBillName.trim(),
-					description: newBillDescription.trim() || undefined,
-					amount: amountInCents
-				})
+			await addBillItem(data.session.session_id, {
+				description: newBillName.trim(),
+				amount
 			});
-
-			if (billResponse.ok) {
-				// Update the participant's share amount
-				const participant = data.session.participants?.find(
-					(p) => p.participant_id === selectedBillParticipant
-				);
-
-				if (participant) {
-					const newShareAmount = participant.share_amount + amountInCents;
-
-					await fetch(
-						`/api/v1/sessions/${data.session.session_id}/participants/${selectedBillParticipant}`,
-						{
-							method: 'PUT',
-							headers: {
-								'Content-Type': 'application/json',
-								Authorization: `Bearer ${localStorage.getItem('token')}`
-							},
-							body: JSON.stringify({ share_amount: newShareAmount })
-						}
-					);
+			// Recompute equal splits across participants now that bill totals changed
+			if (data.session.participants?.length) {
+				try {
+					await calculateSplits(data.session.session_id);
+				} catch (e) {
+					console.warn('Auto-recalculate splits failed:', e);
 				}
-
-				// Reset form and close modal
-				newBillName = '';
-				newBillAmount = '';
-				newBillDescription = '';
-				selectedBillParticipant = '';
-				showAddBillModal = false;
-
-				// Reload to show updated data
-				window.location.reload();
 			}
+			newBillName = '';
+			newBillAmount = '';
+			showAddBillModal = false;
+			await invalidateAll();
 		} catch (error) {
 			console.error('Add bill error:', error);
+			toast.error('Failed to add bill');
 		} finally {
 			isLoading = false;
 		}
@@ -241,54 +215,141 @@
 
 	async function handleDeleteBill(billItemId: string) {
 		if (!confirm('Are you sure you want to delete this bill?')) return;
-
 		isLoading = true;
 		try {
-			await fetch(`/api/v1/sessions/${data.session.session_id}/bills/${billItemId}`, {
-				method: 'DELETE',
-				headers: {
-					Authorization: `Bearer ${localStorage.getItem('token')}`
+			await deleteBillItem(data.session.session_id, billItemId);
+			if (data.session.participants?.length) {
+				try {
+					await calculateSplits(data.session.session_id);
+				} catch (e) {
+					console.warn('Auto-recalculate splits failed:', e);
 				}
-			});
-
-			window.location.reload();
+			}
+			await invalidateAll();
 		} catch (error) {
 			console.error('Delete bill error:', error);
+			toast.error('Failed to delete bill');
 		} finally {
 			isLoading = false;
 		}
 	}
 
+	async function handleSendNotifications() {
+		if (!data.session.participants?.length) {
+			toast.error('Add participants first');
+			return;
+		}
+		isNotifying = true;
+		try {
+			await sendNotifications(data.session.session_id);
+			toast.success('Notifications sent');
+		} catch (error) {
+			console.error('Send notifications error:', error);
+			toast.error('Failed to send notifications');
+		} finally {
+			isNotifying = false;
+		}
+	}
+
 	function openAddBillModal() {
 		if (!data.session.participants || data.session.participants.length === 0) {
-			alert('Please add participants first before adding bills.');
+			toast.error('Please add participants first before adding bills.');
 			return;
 		}
 		showAddBillModal = true;
 	}
 
-	// Group bills by participant for display
-	function getBillsByParticipant() {
-		const grouped: Record<string, typeof data.session.bill_items> = {};
-
-		if (!data.session.bill_items) return grouped;
-
-		// Note: In a real implementation, bills would have a participant_id field
-		// For now, we'll just show all bills together
-		grouped['all'] = data.session.bill_items;
-
-		return grouped;
-	}
-
-	function getTotalForParticipant(participantId: string): number {
-		const participant = data.session.participants?.find(
-			(p) => p.participant_id === participantId
-		);
-		return participant?.share_amount || 0;
-	}
-
 	function handleBack() {
 		goto('/dashboard');
+	}
+
+	async function handleRemindParticipant(participantId: string) {
+		remindingParticipantId = participantId;
+		try {
+			const result = await sendParticipantReminder(participantId);
+			toast.success(result.message || 'Reminder sent');
+		} catch (error) {
+			console.error('Send reminder error:', error);
+			const msg = error instanceof Error ? error.message : 'Failed to send reminder';
+			toast.error(msg);
+		} finally {
+			remindingParticipantId = null;
+		}
+	}
+
+	async function handleBulkReminder() {
+		if (!data.session.participants?.length) return;
+		isBulkReminding = true;
+		try {
+			const result = await sendBulkReminder(data.session.session_id);
+			toast.success(result.message || 'Reminders sent to all unpaid participants');
+		} catch (error) {
+			console.error('Bulk reminder error:', error);
+			const msg = error instanceof Error ? error.message : 'Failed to send reminders';
+			toast.error(msg);
+		} finally {
+			isBulkReminding = false;
+		}
+	}
+
+	async function handleApprove(participantId: string) {
+		actingPaymentId = participantId;
+		try {
+			await approvePayment(participantId);
+			toast.success('Payment approved');
+			await invalidateAll();
+		} catch (error) {
+			console.error('Approve payment error:', error);
+			toast.error('Failed to approve payment');
+		} finally {
+			actingPaymentId = null;
+		}
+	}
+
+	async function handleReject(participantId: string) {
+		const reason = window.prompt('Reason for rejection (optional):') ?? undefined;
+		actingPaymentId = participantId;
+		try {
+			await rejectPayment(participantId, reason);
+			toast.success('Payment rejected');
+			await invalidateAll();
+		} catch (error) {
+			console.error('Reject payment error:', error);
+			toast.error('Failed to reject payment');
+		} finally {
+			actingPaymentId = null;
+		}
+	}
+
+	async function handleBulkApproveAll() {
+		const ids = submittedProofs.map((p) => p.participant_id);
+		if (ids.length === 0) return;
+		isBulkApproving = true;
+		try {
+			const result = await bulkApprove(ids);
+			toast.success(result.message || `Approved ${ids.length} payments`);
+			await invalidateAll();
+		} catch (error) {
+			console.error('Bulk approve error:', error);
+			toast.error('Failed to approve payments');
+		} finally {
+			isBulkApproving = false;
+		}
+	}
+
+	async function handleCancelSession() {
+		isCancelling = true;
+		try {
+			await cancelSession(data.session.session_id);
+			toast.success('Session cancelled');
+			goto('/dashboard');
+		} catch (error) {
+			console.error('Cancel session error:', error);
+			toast.error('Failed to cancel session');
+		} finally {
+			isCancelling = false;
+			showCancelDialog = false;
+		}
 	}
 </script>
 
@@ -310,10 +371,23 @@
 					Created {formatRelativeTime(data.session.created_at)}
 				</p>
 			</div>
-			<span class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full {getStatusColor(data.session.status)}">
-				<HeaderStatusIcon class="w-3.5 h-3.5" />
-				{data.session.status}
-			</span>
+			<div class="flex items-center gap-2">
+				<span class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full {getStatusColor(data.session.status)}">
+					<HeaderStatusIcon class="w-3.5 h-3.5" />
+					{data.session.status}
+				</span>
+				{#if data.session.status !== 'cancelled' && data.session.status !== 'completed'}
+					<button
+						type="button"
+						onclick={() => (showCancelDialog = true)}
+						class="inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded-full text-[#584140] hover:bg-[#fbe3e1] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6]"
+						title="Cancel session"
+						aria-label="Cancel session"
+					>
+						<XCircle class="w-5 h-5" />
+					</button>
+				{/if}
+			</div>
 		</header>
 
 		<!-- Description -->
@@ -331,7 +405,7 @@
 					<div>
 						<p class="text-sm text-[#584140]">Total</p>
 						<p class="text-lg font-semibold text-[#251818]">
-							{getCurrencySymbol(data.session.currency)} {(data.session.total_amount / 100).toLocaleString()}
+							{formatIDR(data.session.total_amount)}
 						</p>
 					</div>
 				</div>
@@ -377,29 +451,55 @@
 				</button>
 			</div>
 
-			<!-- Equal Split Action -->
+			<!-- Actions -->
 			{#if data.session.participants && data.session.participants.length > 0}
-				<div class="mb-4 p-4 bg-[#fff0ef] rounded-xl">
-					<div class="flex items-center justify-between">
-						<div>
-							<h3 class="text-sm font-medium text-[#251818]">Equal Split</h3>
-							<p class="text-xs text-[#584140] mt-0.5">
-								{selectedContacts.size > 0
-									? `${selectedContacts.size} selected`
-									: 'Select participants below to split total equally'}
-							</p>
-						</div>
+				<div class="mb-4 p-4 bg-[#fff0ef] rounded-2xl flex flex-wrap items-center justify-between gap-3">
+					<div>
+						<h3 class="text-sm font-medium text-[#251818]">Equal Split &amp; Notify</h3>
+						<p class="text-xs text-[#584140] mt-0.5">
+							Divide the total across all {data.session.participants.length} participants, then notify everyone.
+						</p>
+					</div>
+					<div class="flex flex-wrap items-center gap-2">
 						<button
-							onclick={handleEqualSplit}
-							disabled={selectedContacts.size === 0 || isLoading}
-							class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-gradient-to-br from-[#ae2f34] to-[#FF6B6B] rounded-xl hover:from-[#9a282c] hover:to-[#FF5252] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+							type="button"
+							onclick={handleCalculateSplits}
+							disabled={isSplitting || isLoading || !data.session.bill_items?.length}
+							class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#006b5f] bg-[#6df5e1] rounded-2xl hover:brightness-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6]"
 						>
-							{#if isLoading}
+							{#if isSplitting}
 								<Loader2 class="w-4 h-4 animate-spin" />
 							{:else}
 								<Share2 class="w-4 h-4" />
 							{/if}
-							Split Equally
+							Calculate Splits
+						</button>
+						<button
+							type="button"
+							onclick={handleSendNotifications}
+							disabled={isNotifying || isLoading}
+							class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-gradient-to-br from-[#ae2f34] to-[#FF6B6B] rounded-2xl hover:opacity-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6]"
+						>
+							{#if isNotifying}
+								<Loader2 class="w-4 h-4 animate-spin" />
+							{:else}
+								<Send class="w-4 h-4" />
+							{/if}
+							Send Notifications
+						</button>
+						<button
+							type="button"
+							onclick={handleBulkReminder}
+							disabled={isBulkReminding || isLoading}
+							class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#251818] bg-white rounded-2xl hover:bg-[#fff0ef] disabled:opacity-50 disabled:cursor-not-allowed transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6]"
+							title="Send a reminder to every unpaid participant"
+						>
+							{#if isBulkReminding}
+								<Loader2 class="w-4 h-4 animate-spin" />
+							{:else}
+								<Bell class="w-4 h-4" />
+							{/if}
+							Remind All
 						</button>
 					</div>
 				</div>
@@ -412,38 +512,135 @@
 					<p class="text-sm">No participants yet. Add contacts to get started.</p>
 				</div>
 			{:else}
-				<div class="space-y-2">
+				<ul class="space-y-2">
 					{#each data.session.participants as participant}
-						<button
-							type="button"
-							class="w-full text-left flex items-center justify-between p-3 rounded-2xl transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6]
-							{selectedContacts.has(participant.participant_id)
-								? 'bg-[#FF6B6B]/10'
-								: 'bg-[#fff0ef]/50 hover:bg-[#fff0ef]'}"
-							onclick={() => toggleContactSelection(participant.participant_id)}
-						>
-							<div class="flex items-center gap-3">
-								<div class="w-10 h-10 bg-[#fff0ef] rounded-full flex items-center justify-center text-sm font-medium text-[#251818]">
+						<li class="flex items-center justify-between p-3 rounded-2xl bg-[#fff0ef]/50">
+							<div class="flex items-center gap-3 min-w-0">
+								<div class="w-10 h-10 bg-[#fff0ef] rounded-full flex items-center justify-center text-sm font-medium text-[#251818] flex-shrink-0">
 									{participant.name.charAt(0).toUpperCase()}
 								</div>
-								<div>
-									<p class="text-sm font-medium text-[#251818]">{participant.name}</p>
-									<p class="text-xs text-[#584140]">{participant.whatsapp_number}</p>
+								<div class="min-w-0">
+									<p class="text-sm font-medium text-[#251818] truncate">{participant.name}</p>
+									<p class="text-xs text-[#584140] truncate">{participant.whatsapp_number}</p>
 								</div>
 							</div>
-							<div class="flex items-center gap-3">
+							<div class="flex items-center gap-2 flex-shrink-0">
 								<div class="text-right">
 									<p class="text-sm font-medium text-[#251818]">
 										{formatIDR(participant.share_amount)}
 									</p>
 									<p class="text-xs text-[#584140]">{participant.payment_status}</p>
 								</div>
+								{#if participant.payment_status !== 'paid'}
+									<button
+										type="button"
+										onclick={() => handleRemindParticipant(participant.participant_id)}
+										disabled={remindingParticipantId === participant.participant_id || isLoading}
+										class="inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded-full text-[#584140] hover:bg-[#fbe3e1] disabled:opacity-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6]"
+										title="Send reminder"
+										aria-label="Send reminder to {participant.name}"
+									>
+										{#if remindingParticipantId === participant.participant_id}
+											<Loader2 class="w-4 h-4 animate-spin" />
+										{:else}
+											<Bell class="w-4 h-4" />
+										{/if}
+									</button>
+								{/if}
 							</div>
-						</button>
+						</li>
 					{/each}
-				</div>
+				</ul>
 			{/if}
 		</section>
+
+		<!-- Payment Proofs Review -->
+		{#if submittedProofs.length > 0}
+			<section class="bg-white rounded-2xl p-6 mb-6 shadow-[0_1px_3px_rgba(37,24,24,0.04)]">
+				<div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+					<div>
+						<h2 class="text-lg font-semibold text-[#251818]">Payment Review</h2>
+						<p class="text-xs text-[#584140] mt-0.5">
+							{submittedProofs.length} pending {submittedProofs.length === 1 ? 'proof' : 'proofs'}
+						</p>
+					</div>
+					{#if submittedProofs.length > 1}
+						<button
+							type="button"
+							onclick={handleBulkApproveAll}
+							disabled={isBulkApproving}
+							class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#006b5f] bg-[#6df5e1] rounded-2xl hover:brightness-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6]"
+						>
+							{#if isBulkApproving}
+								<Loader2 class="w-4 h-4 animate-spin" />
+							{:else}
+								<ThumbsUp class="w-4 h-4" />
+							{/if}
+							Approve All
+						</button>
+					{/if}
+				</div>
+
+				<ul class="space-y-3">
+					{#each submittedProofs as proof}
+						<li class="p-3 rounded-2xl bg-[#fff0ef]/50 flex items-start gap-3 flex-wrap">
+							{#if proof.payment_proof_url}
+								<a
+									href={proof.payment_proof_url}
+									target="_blank"
+									rel="noopener noreferrer"
+									class="block w-16 h-16 rounded-2xl overflow-hidden bg-white flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6]"
+									title="Open proof"
+								>
+									<img
+										src={proof.payment_proof_url}
+										alt="Payment proof from {proof.name}"
+										class="w-full h-full object-cover"
+									/>
+								</a>
+							{:else}
+								<div class="w-16 h-16 rounded-2xl bg-[#fbe3e1] flex items-center justify-center flex-shrink-0">
+									<ImageIcon class="w-6 h-6 text-[#584140]/50" />
+								</div>
+							{/if}
+
+							<div class="flex-1 min-w-0">
+								<p class="text-sm font-medium text-[#251818] truncate">{proof.name}</p>
+								<p class="text-xs text-[#584140] truncate">{proof.whatsapp_number}</p>
+								<p class="text-sm text-[#251818] mt-1">
+									{formatIDR(proof.share_amount)}
+								</p>
+							</div>
+
+							<div class="flex items-center gap-2 flex-shrink-0">
+								<button
+									type="button"
+									onclick={() => handleApprove(proof.participant_id)}
+									disabled={actingPaymentId === proof.participant_id}
+									class="inline-flex items-center gap-1.5 px-3 py-2 rounded-2xl text-sm font-medium text-[#047857] bg-[#10B981]/15 hover:bg-[#10B981]/25 disabled:opacity-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6]"
+								>
+									{#if actingPaymentId === proof.participant_id}
+										<Loader2 class="w-4 h-4 animate-spin" />
+									{:else}
+										<ThumbsUp class="w-4 h-4" />
+									{/if}
+									Approve
+								</button>
+								<button
+									type="button"
+									onclick={() => handleReject(proof.participant_id)}
+									disabled={actingPaymentId === proof.participant_id}
+									class="inline-flex items-center gap-1.5 px-3 py-2 rounded-2xl text-sm font-medium text-[#991B1B] bg-[#EF4444]/15 hover:bg-[#EF4444]/25 disabled:opacity-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6]"
+								>
+									<ThumbsDown class="w-4 h-4" />
+									Reject
+								</button>
+							</div>
+						</li>
+					{/each}
+				</ul>
+			</section>
+		{/if}
 
 		<!-- Bill Items Section -->
 		<section class="bg-white rounded-2xl p-6 shadow-[0_1px_3px_rgba(37,24,24,0.04)]">
@@ -466,15 +663,15 @@
 			{:else}
 				<div class="space-y-3">
 					{#each data.session.bill_items as item}
-						<div class="p-4 rounded-xl bg-[#fff0ef]/50">
+						<div class="p-4 rounded-2xl bg-[#fff0ef]/50">
 							<div class="flex items-start justify-between gap-4">
 								<div class="flex-1 min-w-0">
 									<div class="flex items-center gap-2">
 										<Receipt class="w-4 h-4 text-[#584140] flex-shrink-0" />
-										<p class="text-sm font-medium text-[#251818] truncate">{item.name}</p>
+										<p class="text-sm font-medium text-[#251818] truncate">{item.description}</p>
 									</div>
-									{#if item.description}
-										<p class="text-xs text-[#584140] mt-1 ml-6">{item.description}</p>
+									{#if item.category}
+										<p class="text-xs text-[#584140] mt-1 ml-6 capitalize">{item.category}</p>
 									{/if}
 								</div>
 								<div class="flex items-center gap-3 flex-shrink-0">
@@ -604,19 +801,6 @@
 		</div>
 
 		<div>
-			<label for="bill_description" class="block text-sm font-medium text-[#251818] mb-1">
-				Description <span class="text-[#584140]/50 font-normal">(optional)</span>
-			</label>
-			<textarea
-				id="bill_description"
-				bind:value={newBillDescription}
-				placeholder="Add details about this bill..."
-				rows="2"
-				class="w-full px-4 py-2.5 bg-[#fff0ef]/50 rounded-xl text-sm text-[#251818] focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent resize-none"
-			></textarea>
-		</div>
-
-		<div>
 			<label for="bill_amount" class="block text-sm font-medium text-[#251818] mb-1">
 				Amount ({getCurrencySymbol(data.session.currency)}) <span class="text-[#ae2f34]">*</span>
 			</label>
@@ -629,42 +813,19 @@
 				min="0"
 				class="w-full px-4 py-2.5 bg-[#fff0ef]/50 rounded-xl text-sm text-[#251818] focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent"
 			/>
-		</div>
-
-		<div>
-			<label for="bill_participant" class="block text-sm font-medium text-[#251818] mb-1">
-				Assign to <span class="text-[#ae2f34]">*</span>
-			</label>
-			<div class="relative">
-				<User class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#584140] pointer-events-none" />
-				<select
-					id="bill_participant"
-					bind:value={selectedBillParticipant}
-					class="w-full pl-10 pr-10 py-2.5 bg-[#f5dddb] rounded-xl text-sm text-[#251818] focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent appearance-none bg-no-repeat bg-[length:1.25em_1.25em] bg-[right_0.75rem_center]"
-					style="background-image:url(&quot;data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23584140' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e&quot;);"
-				>
-					<option value="">Select participant</option>
-					{#each data.session.participants || [] as participant}
-						<option value={participant.participant_id}>{participant.name}</option>
-					{/each}
-				</select>
-			</div>
 			<p class="text-xs text-[#584140] mt-1.5">
-				This bill will be added to the selected participant's share.
+				This bill is added to the session total and split equally across all {data.session.participants?.length || 0} participants.
 			</p>
 		</div>
 
 		<!-- Preview -->
-		{#if newBillAmount && selectedBillParticipant}
-			<div class="p-3 bg-blue-50 rounded-xl">
-				<p class="text-xs text-blue-700 font-medium mb-1">Preview</p>
+		{#if newBillAmount}
+			<div class="p-3 bg-[#fff0ef] rounded-2xl">
+				<p class="text-xs text-[#584140] font-medium mb-1">Preview</p>
 				<div class="flex items-center justify-between text-sm">
-					<span class="text-blue-600">
-						{data.session.participants?.find((p) => p.participant_id === selectedBillParticipant)
-							?.name}
-					</span>
-					<span class="font-semibold text-blue-900">
-						{formatIDR(Math.round(parseFloat(newBillAmount || '0') * 100))}
+					<span class="text-[#251818]">{newBillName.trim() || 'New bill'}</span>
+					<span class="font-semibold text-[#251818]">
+						{formatIDR(parseFloat(newBillAmount || '0'))}
 					</span>
 				</div>
 			</div>
@@ -679,8 +840,8 @@
 			</button>
 			<button
 				onclick={handleAddBill}
-				disabled={isLoading || !newBillName.trim() || !newBillAmount.trim() || !selectedBillParticipant}
-				class="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-gradient-to-br from-[#ae2f34] to-[#FF6B6B] rounded-xl hover:from-[#9a282c] hover:to-[#FF5252] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+				disabled={isLoading || !newBillName.trim() || !newBillAmount.trim()}
+				class="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-gradient-to-br from-[#ae2f34] to-[#FF6B6B] rounded-xl hover:opacity-95 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
 			>
 				{#if isLoading}
 					<Loader2 class="w-4 h-4 animate-spin mx-auto" />
@@ -691,3 +852,15 @@
 		</div>
 	</div>
 </Modal>
+
+<!-- Cancel Session confirm -->
+<ConfirmDialog
+	open={showCancelDialog}
+	title="Cancel session?"
+	message="Cancelling closes this session for everyone. Participants will no longer receive notifications or be able to submit payments. This cannot be undone."
+	confirmText={isCancelling ? 'Cancelling…' : 'Cancel session'}
+	cancelText="Keep session"
+	variant="danger"
+	onconfirm={handleCancelSession}
+	oncancel={() => (showCancelDialog = false)}
+/>
