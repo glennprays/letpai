@@ -11,14 +11,14 @@
     ArrowRight,
   } from "lucide-svelte";
 
-  $effect(() => {
-    if ($auth.isAuthenticated) {
-      goto("/dashboard");
-    }
-  });
+  const cta = $derived(
+    $auth.isAuthenticated
+      ? { label: "Go to Dashboard", href: "/dashboard" }
+      : { label: "Get Started", href: "/login" }
+  );
 
-  function handleGetStarted() {
-    goto("/login");
+  function handleCta() {
+    goto(cta.href);
   }
 </script>
 
@@ -57,8 +57,8 @@
           <div
             style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;"
           >
-            <button class="btn-coral" onclick={handleGetStarted}>
-              Get Started <ArrowRight size={16} />
+            <button class="btn-coral" onclick={handleCta}>
+              {cta.label} <ArrowRight size={16} />
             </button>
             <span style="font-size:13px; color:#9CA3AF; font-weight:500;"
               >Free to use · No sign-up for friends</span
@@ -367,9 +367,9 @@
           <button
             class="btn-white"
             style="position:relative; z-index:1; white-space:nowrap; font-size:16px; padding:15px 32px;"
-            onclick={handleGetStarted}
+            onclick={handleCta}
           >
-            Get Started Free <ArrowRight size={16} />
+            {cta.label} <ArrowRight size={16} />
           </button>
         </div>
       </section>

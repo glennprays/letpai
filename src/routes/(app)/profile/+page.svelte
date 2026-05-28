@@ -7,27 +7,21 @@
   import Input from '$lib/components/ui/Input.svelte';
   import Button from '$lib/components/ui/Button.svelte';
 
-  // Loading state to prevent avatar color glitch
   let isReady = $state(false);
+  let initialized = $state(false);
 
-  // Get initial value from auth store
-  const getInitialName = () => $auth.user?.full_name || '';
-
-  // Form state
-  let fullName = $state(getInitialName());
-  let originalFullName = $state(getInitialName());
+  let fullName = $state('');
+  let originalFullName = $state('');
   let isSaving = $state(false);
   let error = $state('');
 
-  // Ensure auth data is loaded before rendering
   $effect(() => {
-    if ($auth.user && $auth.user.user_id) {
-      isReady = true;
+    if (!initialized && $auth.user?.user_id) {
       const newName = $auth.user.full_name || '';
-      if (newName !== fullName && newName === originalFullName) {
-        fullName = newName;
-        originalFullName = newName;
-      }
+      fullName = newName;
+      originalFullName = newName;
+      isReady = true;
+      initialized = true;
     }
   });
 
@@ -54,9 +48,14 @@
     isSaving = true;
     error = '';
 
+    const wasFirstCompletion = originalFullName === '';
     try {
       await updateProfile({ full_name: fullName.trim() });
       originalFullName = fullName;
+      if (wasFirstCompletion) {
+        await goto('/dashboard');
+        return;
+      }
     } catch (err) {
       error = err instanceof Error ? err.message : 'Failed to update profile';
     } finally {
