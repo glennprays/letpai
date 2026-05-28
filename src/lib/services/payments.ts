@@ -116,3 +116,27 @@ export async function bulkReject(
 		serverToken
 	);
 }
+
+export interface MarkPaidResponse {
+	success: boolean;
+	data?: {
+		message: string;
+		participant_id: string;
+		payment_status: string;
+		paid_manually: boolean;
+	};
+	message?: string;
+}
+
+/**
+ * Mark a participant as paid without requiring a proof upload. Useful for
+ * cash payments and offline transfers the host has already confirmed.
+ * Backend returns 409 if the participant is already paid.
+ */
+export async function markPaidWithoutProof(
+	participantId: string,
+	customFetch?: typeof fetch,
+	serverToken?: string
+): Promise<MarkPaidResponse> {
+	return post(`/participants/${participantId}/mark-paid`, {}, customFetch, serverToken);
+}

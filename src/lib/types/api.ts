@@ -78,8 +78,11 @@ export interface BillItem {
   description: string;
   amount: number;
   category?: string;
-  created_at: string;
+  created_at?: string;
   updated_at?: string;
+  // Per-bill participant assignment. Empty array means "applies to
+  // everyone in the session" (legacy default).
+  participant_ids?: string[];
 }
 
 export interface Participant {
@@ -95,6 +98,10 @@ export interface Participant {
   contact_avatar_url?: string;
   notification_count?: number;
   last_notification_at?: string;
+  // True when the host manually marked this participant as paid (no
+  // proof upload). Drives the "Marked by you" badge + disables the
+  // participant-facing upload affordance.
+  paid_manually?: boolean;
 }
 
 export interface DashboardStats {
@@ -202,16 +209,24 @@ export interface UpdateParticipantRequest {
 // Bill Item Types
 // Backend stores a single `description` field as the primary label.
 // `amount` is in the session's base currency unit (e.g. IDR rupiah), NOT cents.
+// `participant_ids` is optional — omit or pass an empty array to split the
+// bill across every participant in the session (legacy behaviour). A
+// non-empty array restricts the bill to those participants.
 export interface CreateBillItemRequest {
   description: string;
   amount: number;
   category?: string;
+  participant_ids?: string[];
 }
 
+// For UpdateBillItem the backend treats a missing `participant_ids` key as
+// "leave assignments untouched", an explicit empty array as "reset to
+// everyone", and a populated array as "replace assignments".
 export interface UpdateBillItemRequest {
   description?: string;
   amount?: number;
   category?: string;
+  participant_ids?: string[];
 }
 
 export interface BillItemResponse {

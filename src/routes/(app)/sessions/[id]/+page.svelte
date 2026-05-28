@@ -35,7 +35,8 @@
 	import {
 		approvePayment,
 		rejectPayment,
-		bulkApprove
+		bulkApprove,
+		markPaidWithoutProof
 	} from '$lib/services/payments';
 	import Modal from '$lib/components/ui/Modal.svelte';
 	import PhoneInput from '$lib/components/ui/PhoneInput.svelte';
@@ -136,6 +137,21 @@
 	// Temporary state for adding bill (single `description` field — matches backend)
 	let newBillName = $state('');
 	let newBillAmount = $state('');
+	let newBillScope = $state<'everyone' | 'specific'>('everyone');
+	let newBillParticipantIds = $state<string[]>([]);
+
+	function resetAddBill() {
+		newBillName = '';
+		newBillAmount = '';
+		newBillScope = 'everyone';
+		newBillParticipantIds = [];
+	}
+
+	function toggleBillParticipant(id: string) {
+		newBillParticipantIds = newBillParticipantIds.includes(id)
+			? newBillParticipantIds.filter((x) => x !== id)
+			: [...newBillParticipantIds, id];
+	}
 
 	$effect(() => {
 		contactsPickerSupported = 'contacts' in navigator && 'ContactsManager' in window;
@@ -168,6 +184,35 @@
 	}
 
 	const HeaderStatusIcon = $derived(getStatusIcon(data.session.status));
+
+	const REMINDER_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+
+	function paymentStatusLabel(p: { payment_status: string; paid_manually?: boolean }): string {
+		if (p.payment_status === 'paid') return p.paid_manually ? 'Paid (marked by you)' : 'Paid';
+		if (p.payment_status === 'submitted') return 'Submitted';
+		if (p.payment_status === 'rejected') return 'Update requested';
+		return 'Pending';
+	}
+
+	function paymentStatusBadgeClass(status: string): string {
+		if (status === 'paid') return 'text-[#047857] bg-[#10B981]/15';
+		if (status === 'submitted') return 'text-[#1E40AF] bg-[#3B82F6]/15';
+		if (status === 'rejected') return 'text-[#92400E] bg-[#F59E0B]/15';
+		return 'text-[#584140] bg-[#fff0ef]';
+	}
+
+	function reminderAvailableInMs(participant: { last_notification_at?: string }): number {
+		if (!participant.last_notification_at) return 0;
+		const last = new Date(participant.last_notification_at).getTime();
+		if (Number.isNaN(last)) return 0;
+		const remaining = last + REMINDER_COOLDOWN_MS - Date.now();
+		return remaining > 0 ? remaining : 0;
+	}
+
+	function formatCooldown(ms: number): string {
+		const hours = Math.ceil(ms / (60 * 60 * 1000));
+		return hours <= 1 ? '<1h' : `${hours}h`;
+	}
 
 	async function openContactsPicker() {
 		if (!contactsPickerSupported) return;
@@ -303,13 +348,19 @@
 			return;
 		}
 
+		if (newBillScope === 'specific' && newBillParticipantIds.length === 0) {
+			toast.error('Pick at least one participant for this bill');
+			return;
+		}
+
 		isLoading = true;
 		try {
 			await addBillItem(data.session.session_id, {
 				description: newBillName.trim(),
-				amount
+				amount,
+				participant_ids: newBillScope === 'specific' ? newBillParticipantIds : []
 			});
-			// Recompute equal splits across participants now that bill totals changed
+			// Recompute splits across participants now that bill totals changed
 			if (data.session.participants?.length) {
 				try {
 					await calculateSplits(data.session.session_id);
@@ -317,8 +368,7 @@
 					console.warn('Auto-recalculate splits failed:', e);
 				}
 			}
-			newBillName = '';
-			newBillAmount = '';
+			resetAddBill();
 			showAddBillModal = false;
 			await invalidateAll();
 		} catch (error) {
@@ -422,16 +472,35 @@
 		}
 	}
 
-	async function handleReject(participantId: string) {
-		const reason = window.prompt('Reason for rejection (optional):') ?? undefined;
+	async function handleRequestUpdate(participantId: string) {
+		const reason = window.prompt('What needs to be fixed? (sent to the participant)') ?? undefined;
+		if (reason !== undefined && reason.trim().length < 5) {
+			toast.error('Add a short note (at least 5 characters)');
+			return;
+		}
 		actingPaymentId = participantId;
 		try {
 			await rejectPayment(participantId, reason);
-			toast.success('Payment rejected');
+			toast.success('Update requested');
 			await invalidateAll();
 		} catch (error) {
-			console.error('Reject payment error:', error);
-			toast.error('Failed to reject payment');
+			console.error('Request update error:', error);
+			toast.error('Failed to request update');
+		} finally {
+			actingPaymentId = null;
+		}
+	}
+
+	async function handleMarkPaid(participantId: string) {
+		actingPaymentId = participantId;
+		try {
+			await markPaidWithoutProof(participantId);
+			toast.success('Marked as paid');
+			await invalidateAll();
+		} catch (error) {
+			console.error('Mark as paid error:', error);
+			const msg = error instanceof Error ? error.message : 'Failed to mark as paid';
+			toast.error(msg);
 		} finally {
 			actingPaymentId = null;
 		}
@@ -630,6 +699,9 @@
 			{:else}
 				<ul class="space-y-2">
 					{#each data.session.participants as participant}
+						{@const cooldown = reminderAvailableInMs(participant)}
+						{@const isAlreadyPaid = participant.payment_status === 'paid'}
+						{@const reminderDisabled = isAlreadyPaid || cooldown > 0 || isLoading || remindingParticipantId === participant.participant_id}
 						<li class="flex items-center justify-between p-3 rounded-2xl bg-[#fff0ef]/50">
 							<div class="flex items-center gap-3 min-w-0">
 								<div class="w-10 h-10 bg-[#fff0ef] rounded-full flex items-center justify-center text-sm font-medium text-[#251818] flex-shrink-0">
@@ -638,6 +710,11 @@
 								<div class="min-w-0">
 									<p class="text-sm font-medium text-[#251818] truncate">{participant.name}</p>
 									<p class="text-xs text-[#584140] truncate">{participant.whatsapp_number}</p>
+									{#if (participant.notification_count ?? 0) > 0}
+										<p class="text-[11px] text-[#584140]/80 mt-0.5">
+											Reminded {participant.notification_count}×{#if participant.last_notification_at} · last {formatRelativeTime(participant.last_notification_at)}{/if}
+										</p>
+									{/if}
 								</div>
 							</div>
 							<div class="flex items-center gap-2 flex-shrink-0">
@@ -645,15 +722,33 @@
 									<p class="text-sm font-medium text-[#251818]">
 										{formatIDR(participant.share_amount)}
 									</p>
-									<p class="text-xs text-[#584140]">{participant.payment_status}</p>
+									<span class="inline-block px-2 py-0.5 rounded-full text-[11px] font-medium {paymentStatusBadgeClass(participant.payment_status)}">
+										{paymentStatusLabel(participant)}
+									</span>
 								</div>
-								{#if participant.payment_status !== 'paid'}
+								{#if !isAlreadyPaid}
+									<button
+										type="button"
+										onclick={() => handleMarkPaid(participant.participant_id)}
+										disabled={actingPaymentId === participant.participant_id || isLoading}
+										class="inline-flex items-center justify-center min-h-[36px] min-w-[36px] rounded-full text-[#047857] hover:bg-[#10B981]/15 disabled:opacity-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6]"
+										title="Mark as paid (no proof needed)"
+										aria-label="Mark {participant.name} as paid"
+									>
+										{#if actingPaymentId === participant.participant_id}
+											<Loader2 class="w-4 h-4 animate-spin" />
+										{:else}
+											<CheckCircle2 class="w-4 h-4" />
+										{/if}
+									</button>
+								{/if}
+								{#if !isAlreadyPaid}
 									<button
 										type="button"
 										onclick={() => handleRemindParticipant(participant.participant_id)}
-										disabled={remindingParticipantId === participant.participant_id || isLoading}
-										class="inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded-full text-[#584140] hover:bg-[#fbe3e1] disabled:opacity-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6]"
-										title="Send reminder"
+										disabled={reminderDisabled}
+										class="inline-flex items-center justify-center min-h-[36px] min-w-[36px] rounded-full text-[#584140] hover:bg-[#fbe3e1] disabled:opacity-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6]"
+										title={cooldown > 0 ? `Next reminder available in ${formatCooldown(cooldown)}` : 'Send reminder'}
 										aria-label="Send reminder to {participant.name}"
 									>
 										{#if remindingParticipantId === participant.participant_id}
@@ -744,12 +839,12 @@
 								</button>
 								<button
 									type="button"
-									onclick={() => handleReject(proof.participant_id)}
+									onclick={() => handleRequestUpdate(proof.participant_id)}
 									disabled={actingPaymentId === proof.participant_id}
-									class="inline-flex items-center gap-1.5 px-3 py-2 rounded-2xl text-sm font-medium text-[#991B1B] bg-[#EF4444]/15 hover:bg-[#EF4444]/25 disabled:opacity-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6]"
+									class="inline-flex items-center gap-1.5 px-3 py-2 rounded-2xl text-sm font-medium text-[#92400E] bg-[#F59E0B]/15 hover:bg-[#F59E0B]/25 disabled:opacity-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6]"
 								>
 									<ThumbsDown class="w-4 h-4" />
-									Reject
+									Request update
 								</button>
 							</div>
 						</li>
@@ -785,6 +880,11 @@
 									<div class="flex items-center gap-2">
 										<Receipt class="w-4 h-4 text-[#584140] flex-shrink-0" />
 										<p class="text-sm font-medium text-[#251818] truncate">{item.description}</p>
+										{#if item.participant_ids && item.participant_ids.length > 0}
+											<span class="inline-flex items-center text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full bg-[#FF6B6B]/15 text-[#ae2f34] flex-shrink-0">
+												Split with {item.participant_ids.length}
+											</span>
+										{/if}
 									</div>
 									{#if item.category}
 										<p class="text-xs text-[#584140] mt-1 ml-6 capitalize">{item.category}</p>
@@ -1045,7 +1145,7 @@
 </Modal>
 
 <!-- Add Bill Modal -->
-<Modal bind:open={showAddBillModal} title="Add Bill Item">
+<Modal bind:open={showAddBillModal} title="Add Bill Item" onclose={resetAddBill}>
 	<div class="space-y-4">
 		<div>
 			<label for="bill_name" class="block text-sm font-medium text-[#251818] mb-1">
@@ -1073,21 +1173,62 @@
 				pattern="[0-9]*[.,]?[0-9]*"
 				class="w-full px-4 py-2.5 bg-[#fff0ef]/50 rounded-xl text-sm text-[#251818] focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent"
 			/>
-			<p class="text-xs text-[#584140] mt-1.5">
-				This bill is added to the session total and split equally across all {data.session.participants?.length || 0} participants.
-			</p>
+		</div>
+
+		<!-- Apply to -->
+		<div>
+			<p class="block text-sm font-medium text-[#251818] mb-2">Apply to</p>
+			<div class="flex gap-2 mb-2">
+				<label class="flex-1 flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer bg-[#fff0ef]/60 border-2 {newBillScope === 'everyone' ? 'border-[#FF6B6B]' : 'border-transparent'}">
+					<input type="radio" name="bill_scope" value="everyone" bind:group={newBillScope} class="accent-[#ae2f34]" />
+					<span class="text-sm text-[#251818]">Everyone ({data.session.participants?.length || 0})</span>
+				</label>
+				<label class="flex-1 flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer bg-[#fff0ef]/60 border-2 {newBillScope === 'specific' ? 'border-[#FF6B6B]' : 'border-transparent'}">
+					<input type="radio" name="bill_scope" value="specific" bind:group={newBillScope} class="accent-[#ae2f34]" />
+					<span class="text-sm text-[#251818]">Specific people</span>
+				</label>
+			</div>
+
+			{#if newBillScope === 'specific'}
+				{#if !data.session.participants || data.session.participants.length === 0}
+					<p class="text-xs text-[#584140]">Add participants first to use this option.</p>
+				{:else}
+					<div class="max-h-40 overflow-y-auto -mx-1 px-1 space-y-1">
+						{#each data.session.participants as p (p.participant_id)}
+							{@const checked = newBillParticipantIds.includes(p.participant_id)}
+							<label class="flex items-center gap-3 px-2 py-1.5 rounded-lg cursor-pointer hover:bg-[#fff0ef]/60">
+								<input
+									type="checkbox"
+									class="w-4 h-4 accent-[#ae2f34]"
+									checked={checked}
+									onchange={() => toggleBillParticipant(p.participant_id)}
+								/>
+								<span class="text-sm text-[#251818] flex-1 truncate">{p.name}</span>
+								<span class="text-xs text-[#584140]">{p.whatsapp_number}</span>
+							</label>
+						{/each}
+					</div>
+					<p class="text-xs text-[#584140] mt-1">{newBillParticipantIds.length} selected</p>
+				{/if}
+			{:else}
+				<p class="text-xs text-[#584140]">Split equally across every participant in the session.</p>
+			{/if}
 		</div>
 
 		<!-- Preview -->
 		{#if newBillAmount}
-			<div class="p-3 bg-[#fff0ef] rounded-2xl">
-				<p class="text-xs text-[#584140] font-medium mb-1">Preview</p>
+			{@const amount = parseFloat(newBillAmount || '0')}
+			{@const splitCount = newBillScope === 'specific' ? newBillParticipantIds.length : (data.session.participants?.length || 0)}
+			{@const sharePer = splitCount > 0 ? amount / splitCount : 0}
+			<div class="p-3 bg-[#fff0ef] rounded-2xl space-y-1">
+				<p class="text-xs text-[#584140] font-medium">Preview</p>
 				<div class="flex items-center justify-between text-sm">
 					<span class="text-[#251818]">{newBillName.trim() || 'New bill'}</span>
-					<span class="font-semibold text-[#251818]">
-						{formatIDR(parseFloat(newBillAmount || '0'))}
-					</span>
+					<span class="font-semibold text-[#251818]">{formatIDR(amount)}</span>
 				</div>
+				{#if splitCount > 0}
+					<p class="text-xs text-[#584140]">Each pays {formatIDR(sharePer)} ({splitCount} {splitCount === 1 ? 'person' : 'people'})</p>
+				{/if}
 			</div>
 		{/if}
 
