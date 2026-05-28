@@ -212,7 +212,7 @@
   {/if}
 
   <!-- Create/Edit Modal -->
-  <Modal open={showCreateModal} title={modalTitle} onclose={closeEditGroup}>
+  <Modal bind:open={showCreateModal} title={modalTitle} onclose={closeEditGroup}>
     <!-- Form -->
     <div class="space-y-6">
       <!-- Group Name -->

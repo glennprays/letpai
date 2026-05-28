@@ -7,22 +7,14 @@
   import { setToken, setUser } from '$lib/stores/auth';
   import { validatePhone, validatePassword, validateOTP } from '$lib/utils/validation';
   import { formatPhoneNumber } from '$lib/utils/format';
+  import { COUNTRY_CODES as countryCodes, DEFAULT_COUNTRY_CODE } from '$lib/utils/phone';
   import { UserPlus, Shield, ArrowRight, CheckCircle2, Clock, RotateCw, AlertCircle } from 'lucide-svelte';
-
-  const countryCodes = [
-    { code: '62', label: 'ID (Indonesia)', short: 'ID' },
-    { code: '1', label: 'US (USA)', short: 'US' },
-    { code: '44', label: 'GB (UK)', short: 'GB' },
-    { code: '61', label: 'AU (Australia)', short: 'AU' },
-    { code: '65', label: 'SG (Singapore)', short: 'SG' },
-    { code: '60', label: 'MY (Malaysia)', short: 'MY' },
-  ];
 
   // Form state
   let currentStep = $state(1);
   let isLoading = $state(false);
   let formData = $state({
-    country_code: '62',
+    country_code: DEFAULT_COUNTRY_CODE,
     whatsapp_number: '',
     password: '',
     confirmPassword: '',

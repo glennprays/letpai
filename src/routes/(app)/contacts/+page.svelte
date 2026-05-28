@@ -470,7 +470,7 @@
 
 <!-- Modals - Rendered outside main container to avoid overflow constraints -->
 <!-- Add Contact Modal -->
-<Modal open={showAddModal} title="Add Contact" onclose={() => showAddModal = false}>
+<Modal bind:open={showAddModal} title="Add Contact">
   <ContactForm
     {groups}
     loading={isSaving}
@@ -481,7 +481,7 @@
 </Modal>
 
 <!-- Edit Contact Modal -->
-<Modal open={showEditModal} title="Edit Contact" onclose={() => showEditModal = false}>
+<Modal bind:open={showEditModal} title="Edit Contact" onclose={() => { editingContact = null; }}>
   <ContactForm
     contact={editingContact}
     {groups}
@@ -496,7 +496,7 @@
 </Modal>
 
 <!-- Import Modal -->
-<Modal open={showImportModal} title="Import Contacts" onclose={() => showImportModal = false}>
+<Modal bind:open={showImportModal} title="Import Contacts">
   <ContactImport
     existingContacts={existingContactsMap}
     {groups}
@@ -507,7 +507,7 @@
 </Modal>
 
 <!-- Groups Modal -->
-<Modal open={showGroupsModal} title="Manage Groups" onclose={() => showGroupsModal = false}>
+<Modal bind:open={showGroupsModal} title="Manage Groups">
   <ContactGroups
     {groups}
     loading={isSaving}

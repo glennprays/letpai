@@ -30,6 +30,7 @@
 		sendNotifications,
 		cancelSession
 	} from '$lib/services/sessions';
+	import { createContact } from '$lib/services/contacts';
 	import { sendParticipantReminder, sendBulkReminder } from '$lib/services/notifications';
 	import {
 		approvePayment,
@@ -37,6 +38,7 @@
 		bulkApprove
 	} from '$lib/services/payments';
 	import Modal from '$lib/components/ui/Modal.svelte';
+	import PhoneInput from '$lib/components/ui/PhoneInput.svelte';
 	import ConfirmDialog from '$lib/components/ui/ConfirmDialog.svelte';
 	import { toast } from '$lib/stores/toast';
 
@@ -63,9 +65,73 @@
 		(data.session.participants || []).filter((p) => p.payment_status === 'submitted')
 	);
 
-	// Temporary state for adding contact
-	let newContactName = $state('');
-	let newContactPhone = $state('');
+	// Add-participant modal state
+	type AddTab = 'contacts' | 'group' | 'manual';
+	let addTab = $state<AddTab>('contacts');
+	let contactSearch = $state('');
+	let selectedContactIds = $state<string[]>([]);
+	let selectedGroupId = $state<string>('');
+	let groupSelectedIds = $state<string[]>([]);
+	let manualName = $state('');
+	let manualPhone = $state('');
+	let manualSaveToContacts = $state(false);
+
+	// Set of contact_ids already linked into this session (for dedupe).
+	const linkedContactIds = $derived(
+		new Set(
+			(data.session.participants || [])
+				.map((p) => p.contact_id)
+				.filter((id): id is string => typeof id === 'string' && id.length > 0)
+		)
+	);
+
+	const filteredContacts = $derived.by(() => {
+		const q = contactSearch.trim().toLowerCase();
+		const list = data.contacts || [];
+		if (!q) return list;
+		return list.filter(
+			(c) =>
+				c.name.toLowerCase().includes(q) ||
+				(c.whatsapp_number || '').toLowerCase().includes(q)
+		);
+	});
+
+	const selectedGroup = $derived(
+		(data.groups || []).find((g) => g.group_id === selectedGroupId) || null
+	);
+
+	const groupMembers = $derived(
+		selectedGroupId
+			? (data.contacts || []).filter((c) => c.group_id === selectedGroupId)
+			: []
+	);
+
+	// When the selected group changes, pre-select all its members that aren't
+	// already participants.
+	$effect(() => {
+		if (selectedGroupId) {
+			groupSelectedIds = groupMembers
+				.filter((c) => !linkedContactIds.has(c.contact_id))
+				.map((c) => c.contact_id);
+		} else {
+			groupSelectedIds = [];
+		}
+	});
+
+	function resetAddModal() {
+		addTab = 'contacts';
+		contactSearch = '';
+		selectedContactIds = [];
+		selectedGroupId = '';
+		groupSelectedIds = [];
+		manualName = '';
+		manualPhone = '';
+		manualSaveToContacts = false;
+	}
+
+	function toggleContactId(list: string[], id: string): string[] {
+		return list.includes(id) ? list.filter((x) => x !== id) : [...list, id];
+	}
 
 	// Temporary state for adding bill (single `description` field — matches backend)
 	let newBillName = $state('');
@@ -136,22 +202,72 @@
 		}
 	}
 
-	async function handleManualAddContact() {
-		if (!newContactName.trim() || !newContactPhone.trim()) return;
+	type ParticipantItem =
+		| { contact_id: string }
+		| { custom_name: string; custom_whatsapp: string };
+
+	async function submitParticipants(items: ParticipantItem[]) {
+		if (items.length === 0) {
+			toast.error('Nothing to add');
+			return;
+		}
 		isLoading = true;
 		try {
-			await addParticipants(data.session.session_id, {
-				participants: [
-					{ custom_name: newContactName.trim(), custom_whatsapp: newContactPhone.trim() }
-				]
-			});
-			newContactName = '';
-			newContactPhone = '';
+			await addParticipants(data.session.session_id, { participants: items });
 			showAddContactModal = false;
+			resetAddModal();
 			await invalidateAll();
+			toast.success(items.length === 1 ? 'Participant added' : `${items.length} participants added`);
 		} catch (error) {
 			console.error('Add participant error:', error);
 			toast.error('Failed to add participant');
+		} finally {
+			isLoading = false;
+		}
+	}
+
+	async function handleAddFromContacts() {
+		const fresh = selectedContactIds.filter((id) => !linkedContactIds.has(id));
+		const dupes = selectedContactIds.length - fresh.length;
+		if (dupes > 0) toast.warning(`${dupes} already in this session, skipped`);
+		await submitParticipants(fresh.map((id) => ({ contact_id: id })));
+	}
+
+	async function handleAddFromGroup() {
+		const fresh = groupSelectedIds.filter((id) => !linkedContactIds.has(id));
+		const dupes = groupSelectedIds.length - fresh.length;
+		if (dupes > 0) toast.warning(`${dupes} already in this session, skipped`);
+		await submitParticipants(fresh.map((id) => ({ contact_id: id })));
+	}
+
+	async function handleAddManual() {
+		const name = manualName.trim();
+		const phone = manualPhone.trim();
+		if (!name || phone.length < 10) {
+			toast.error('Enter a name and a valid phone number');
+			return;
+		}
+
+		isLoading = true;
+		try {
+			if (manualSaveToContacts) {
+				try {
+					const created = await createContact(
+						{ name, whatsapp_number: phone },
+						undefined,
+						undefined
+					);
+					const contactId = created?.data?.contact_id;
+					if (contactId) {
+						await submitParticipants([{ contact_id: contactId }]);
+						return;
+					}
+				} catch (err) {
+					console.error('Save contact failed, falling back to custom:', err);
+					toast.error('Could not save contact; added as one-off participant');
+				}
+			}
+			await submitParticipants([{ custom_name: name, custom_whatsapp: phone }]);
 		} finally {
 			isLoading = false;
 		}
@@ -705,62 +821,180 @@
 	</div>
 </div>
 
-<!-- Add Contact Modal -->
-<Modal open={showAddContactModal} title="Add Contact">
+<!-- Add Participant Modal -->
+<Modal bind:open={showAddContactModal} title="Add Participant" onclose={resetAddModal}>
 	<div class="space-y-4">
-		<!-- Contacts Picker Button -->
-		{#if contactsPickerSupported}
-			<button
-				onclick={openContactsPicker}
-				class="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-[#584140]/30 rounded-xl hover:border-[#FF6B6B] hover:bg-[#FF6B6B]/5 transition-colors group"
-			>
-				<Phone class="w-5 h-5 text-[#584140] group-hover:text-[#FF6B6B]" />
-				<span class="text-sm font-medium text-[#251818] group-hover:text-[#FF6B6B]">
-					Import from Device Contacts
-				</span>
-			</button>
-			<div class="relative">
-				<div class="absolute inset-0 flex items-center">
-					<div class="w-full border-t border-[#584140]/10"></div>
+		<!-- Tabs -->
+		<div class="flex gap-1 bg-[#fff0ef]/60 p-1 rounded-xl text-sm">
+			{#each [
+				{ id: 'contacts' as AddTab, label: 'From Contacts' },
+				{ id: 'group' as AddTab, label: 'From Group' },
+				{ id: 'manual' as AddTab, label: 'Manual' }
+			] as tab}
+				<button
+					type="button"
+					onclick={() => (addTab = tab.id)}
+					class="flex-1 px-3 py-1.5 rounded-lg font-medium transition-colors {addTab ===
+					tab.id
+						? 'bg-white text-[#251818] shadow-sm'
+						: 'text-[#584140] hover:bg-white/60'}"
+				>
+					{tab.label}
+				</button>
+			{/each}
+		</div>
+
+		{#if addTab === 'contacts'}
+			{#if !data.contacts || data.contacts.length === 0}
+				<p class="text-sm text-[#584140] text-center py-6">
+					You don't have any saved contacts yet. Use the Manual tab to add one.
+				</p>
+			{:else}
+				<div>
+					<input
+						type="text"
+						bind:value={contactSearch}
+						placeholder="Search contacts…"
+						class="w-full px-4 py-2.5 bg-[#fff0ef]/50 rounded-xl text-sm text-[#251818] focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]"
+					/>
 				</div>
-				<div class="relative flex justify-center text-sm">
-					<span class="px-2 bg-white text-[#584140]">or add manually</span>
+
+				<div class="max-h-64 overflow-y-auto -mx-1 px-1 space-y-1">
+					{#each filteredContacts as contact (contact.contact_id)}
+						{@const linked = linkedContactIds.has(contact.contact_id)}
+						{@const checked = selectedContactIds.includes(contact.contact_id)}
+						<label
+							class="flex items-center gap-3 px-3 py-2 rounded-xl cursor-pointer hover:bg-[#fff0ef]/60 {linked
+								? 'opacity-50 cursor-not-allowed'
+								: ''}"
+						>
+							<input
+								type="checkbox"
+								class="w-4 h-4 accent-[#ae2f34]"
+								disabled={linked}
+								checked={checked || linked}
+								onchange={() => {
+									if (!linked)
+										selectedContactIds = toggleContactId(selectedContactIds, contact.contact_id);
+								}}
+							/>
+							<div class="flex-1 min-w-0">
+								<p class="text-sm font-medium text-[#251818] truncate">{contact.name}</p>
+								<p class="text-xs text-[#584140] truncate">{contact.whatsapp_number}</p>
+							</div>
+							{#if linked}
+								<span class="text-[10px] uppercase tracking-wide text-[#584140]">In session</span>
+							{/if}
+						</label>
+					{/each}
+					{#if filteredContacts.length === 0}
+						<p class="text-sm text-[#584140] text-center py-6">No contacts match "{contactSearch}".</p>
+					{/if}
+				</div>
+
+				<div class="flex items-center justify-between text-xs text-[#584140] pt-1">
+					<span>{selectedContactIds.length} selected</span>
+					{#if contactsPickerSupported}
+						<button
+							type="button"
+							onclick={openContactsPicker}
+							class="inline-flex items-center gap-1 text-[#FF6B6B] hover:underline"
+						>
+							<Phone class="w-3 h-3" /> Import from device
+						</button>
+					{/if}
+				</div>
+			{/if}
+		{:else if addTab === 'group'}
+			{#if !data.groups || data.groups.length === 0}
+				<p class="text-sm text-[#584140] text-center py-6">
+					You haven't created any contact groups yet. Manage groups from /contacts.
+				</p>
+			{:else}
+				<div>
+					<label for="group_select" class="block text-sm font-medium text-[#251818] mb-1">Group</label>
+					<select
+						id="group_select"
+						bind:value={selectedGroupId}
+						class="w-full px-4 py-2.5 bg-[#fff0ef]/50 rounded-xl text-sm text-[#251818] focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]"
+					>
+						<option value="">Choose a group…</option>
+						{#each data.groups as g (g.group_id)}
+							<option value={g.group_id}>{g.name}</option>
+						{/each}
+					</select>
+				</div>
+
+				{#if selectedGroup}
+					{#if groupMembers.length === 0}
+						<p class="text-sm text-[#584140] text-center py-6">
+							"{selectedGroup.name}" has no contacts.
+						</p>
+					{:else}
+						<div class="max-h-56 overflow-y-auto -mx-1 px-1 space-y-1">
+							{#each groupMembers as contact (contact.contact_id)}
+								{@const linked = linkedContactIds.has(contact.contact_id)}
+								{@const checked = groupSelectedIds.includes(contact.contact_id)}
+								<label
+									class="flex items-center gap-3 px-3 py-2 rounded-xl cursor-pointer hover:bg-[#fff0ef]/60 {linked
+										? 'opacity-50 cursor-not-allowed'
+										: ''}"
+								>
+									<input
+										type="checkbox"
+										class="w-4 h-4 accent-[#ae2f34]"
+										disabled={linked}
+										checked={checked || linked}
+										onchange={() => {
+											if (!linked)
+												groupSelectedIds = toggleContactId(groupSelectedIds, contact.contact_id);
+										}}
+									/>
+									<div class="flex-1 min-w-0">
+										<p class="text-sm font-medium text-[#251818] truncate">{contact.name}</p>
+										<p class="text-xs text-[#584140] truncate">{contact.whatsapp_number}</p>
+									</div>
+									{#if linked}
+										<span class="text-[10px] uppercase tracking-wide text-[#584140]">In session</span>
+									{/if}
+								</label>
+							{/each}
+						</div>
+						<p class="text-xs text-[#584140]">{groupSelectedIds.length} of {groupMembers.length} selected</p>
+					{/if}
+				{/if}
+			{/if}
+		{:else}
+			<div>
+				<label for="manual_name" class="block text-sm font-medium text-[#251818] mb-1">Name</label>
+				<div class="relative">
+					<Type class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#584140]" />
+					<input
+						type="text"
+						id="manual_name"
+						bind:value={manualName}
+						placeholder="Enter name"
+						class="w-full pl-10 pr-4 py-2.5 bg-[#fff0ef]/50 rounded-xl text-sm text-[#251818] focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]"
+					/>
 				</div>
 			</div>
+
+			<PhoneInput
+				id="manual_phone"
+				label="WhatsApp Number"
+				placeholder="8123456789"
+				bind:value={manualPhone}
+			/>
+
+			<label class="flex items-center gap-2 cursor-pointer">
+				<input
+					type="checkbox"
+					class="w-4 h-4 accent-[#ae2f34]"
+					bind:checked={manualSaveToContacts}
+				/>
+				<span class="text-sm text-[#584140]">Save to my contacts</span>
+			</label>
 		{/if}
-
-		<!-- Manual Entry -->
-		<div>
-			<label for="contact_name" class="block text-sm font-medium text-[#251818] mb-1">
-				Name
-			</label>
-			<div class="relative">
-				<Type class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#584140]" />
-				<input
-					type="text"
-					id="contact_name"
-					bind:value={newContactName}
-					placeholder="Enter name"
-					class="w-full pl-10 pr-4 py-2.5 bg-[#fff0ef]/50 rounded-xl text-sm text-[#251818] focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent"
-				/>
-			</div>
-		</div>
-
-		<div>
-			<label for="contact_phone" class="block text-sm font-medium text-[#251818] mb-1">
-				WhatsApp Number
-			</label>
-			<div class="relative">
-				<Phone class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#584140]" />
-				<input
-					type="tel"
-					id="contact_phone"
-					bind:value={newContactPhone}
-					placeholder="+6281234567890"
-					class="w-full pl-10 pr-4 py-2.5 bg-[#fff0ef]/50 rounded-xl text-sm text-[#251818] focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent"
-				/>
-			</div>
-		</div>
 
 		<div class="flex gap-3 pt-2">
 			<button
@@ -769,23 +1003,49 @@
 			>
 				Cancel
 			</button>
-			<button
-				onclick={handleManualAddContact}
-				disabled={isLoading || !newContactName.trim() || !newContactPhone.trim()}
-				class="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-gradient-to-br from-[#ae2f34] to-[#FF6B6B] rounded-xl hover:from-[#9a282c] hover:to-[#FF5252] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-			>
-				{#if isLoading}
-					<Loader2 class="w-4 h-4 animate-spin mx-auto" />
-				{:else}
-					Add Contact
-				{/if}
-			</button>
+			{#if addTab === 'contacts'}
+				<button
+					onclick={handleAddFromContacts}
+					disabled={isLoading || selectedContactIds.length === 0}
+					class="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-gradient-to-br from-[#ae2f34] to-[#FF6B6B] rounded-xl hover:from-[#9a282c] hover:to-[#FF5252] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+				>
+					{#if isLoading}
+						<Loader2 class="w-4 h-4 animate-spin mx-auto" />
+					{:else}
+						Add {selectedContactIds.length || ''}
+					{/if}
+				</button>
+			{:else if addTab === 'group'}
+				<button
+					onclick={handleAddFromGroup}
+					disabled={isLoading || groupSelectedIds.length === 0}
+					class="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-gradient-to-br from-[#ae2f34] to-[#FF6B6B] rounded-xl hover:from-[#9a282c] hover:to-[#FF5252] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+				>
+					{#if isLoading}
+						<Loader2 class="w-4 h-4 animate-spin mx-auto" />
+					{:else}
+						Add {groupSelectedIds.length || ''}
+					{/if}
+				</button>
+			{:else}
+				<button
+					onclick={handleAddManual}
+					disabled={isLoading || !manualName.trim() || manualPhone.length < 10}
+					class="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-gradient-to-br from-[#ae2f34] to-[#FF6B6B] rounded-xl hover:from-[#9a282c] hover:to-[#FF5252] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+				>
+					{#if isLoading}
+						<Loader2 class="w-4 h-4 animate-spin mx-auto" />
+					{:else}
+						Add Contact
+					{/if}
+				</button>
+			{/if}
 		</div>
 	</div>
 </Modal>
 
 <!-- Add Bill Modal -->
-<Modal open={showAddBillModal} title="Add Bill Item">
+<Modal bind:open={showAddBillModal} title="Add Bill Item">
 	<div class="space-y-4">
 		<div>
 			<label for="bill_name" class="block text-sm font-medium text-[#251818] mb-1">
@@ -805,12 +1065,12 @@
 				Amount ({getCurrencySymbol(data.session.currency)}) <span class="text-[#ae2f34]">*</span>
 			</label>
 			<input
-				type="number"
+				type="text"
 				id="bill_amount"
 				bind:value={newBillAmount}
 				placeholder="0"
-				step="0.01"
-				min="0"
+				inputmode="decimal"
+				pattern="[0-9]*[.,]?[0-9]*"
 				class="w-full px-4 py-2.5 bg-[#fff0ef]/50 rounded-xl text-sm text-[#251818] focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent"
 			/>
 			<p class="text-xs text-[#584140] mt-1.5">

@@ -43,9 +43,11 @@
     return XCircle;
   }
 
-  function getProgressWidth(session: { paid_count: number; participant_count: number }): number {
-    if (session.participant_count === 0) return 0;
-    return Math.round((session.paid_count / session.participant_count) * 100);
+  function getProgressWidth(session: { paid_count?: number; participant_count?: number }): number {
+    const total = session.participant_count ?? 0;
+    const paid = session.paid_count ?? 0;
+    if (total <= 0) return 0;
+    return Math.round((paid / total) * 100);
   }
 
   function handleCardClick(sessionId: string) {
@@ -254,12 +256,12 @@
               <div class="space-y-2">
                 <div class="h-2 bg-[#f5dddb] rounded-full overflow-hidden relative">
                   <div
-                    class="h-full rounded-full transition-all duration-300 bg-gradient-to-r from-[#842bd2] to-[#14B8A6]"
+                    class="h-full rounded-full transition-all duration-300 bg-[#14B8A6]"
                     style="width: {getProgressWidth(session)}%"
                   ></div>
                 </div>
                 <div class="flex items-center justify-between text-xs text-[#584140]">
-                  <span>{session.paid_count} of {session.participant_count} paid</span>
+                  <span>{session.paid_count ?? 0} of {session.participant_count ?? 0} paid</span>
                   <span class="font-medium text-[#251818]">{getProgressWidth(session)}%</span>
                 </div>
               </div>

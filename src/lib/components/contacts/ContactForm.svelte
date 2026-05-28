@@ -2,6 +2,7 @@
   import { untrack } from 'svelte';
   import { cn } from '$lib/utils/cn';
   import Input from '../ui/Input.svelte';
+  import PhoneInput from '../ui/PhoneInput.svelte';
   import Button from '../ui/Button.svelte';
   import type { Contact, ContactGroup, CreateContactRequest, UpdateContactRequest } from '$lib/types/api';
 
@@ -45,41 +46,17 @@
       errors.name = 'Name must be at least 2 characters';
     }
 
-    if (!phone.trim()) {
-      errors.phone = 'Phone number is required';
-    } else {
-      // Validate Indonesian phone format (with or without 62 prefix)
-      const cleanedPhone = normalizePhoneNumber(phone);
-      if (cleanedPhone.length < 10 || cleanedPhone.length > 14) {
-        errors.phone = 'Please enter a valid phone number';
-      }
+    if (!phone || phone.length < 10 || phone.length > 15) {
+      errors.phone = 'Please enter a valid phone number';
     }
 
     return Object.keys(errors).length === 0;
   }
 
-  // Normalize phone number to match backend format (always starts with 62)
-  function normalizePhoneNumber(value: string): string {
-    let cleaned = value.replace(/\D/g, '');
-
-    // Remove leading 0 and add 62
-    if (cleaned.startsWith('0')) {
-      cleaned = '62' + cleaned.slice(1);
-    }
-
-    // Ensure it starts with 62
-    if (!cleaned.startsWith('62')) {
-      cleaned = '62' + cleaned;
-    }
-
-    return cleaned;
-  }
-
   function handleSubmit() {
     if (!validate()) return;
 
-    // Normalize phone number for API (backend expects: 6289876543240)
-    const normalizedPhone = normalizePhoneNumber(phone);
+    const normalizedPhone = phone;
 
     // Use first selected group (TODO: backend support for multiple groups coming soon)
     const primaryGroupId = selectedGroupIds.length > 0 ? selectedGroupIds[0] : undefined;
@@ -105,30 +82,6 @@
 
   function handleCancel() {
     if (oncancel) oncancel();
-  }
-
-  function formatPhone(value: string): string {
-    // Remove all non-digits for processing
-    let cleaned = value.replace(/\D/g, '');
-
-    // Remove leading 0 and add 62 for display
-    if (cleaned.startsWith('0')) {
-      cleaned = '62' + cleaned.slice(1);
-    }
-
-    // Ensure it starts with 62
-    if (!cleaned.startsWith('62')) {
-      cleaned = '62' + cleaned;
-    }
-
-    // Format as 62-8XX-XXXX-XXXX for display (without + for cleaner display)
-    if (cleaned.length > 6) {
-      return cleaned.replace(/(\d{2})(\d{3})(\d{4})(\d+)/, '$1-$2-$3-$4');
-    } else if (cleaned.length > 2) {
-      return cleaned.replace(/(\d{2})(\d+)/, '$1-$2');
-    }
-
-    return cleaned;
   }
 </script>
 
@@ -157,23 +110,14 @@
 
   <!-- Phone Number -->
   <div>
-    <div class="relative">
-      <span class="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-[#584140] pointer-events-none z-10">
-        +62
-      </span>
-      <Input
-        id="contact-phone"
-        type="tel"
-        label="WhatsApp Number"
-        placeholder="e.g., 812-3456-7890"
-        bind:value={phone}
-        oninput={(val) => phone = formatPhone(val)}
-        error={!!errors.phone}
-        errorText={errors.phone}
-        disabled={loading}
-        class="pl-14"
-      />
-    </div>
+    <PhoneInput
+      id="contact-phone"
+      label="WhatsApp Number"
+      placeholder="8123456789"
+      bind:value={phone}
+      error={errors.phone}
+      disabled={loading}
+    />
   </div>
 
   <!-- Groups (Multiple Selection) -->

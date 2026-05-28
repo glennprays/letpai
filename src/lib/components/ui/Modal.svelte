@@ -9,7 +9,7 @@
 		children: import('svelte').Snippet;
 	}
 
-	let { open = false, title, onclose, children }: Props = $props();
+	let { open = $bindable(false), title, onclose, children }: Props = $props();
 
 	let dialogElement = $state<HTMLDivElement>();
 
