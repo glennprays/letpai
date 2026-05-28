@@ -162,7 +162,7 @@
 			toast.error('Add participants first');
 			return;
 		}
-		if (!data.session.bill_items?.length) {
+		if (!data.session.bills?.length) {
 			toast.error('Add at least one bill item first');
 			return;
 		}
@@ -365,7 +365,7 @@
 			</button>
 			<div class="flex-1">
 				<h1 class="text-xl font-semibold text-[#251818] tracking-tight">
-					{data.session.session_name}
+					{data.session.title}
 				</h1>
 				<p class="text-sm text-[#584140] mt-0.5">
 					Created {formatRelativeTime(data.session.created_at)}
@@ -391,8 +391,8 @@
 		</header>
 
 		<!-- Description -->
-		{#if data.session.session_description}
-			<p class="text-[#584140] mb-6">{data.session.session_description}</p>
+		{#if data.session.description}
+			<p class="text-[#584140] mb-6">{data.session.description}</p>
 		{/if}
 
 		<!-- Quick Stats -->
@@ -464,7 +464,7 @@
 						<button
 							type="button"
 							onclick={handleCalculateSplits}
-							disabled={isSplitting || isLoading || !data.session.bill_items?.length}
+							disabled={isSplitting || isLoading || !data.session.bills?.length}
 							class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#006b5f] bg-[#6df5e1] rounded-2xl hover:brightness-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6]"
 						>
 							{#if isSplitting}
@@ -655,14 +655,14 @@
 				</button>
 			</div>
 
-			{#if !data.session.bill_items || data.session.bill_items.length === 0}
+			{#if !data.session.bills || data.session.bills.length === 0}
 				<div class="text-center py-8 text-[#584140]">
 					<Receipt class="w-12 h-12 mx-auto text-[#584140]/30 mb-3" />
 					<p class="text-sm">No bill items yet. Add bills to track expenses.</p>
 				</div>
 			{:else}
 				<div class="space-y-3">
-					{#each data.session.bill_items as item}
+					{#each data.session.bills as item}
 						<div class="p-4 rounded-2xl bg-[#fff0ef]/50">
 							<div class="flex items-start justify-between gap-4">
 								<div class="flex-1 min-w-0">
@@ -691,7 +691,7 @@
 			{/if}
 
 			<!-- Total Summary -->
-			{#if data.session.bill_items && data.session.bill_items.length > 0}
+			{#if data.session.bills && data.session.bills.length > 0}
 				<div class="mt-4 pt-4">
 					<div class="flex items-center justify-between">
 						<span class="text-sm font-medium text-[#584140]">Total Bills</span>

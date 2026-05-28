@@ -16,19 +16,19 @@ export const actions: Actions = {
 		}
 
 		const formData = await request.formData();
-		const sessionName = formData.get('session_name')?.toString();
-		const sessionDescription = formData.get('session_description')?.toString() || undefined;
+		const title = formData.get('title')?.toString();
+		const description = formData.get('description')?.toString() || undefined;
 		const currency = formData.get('currency')?.toString() || 'IDR';
 
-		if (!sessionName || sessionName.trim().length === 0) {
-			return fail(400, { error: 'Session name is required' });
+		if (!title || title.trim().length === 0) {
+			return fail(400, { error: 'Title is required' });
 		}
 
 		try {
 			const result = await createSession(
 				{
-					session_name: sessionName.trim(),
-					session_description: sessionDescription?.trim(),
+					title: title.trim(),
+					description: description?.trim(),
 					currency
 				},
 				fetch,

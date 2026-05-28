@@ -56,19 +56,19 @@ export interface CreateContactRequest {
 export interface Session {
   session_id: string;
   host_id: string;
-  session_name: string;
-  session_description?: string;
+  title: string;
+  description?: string;
   total_amount: number;
   currency: string;
-  status: 'active' | 'completed' | 'cancelled';
+  status: 'active' | 'draft' | 'pending' | 'in_progress' | 'completed' | 'cancelled';
   participant_count: number;
   paid_count: number;
   created_at: string;
 }
 
 export interface CreateSessionRequest {
-  session_name: string;
-  session_description?: string;
+  title: string;
+  description?: string;
   currency?: string;
 }
 
@@ -151,8 +151,8 @@ export interface ApiError {
 export interface SessionDetail {
   session_id: string;
   host_id: string;
-  session_name: string;
-  session_description?: string;
+  title: string;
+  description?: string;
   total_amount: number;
   currency: string;
   status: 'draft' | 'pending' | 'in_progress' | 'completed' | 'cancelled';
@@ -160,7 +160,7 @@ export interface SessionDetail {
   paid_count: number;
   created_at: string;
   participants: Participant[];
-  bill_items: BillItem[];
+  bills: BillItem[];
 }
 
 export interface SessionResponse {
@@ -175,8 +175,8 @@ export interface SessionDetailResponse {
 }
 
 export interface UpdateSessionRequest {
-  session_name?: string;
-  session_description?: string;
+  title?: string;
+  description?: string;
   currency?: string;
   status?: string;
 }

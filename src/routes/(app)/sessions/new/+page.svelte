@@ -86,13 +86,13 @@
 		<form method="POST" class="bg-white rounded-3xl shadow-[0_1px_3px_rgba(37,24,24,0.04)] p-6 space-y-6">
 			<!-- Session Name -->
 			<div>
-				<label for="session_name" class="block text-sm font-medium text-[#251818] mb-2">
+				<label for="title" class="block text-sm font-medium text-[#251818] mb-2">
 					Session Name <span class="text-[#ae2f34]">*</span>
 				</label>
 				<input
 					type="text"
-					id="session_name"
-					name="session_name"
+					id="title"
+					name="title"
 					bind:value={sessionName}
 					onblur={() => handleBlur('sessionName', sessionName)}
 					oninput={() => handleInput('sessionName', sessionName)}
@@ -108,12 +108,12 @@
 
 			<!-- Session Description -->
 			<div>
-				<label for="session_description" class="block text-sm font-medium text-[#251818] mb-2">
+				<label for="description" class="block text-sm font-medium text-[#251818] mb-2">
 					Description <span class="text-[#584140]/50 font-normal">(optional)</span>
 				</label>
 				<textarea
-					id="session_description"
-					name="session_description"
+					id="description"
+					name="description"
 					bind:value={sessionDescription}
 					placeholder="Add a description to help everyone remember what this session is for..."
 					rows="3"

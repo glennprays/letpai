@@ -233,13 +233,13 @@
 
               <!-- Name -->
               <h3 class="text-base font-semibold text-[#251818] mb-1 line-clamp-1">
-                {session.session_name}
+                {session.title}
               </h3>
 
               <!-- Description -->
-              {#if session.session_description}
+              {#if session.description}
                 <p class="text-sm text-[#584140] mb-4 line-clamp-2">
-                  {session.session_description}
+                  {session.description}
                 </p>
               {/if}
 
