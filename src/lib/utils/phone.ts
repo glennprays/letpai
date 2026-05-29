@@ -63,3 +63,26 @@ export function composeWhatsappNumber(countryCode: string, local: string): strin
 export function isKnownCountryCode(code: string): boolean {
 	return CODE_SET.has(code);
 }
+
+/**
+ * Validate a normalised number (digits-only, may include country
+ * code). Total length must fall within 10–15 — the practical floor
+ * and ceiling for E.164 mobile numbers in the markets we care
+ * about. Indonesian numbers are additionally checked for the `62`
+ * country code and `8` mobile prefix.
+ *
+ * Returns null on success or a short human-friendly error message.
+ */
+export function validateWhatsappNumber(stored: string | null | undefined): string | null {
+	const digits = digitsOnly(stored ?? '');
+	if (!digits) return 'Enter a WhatsApp number.';
+	if (digits.length < 10) return 'That number looks too short.';
+	if (digits.length > 15) return 'That number looks too long.';
+	// Light Indonesia-specific guard: if the prefix is `62`, expect
+	// the next digit to be `8` (mobile). Other country codes pass
+	// through with just the length check.
+	if (digits.startsWith('62') && !digits.startsWith('628')) {
+		return 'Use an Indonesian mobile (8xx…).';
+	}
+	return null;
+}

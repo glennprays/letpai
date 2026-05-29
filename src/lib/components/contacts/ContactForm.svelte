@@ -4,6 +4,7 @@
   import Input from '../ui/Input.svelte';
   import PhoneInput from '../ui/PhoneInput.svelte';
   import Button from '../ui/Button.svelte';
+  import { validateWhatsappNumber } from '$lib/utils/phone';
   import type { Contact, ContactGroup, CreateContactRequest, UpdateContactRequest } from '$lib/types/api';
 
   interface Props {
@@ -46,8 +47,9 @@
       errors.name = 'Name must be at least 2 characters';
     }
 
-    if (!phone || phone.length < 10 || phone.length > 15) {
-      errors.phone = 'Please enter a valid phone number';
+    const phoneErr = validateWhatsappNumber(phone);
+    if (phoneErr) {
+      errors.phone = phoneErr;
     }
 
     return Object.keys(errors).length === 0;

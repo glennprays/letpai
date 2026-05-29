@@ -207,9 +207,34 @@
 			</section>
 		{/if}
 
+		{#if data.page.payment_proof_url && ['submitted', 'paid', 'rejected'].includes(data.page.payment_status)}
+			{@const proofUrl = data.page.payment_proof_url}
+			<section class="bg-white rounded-3xl p-5 mb-6 shadow-[0_1px_3px_rgba(37,24,24,0.04)]">
+				<h2 class="text-sm font-semibold text-[#251818] mb-3">
+					{data.page.payment_status === 'rejected' ? 'Your last upload' : 'Your proof'}
+				</h2>
+				<a
+					href={proofUrl}
+					target="_blank"
+					rel="noopener noreferrer"
+					title="Open full size"
+					class="block rounded-2xl overflow-hidden bg-[#fff0ef] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6]"
+				>
+					<img
+						src={proofUrl}
+						alt="Proof you uploaded"
+						class="w-full max-h-[360px] object-contain"
+					/>
+				</a>
+				<p class="text-xs text-[#584140] mt-2">Tap the image to open it at full size.</p>
+			</section>
+		{/if}
+
 		{#if data.page.payment_status !== 'paid' && !data.page.is_expired}
 			<section class="bg-white rounded-3xl p-5 shadow-[0_1px_3px_rgba(37,24,24,0.04)]">
-				<h2 class="text-base font-semibold text-[#251818] mb-3">Upload payment proof</h2>
+				<h2 class="text-base font-semibold text-[#251818] mb-3">
+					{data.page.payment_status === 'rejected' ? 'Upload a new proof' : data.page.payment_status === 'submitted' ? 'Upload again if needed' : 'Upload payment proof'}
+				</h2>
 
 				{#if previewUrl}
 					<div class="mb-3 rounded-2xl overflow-hidden bg-[#fff0ef]">

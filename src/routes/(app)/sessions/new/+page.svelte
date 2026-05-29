@@ -117,6 +117,7 @@
 					oninput={() => handleInput('sessionName', sessionName)}
 					placeholder="e.g., Lunch at Warung"
 					required
+					maxlength={200}
 					class="w-full px-4 py-3 bg-[#fff0ef]/50 rounded-xl text-[#251818] placeholder:text-[#584140]/50 focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent transition-all disabled:bg-[#fff0ef] disabled:cursor-not-allowed"
 					disabled={isSubmitting}
 				/>
@@ -136,6 +137,7 @@
 					bind:value={sessionDescription}
 					placeholder="Add a description to help everyone remember what this session is for..."
 					rows="3"
+					maxlength={1000}
 					class="w-full px-4 py-3 bg-[#fff0ef]/50 rounded-xl text-[#251818] placeholder:text-[#584140]/50 focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent transition-all resize-none disabled:bg-[#fff0ef] disabled:cursor-not-allowed"
 					disabled={isSubmitting}
 				></textarea>

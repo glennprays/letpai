@@ -49,6 +49,8 @@
 	import Modal from '$lib/components/ui/Modal.svelte';
 	import PhoneInput from '$lib/components/ui/PhoneInput.svelte';
 	import ConfirmDialog from '$lib/components/ui/ConfirmDialog.svelte';
+	import RejectReasonModal from '$lib/components/ui/RejectReasonModal.svelte';
+	import { validateWhatsappNumber } from '$lib/utils/phone';
 	import { toast } from '$lib/stores/toast';
 
 	interface Props {
@@ -302,8 +304,13 @@
 	async function handleAddManual() {
 		const name = manualName.trim();
 		const phone = manualPhone.trim();
-		if (!name || phone.length < 10) {
-			toast.error('Enter a name and a valid phone number');
+		if (!name) {
+			toast.error('Enter a name for the participant');
+			return;
+		}
+		const phoneErr = validateWhatsappNumber(phone);
+		if (phoneErr) {
+			toast.error(phoneErr);
 			return;
 		}
 
@@ -555,22 +562,31 @@
 		}
 	}
 
-	async function handleRequestUpdate(participantId: string) {
-		const reason = window.prompt('What needs to be fixed? (sent to the participant)') ?? undefined;
-		if (reason !== undefined && reason.trim().length < 5) {
-			toast.error('Add a short note (at least 5 characters)');
-			return;
-		}
-		actingPaymentId = participantId;
+	// "Request update" replaces the legacy window.prompt with a real
+	// modal (RejectReasonModal) so the host gets char-count feedback,
+	// validation copy, and keyboard shortcuts. The participant being
+	// updated is captured here; the modal commits via submitReject().
+	let rejectingParticipant = $state<{ id: string; name?: string | null } | null>(null);
+	let rejectSubmitting = $state(false);
+
+	function openRequestUpdate(participantId: string, participantName?: string | null) {
+		rejectingParticipant = { id: participantId, name: participantName ?? null };
+	}
+
+	async function submitReject(reason: string) {
+		if (!rejectingParticipant) return;
+		const participantId = rejectingParticipant.id;
+		rejectSubmitting = true;
 		try {
 			await rejectPayment(participantId, reason);
 			toast.success('Update requested');
+			rejectingParticipant = null;
 			await invalidateAll();
 		} catch (error) {
 			console.error('Request update error:', error);
-			toast.error('Failed to request update');
+			toast.error(error instanceof Error ? error.message : 'Failed to request update');
 		} finally {
-			actingPaymentId = null;
+			rejectSubmitting = false;
 		}
 	}
 
@@ -997,7 +1013,7 @@
 								</button>
 								<button
 									type="button"
-									onclick={() => handleRequestUpdate(proof.participant_id)}
+									onclick={() => openRequestUpdate(proof.participant_id, proof.name)}
 									disabled={actingPaymentId === proof.participant_id}
 									class="inline-flex items-center gap-1.5 px-3 py-2 rounded-2xl text-sm font-medium text-[#92400E] bg-[#F59E0B]/15 hover:bg-[#F59E0B]/25 disabled:opacity-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6]"
 								>
@@ -1232,16 +1248,19 @@
 						id="manual_name"
 						bind:value={manualName}
 						placeholder="Enter name"
+						maxlength={100}
 						class="w-full pl-10 pr-4 py-2.5 bg-[#fff0ef]/50 rounded-xl text-sm text-[#251818] focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]"
 					/>
 				</div>
 			</div>
 
+			{@const manualPhoneError = manualPhone.length > 0 ? validateWhatsappNumber(manualPhone) ?? undefined : undefined}
 			<PhoneInput
 				id="manual_phone"
 				label="WhatsApp Number"
 				placeholder="8123456789"
 				bind:value={manualPhone}
+				error={manualPhoneError}
 			/>
 
 			<label class="flex items-center gap-2 cursor-pointer">
@@ -1288,7 +1307,7 @@
 			{:else}
 				<button
 					onclick={handleAddManual}
-					disabled={isLoading || !manualName.trim() || manualPhone.length < 10}
+					disabled={isLoading || !manualName.trim() || validateWhatsappNumber(manualPhone) !== null}
 					class="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-gradient-to-br from-[#ae2f34] to-[#FF6B6B] rounded-xl hover:from-[#9a282c] hover:to-[#FF5252] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
 				>
 					{#if isLoading}
@@ -1314,6 +1333,7 @@
 				id="bill_name"
 				bind:value={newBillName}
 				placeholder="e.g., Nasi Goreng"
+				maxlength={200}
 				class="w-full px-4 py-2.5 bg-[#fff0ef]/50 rounded-xl text-sm text-[#251818] focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent"
 			/>
 		</div>
@@ -1323,12 +1343,23 @@
 				Amount ({getCurrencySymbol(data.session.currency)}) <span class="text-[#ae2f34]">*</span>
 			</label>
 			<input
-				type="text"
+				type="number"
 				id="bill_amount"
 				bind:value={newBillAmount}
 				placeholder="0"
-				inputmode="decimal"
-				pattern="[0-9]*[.,]?[0-9]*"
+				inputmode="numeric"
+				min="1"
+				step="1"
+				maxlength={12}
+				onpaste={(e) => {
+					// Strip non-digit chars on paste so "Rp 50.000" pastes as 50000.
+					const text = e.clipboardData?.getData('text') ?? '';
+					const cleaned = text.replace(/\D+/g, '');
+					if (cleaned !== text) {
+						e.preventDefault();
+						newBillAmount = cleaned;
+					}
+				}}
 				class="w-full px-4 py-2.5 bg-[#fff0ef]/50 rounded-xl text-sm text-[#251818] focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent"
 			/>
 		</div>
@@ -1411,6 +1442,15 @@
 		</div>
 	</div>
 </Modal>
+
+<!-- Request-update modal (replaces window.prompt) -->
+<RejectReasonModal
+	open={rejectingParticipant !== null}
+	participantName={rejectingParticipant?.name ?? null}
+	submitting={rejectSubmitting}
+	onsubmit={submitReject}
+	oncancel={() => (rejectingParticipant = null)}
+/>
 
 <!-- Resend (force) confirm -->
 <ConfirmDialog

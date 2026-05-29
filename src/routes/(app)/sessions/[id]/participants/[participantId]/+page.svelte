@@ -22,6 +22,7 @@
 	import { sendParticipantReminder } from '$lib/services/notifications';
 	import { ApiError } from '$lib/services/api';
 	import ConfirmDialog from '$lib/components/ui/ConfirmDialog.svelte';
+	import RejectReasonModal from '$lib/components/ui/RejectReasonModal.svelte';
 	import { toast } from '$lib/stores/toast';
 	import type { PageData } from './$types';
 
@@ -103,20 +104,29 @@
 		}
 	}
 
-	async function handleRequestUpdate() {
-		const reason = window.prompt('What needs to be fixed?') ?? undefined;
-		if (reason !== undefined && reason.trim().length < 5) {
-			toast.error('Note must be at least 5 characters');
-			return;
-		}
+	// "Request update" replaces window.prompt with RejectReasonModal
+	// for char-count feedback + min/max validation. acting also
+	// stays true so the surrounding action buttons are disabled
+	// during the request.
+	let showRejectModal = $state(false);
+	let rejectSubmitting = $state(false);
+
+	function openRequestUpdate() {
+		showRejectModal = true;
+	}
+
+	async function submitReject(reason: string) {
+		rejectSubmitting = true;
 		acting = true;
 		try {
 			await rejectPayment(data.participantId, reason);
 			toast.success('Update requested');
+			showRejectModal = false;
 			await invalidateAll();
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : 'Request update failed');
 		} finally {
+			rejectSubmitting = false;
 			acting = false;
 		}
 	}
@@ -267,7 +277,7 @@
 					</button>
 					<button
 						type="button"
-						onclick={handleRequestUpdate}
+						onclick={openRequestUpdate}
 						disabled={acting}
 						class="inline-flex items-center gap-2 px-4 py-2 rounded-2xl text-sm font-medium text-[#92400E] bg-[#F59E0B]/15 hover:bg-[#F59E0B]/25 disabled:opacity-50 transition-colors"
 					>
@@ -311,6 +321,14 @@
 		</section>
 	</div>
 </div>
+
+<RejectReasonModal
+	open={showRejectModal}
+	participantName={data.page.participant_name}
+	submitting={rejectSubmitting}
+	onsubmit={submitReject}
+	oncancel={() => (showRejectModal = false)}
+/>
 
 <ConfirmDialog
 	open={showRemove}
