@@ -19,6 +19,9 @@ export const actions: Actions = {
 		const title = formData.get('title')?.toString();
 		const description = formData.get('description')?.toString() || undefined;
 		const currency = formData.get('currency')?.toString() || 'IDR';
+		const bankName = formData.get('bank_name')?.toString().trim() || undefined;
+		const bankAccountNumber = formData.get('bank_account_number')?.toString().trim() || undefined;
+		const bankAccountHolder = formData.get('bank_account_holder')?.toString().trim() || undefined;
 
 		if (!title || title.trim().length === 0) {
 			return fail(400, { error: 'Title is required' });
@@ -29,7 +32,10 @@ export const actions: Actions = {
 				{
 					title: title.trim(),
 					description: description?.trim(),
-					currency
+					currency,
+					bank_name: bankName,
+					bank_account_number: bankAccountNumber,
+					bank_account_holder: bankAccountHolder
 				},
 				fetch,
 				token

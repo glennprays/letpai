@@ -70,6 +70,9 @@ export interface CreateSessionRequest {
   title: string;
   description?: string;
   currency?: string;
+  bank_name?: string;
+  bank_account_number?: string;
+  bank_account_holder?: string;
 }
 
 export interface BillItem {
@@ -166,6 +169,9 @@ export interface SessionDetail {
   participant_count: number;
   paid_count: number;
   created_at: string;
+  bank_name?: string | null;
+  bank_account_number?: string | null;
+  bank_account_holder?: string | null;
   participants: Participant[];
   bills: BillItem[];
 }
@@ -186,6 +192,9 @@ export interface UpdateSessionRequest {
   description?: string;
   currency?: string;
   status?: string;
+  bank_name?: string | null;
+  bank_account_number?: string | null;
+  bank_account_holder?: string | null;
 }
 
 // Participant Types

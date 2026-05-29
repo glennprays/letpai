@@ -60,6 +60,50 @@ export async function getAdminProfile(
 	return get('/admin/profile', customFetch, serverToken);
 }
 
+// Message-template management (admin scope).
+//
+// Templates use Go text/template syntax on the backend (`{{.Var}}`).
+// The body is validated on the backend at save time, so a syntax error
+// surfaces as a 400 rather than blowing up the renderer at send time.
+export interface AdminMessageTemplate {
+	template_id: string;
+	key: string;
+	name: string;
+	description?: string | null;
+	body: string;
+	variables: string[];
+	updated_at: string;
+}
+
+export async function listAdminTemplates(
+	customFetch?: typeof fetch,
+	serverToken?: string
+): Promise<{ templates: AdminMessageTemplate[] }> {
+	const res = (await get('/admin/templates', customFetch, serverToken)) as
+		| { data: { templates: AdminMessageTemplate[] } }
+		| { templates: AdminMessageTemplate[] };
+	if ('data' in res) return res.data;
+	return res;
+}
+
+export async function updateAdminTemplate(
+	key: string,
+	body: {
+		name?: string;
+		description?: string | null;
+		body?: string;
+		variables?: string[];
+	},
+	customFetch?: typeof fetch,
+	serverToken?: string
+): Promise<AdminMessageTemplate> {
+	const res = (await put(`/admin/templates/${key}`, body, customFetch, serverToken)) as
+		| { data: AdminMessageTemplate }
+		| AdminMessageTemplate;
+	if ('data' in res) return res.data;
+	return res;
+}
+
 export async function getWhatsAppStatus(
 	customFetch?: typeof fetch,
 	serverToken?: string

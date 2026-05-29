@@ -140,6 +140,51 @@
 				</select>
 			</div>
 
+			<!-- Bank info (shown to participants on their payment page) -->
+			<div class="border-t border-[#fbe3e1] pt-6">
+				<p class="text-sm font-medium text-[#251818] mb-1">Transfer details <span class="text-[#584140]/60 font-normal">(optional)</span></p>
+				<p class="text-xs text-[#584140] mb-4">Shared on each participant's payment page so they know where to send the money.</p>
+
+				<div class="space-y-4">
+					<div>
+						<label for="bank_name" class="block text-sm font-medium text-[#251818] mb-2">Bank / e-wallet</label>
+						<input
+							id="bank_name"
+							name="bank_name"
+							type="text"
+							placeholder="e.g. BCA, GoPay, OVO"
+							maxlength="80"
+							class="w-full px-4 py-3 bg-[#fff0ef]/50 rounded-xl text-[#251818] placeholder:text-[#584140]/50 focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent transition-all disabled:bg-[#fff0ef]"
+							disabled={isSubmitting}
+						/>
+					</div>
+					<div>
+						<label for="bank_account_number" class="block text-sm font-medium text-[#251818] mb-2">Account number</label>
+						<input
+							id="bank_account_number"
+							name="bank_account_number"
+							type="text"
+							placeholder="1234567890"
+							maxlength="40"
+							class="w-full px-4 py-3 bg-[#fff0ef]/50 rounded-xl text-[#251818] placeholder:text-[#584140]/50 focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent transition-all disabled:bg-[#fff0ef] font-mono"
+							disabled={isSubmitting}
+						/>
+					</div>
+					<div>
+						<label for="bank_account_holder" class="block text-sm font-medium text-[#251818] mb-2">Account holder</label>
+						<input
+							id="bank_account_holder"
+							name="bank_account_holder"
+							type="text"
+							placeholder="Name on the account"
+							maxlength="80"
+							class="w-full px-4 py-3 bg-[#fff0ef]/50 rounded-xl text-[#251818] placeholder:text-[#584140]/50 focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent transition-all disabled:bg-[#fff0ef]"
+							disabled={isSubmitting}
+						/>
+					</div>
+				</div>
+			</div>
+
 			<!-- Actions -->
 			<div class="flex gap-3 pt-4">
 				<button

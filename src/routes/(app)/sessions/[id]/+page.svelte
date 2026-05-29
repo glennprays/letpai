@@ -751,7 +751,11 @@
 						{@const isAlreadyPaid = participant.payment_status === 'paid'}
 						{@const reminderDisabled = isAlreadyPaid || cooldown > 0 || isLoading || remindingParticipantId === participant.participant_id}
 						<li class="flex items-center justify-between p-3 rounded-2xl bg-[#fff0ef]/50">
-							<div class="flex items-center gap-3 min-w-0">
+							<a
+								href={`/sessions/${data.session.session_id}/participants/${participant.participant_id}`}
+								class="flex items-center gap-3 min-w-0 flex-1 no-underline rounded-xl -m-1 p-1 hover:bg-[#fbe3e1]/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6]"
+								title="Open participant details"
+							>
 								<div class="w-10 h-10 bg-[#fff0ef] rounded-full flex items-center justify-center text-sm font-medium text-[#251818] flex-shrink-0">
 									{(participant.name || '?').charAt(0).toUpperCase()}
 								</div>
@@ -764,7 +768,7 @@
 										</p>
 									{/if}
 								</div>
-							</div>
+							</a>
 							<div class="flex items-center gap-2 flex-shrink-0">
 								<div class="text-right">
 									<p class="text-sm font-medium text-[#251818]">

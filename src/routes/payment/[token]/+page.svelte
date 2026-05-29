@@ -138,14 +138,52 @@
 		{#if data.page.bill_items.length > 0}
 			<section class="bg-white rounded-3xl p-5 mb-6 shadow-[0_1px_3px_rgba(37,24,24,0.04)]">
 				<h2 class="text-sm font-semibold text-[#251818] mb-3">What you're paying for</h2>
-				<ul class="space-y-2">
+				<ul class="space-y-3">
 					{#each data.page.bill_items as item}
-						<li class="flex items-start justify-between gap-3 text-sm">
-							<span class="text-[#251818] truncate">{item.description}</span>
-							<span class="text-[#584140] flex-shrink-0">{formatIDR(item.amount)}</span>
+						<li class="text-sm">
+							<div class="flex items-start justify-between gap-3">
+								<span class="text-[#251818] truncate">{item.description}</span>
+								<span class="text-[#251818] font-semibold flex-shrink-0">{formatIDR(item.your_share)}</span>
+							</div>
+							<p class="text-xs text-[#584140] mt-0.5">
+								{formatIDR(item.amount)} ÷ {item.shared_with} {item.shared_with === 1 ? 'person' : 'people'}
+							</p>
 						</li>
 					{/each}
 				</ul>
+			</section>
+		{/if}
+
+		{#if data.page.bank_name || data.page.bank_account_number || data.page.bank_account_holder}
+			<section class="bg-white rounded-3xl p-5 mb-6 shadow-[0_1px_3px_rgba(37,24,24,0.04)]">
+				<h2 class="text-sm font-semibold text-[#251818] mb-3">Transfer to</h2>
+				<dl class="text-sm space-y-1.5">
+					{#if data.page.bank_name}
+						<div class="flex justify-between gap-3">
+							<dt class="text-[#584140]">Bank</dt>
+							<dd class="text-[#251818] font-medium">{data.page.bank_name}</dd>
+						</div>
+					{/if}
+					{#if data.page.bank_account_number}
+						<div class="flex justify-between gap-3">
+							<dt class="text-[#584140]">Account no.</dt>
+							<dd class="text-[#251818] font-medium font-mono">{data.page.bank_account_number}</dd>
+						</div>
+					{/if}
+					{#if data.page.bank_account_holder}
+						<div class="flex justify-between gap-3">
+							<dt class="text-[#584140]">Account holder</dt>
+							<dd class="text-[#251818] font-medium">{data.page.bank_account_holder}</dd>
+						</div>
+					{/if}
+				</dl>
+			</section>
+		{/if}
+
+		{#if data.page.payment_status === 'rejected' && data.page.rejection_reason}
+			<section class="bg-[#F59E0B]/15 rounded-3xl p-4 mb-6 text-sm text-[#92400E]">
+				<p class="font-semibold mb-1">Why we asked for an update</p>
+				<p>{data.page.rejection_reason}</p>
 			</section>
 		{/if}
 

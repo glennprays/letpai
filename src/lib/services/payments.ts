@@ -1,17 +1,32 @@
 import { get, post } from './api';
 
+// The backend now returns per-participant filtered bills (each line is
+// either a bill assigned to this participant or an "everyone" bill)
+// with `your_share` showing how much of the bill this participant owes
+// after the split. Bank info lives on the session and is surfaced here
+// so the participant has the transfer destination on the same page.
 export interface PaymentPageData {
+	session_id: string;
+	participant_id: string;
 	session_name: string;
 	participant_name: string;
+	total_amount: number;
 	share_amount: number;
 	currency: string;
 	bill_items: Array<{
 		bill_item_id: string;
 		description: string;
 		amount: number;
+		your_share: number;
+		shared_with: number;
 		category?: string | null;
 	}>;
 	payment_status: 'pending' | 'submitted' | 'paid' | 'rejected';
+	payment_proof_url?: string | null;
+	rejection_reason?: string | null;
+	bank_name?: string | null;
+	bank_account_number?: string | null;
+	bank_account_holder?: string | null;
 	link_expires_at?: string;
 	is_expired?: boolean;
 }
