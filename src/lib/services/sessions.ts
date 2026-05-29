@@ -133,3 +133,16 @@ export async function sendNotifications(
 ): Promise<{ success: boolean; message: string }> {
 	return post(`/sessions/${sessionId}/send-notifications`, {}, customFetch, serverToken);
 }
+
+/**
+ * Force-send notifications, bypassing the server-side dirty gate.
+ * Called from the FE's "Send again anyway?" confirm modal when the
+ * default endpoint returns 409 SESSION_NOT_DIRTY.
+ */
+export async function resendNotifications(
+	sessionId: string,
+	customFetch?: typeof fetch,
+	serverToken?: string
+): Promise<{ success: boolean; message: string }> {
+	return post(`/sessions/${sessionId}/send-notifications/resend`, {}, customFetch, serverToken);
+}

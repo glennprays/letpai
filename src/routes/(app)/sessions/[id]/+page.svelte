@@ -29,11 +29,17 @@
 		deleteBillItem,
 		calculateSplits,
 		sendNotifications,
+		resendNotifications,
 		cancelSession,
 		removeParticipant
 	} from '$lib/services/sessions';
 	import { createContact } from '$lib/services/contacts';
-	import { sendParticipantReminder, sendBulkReminder } from '$lib/services/notifications';
+	import {
+		sendParticipantReminder,
+		sendBulkReminder,
+		retryParticipantNotification
+	} from '$lib/services/notifications';
+	import { ApiError } from '$lib/services/api';
 	import {
 		approvePayment,
 		rejectPayment,
@@ -408,6 +414,13 @@
 		}
 	}
 
+	// Send-notifications gated path. On the backend's SESSION_NOT_DIRTY
+	// 409 we surface a confirm modal: the host already notified everyone
+	// and nothing has changed, so re-firing the batch is opt-in via the
+	// /resend escape hatch.
+	let showResendConfirm = $state(false);
+	let resendLastNotifiedAt = $state<string | null>(null);
+
 	async function handleSendNotifications() {
 		if (!data.session.participants?.length) {
 			toast.error('Add participants first');
@@ -417,12 +430,74 @@
 		try {
 			await sendNotifications(data.session.session_id);
 			toast.success('Notifications sent');
+			await invalidateAll();
 		} catch (error) {
-			console.error('Send notifications error:', error);
-			toast.error('Failed to send notifications');
+			if (
+				error instanceof ApiError &&
+				error.status === 409 &&
+				error.code === 'SESSION_NOT_DIRTY'
+			) {
+				const body = error.body as { last_notified_at?: string } | undefined;
+				resendLastNotifiedAt = body?.last_notified_at ?? null;
+				showResendConfirm = true;
+			} else {
+				console.error('Send notifications error:', error);
+				toast.error(error instanceof Error ? error.message : 'Failed to send notifications');
+			}
 		} finally {
 			isNotifying = false;
 		}
+	}
+
+	async function handleConfirmResend() {
+		isNotifying = true;
+		try {
+			await resendNotifications(data.session.session_id);
+			toast.success('Notifications re-sent');
+			await invalidateAll();
+		} catch (error) {
+			console.error('Resend notifications error:', error);
+			toast.error(error instanceof Error ? error.message : 'Failed to resend');
+		} finally {
+			isNotifying = false;
+			showResendConfirm = false;
+			resendLastNotifiedAt = null;
+		}
+	}
+
+	// Per-participant retry — fires the chip's Retry button.
+	let retryingParticipantId = $state<string | null>(null);
+	async function handleRetryNotification(participantId: string) {
+		retryingParticipantId = participantId;
+		try {
+			await retryParticipantNotification(participantId);
+			toast.success('Retry queued');
+			await invalidateAll();
+		} catch (error) {
+			console.error('Retry error:', error);
+			toast.error(error instanceof Error ? error.message : 'Retry failed');
+		} finally {
+			retryingParticipantId = null;
+		}
+	}
+
+	// Send vs Resend label is server-driven via is_dirty (computed
+	// from last_notified_at + sessions.updated_at + hasUnpaid).
+	const sendLabel = $derived(
+		data.session.is_dirty || !data.session.last_notified_at
+			? 'Send notifications'
+			: 'Resend notifications'
+	);
+
+	// Friendly status chip background tint, mapped from the use-case
+	// boundary's friendly_status string. Falls back to neutral.
+	function chipTone(friendly: string | undefined): string {
+		if (!friendly) return 'bg-[#fff0ef] text-[#584140]';
+		if (friendly.includes('Sent')) return 'bg-[#10B981]/15 text-[#047857]';
+		if (friendly.includes('Sending')) return 'bg-[#3B82F6]/15 text-[#1E40AF]';
+		if (friendly.includes('Stuck')) return 'bg-[#F59E0B]/15 text-[#92400E]';
+		if (friendly.includes('Failed')) return 'bg-[#EF4444]/15 text-[#991B1B]';
+		return 'bg-[#fff0ef] text-[#584140]';
 	}
 
 	function openAddBillModal() {
@@ -718,7 +793,7 @@
 							{:else}
 								<Send class="w-4 h-4" />
 							{/if}
-							Send Notifications
+							{sendLabel}
 						</button>
 						<button
 							type="button"
@@ -777,6 +852,27 @@
 									<span class="inline-block px-2 py-0.5 rounded-full text-[11px] font-medium {paymentStatusBadgeClass(participant.payment_status)}">
 										{paymentStatusLabel(participant)}
 									</span>
+									{#if participant.last_notification}
+										{@const ln = participant.last_notification}
+										{@const canRetry = ln.friendly_status.includes('retry') || ln.friendly_status.includes('Failed') || ln.friendly_status.includes('Stuck')}
+										<div class="mt-1 flex items-center gap-1.5 justify-end">
+											<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium {chipTone(ln.friendly_status)}">
+												{ln.friendly_status}
+											</span>
+											{#if canRetry}
+												<button
+													type="button"
+													onclick={(e) => { e.preventDefault(); e.stopPropagation(); handleRetryNotification(participant.participant_id); }}
+													disabled={retryingParticipantId === participant.participant_id}
+													class="text-[10px] underline text-[#ae2f34] hover:opacity-80 disabled:opacity-50"
+												>
+													{retryingParticipantId === participant.participant_id ? '…' : 'Retry'}
+												</button>
+											{/if}
+										</div>
+									{:else if data.session.last_notified_at}
+										<span class="mt-1 inline-block text-[10px] text-[#584140]/70">Not sent yet</span>
+									{/if}
 								</div>
 								{#if !isAlreadyPaid}
 									<button
@@ -1315,6 +1411,23 @@
 		</div>
 	</div>
 </Modal>
+
+<!-- Resend (force) confirm -->
+<ConfirmDialog
+	open={showResendConfirm}
+	title="Send notifications again?"
+	message={resendLastNotifiedAt
+		? `You already sent these ${formatRelativeTime(resendLastNotifiedAt)}. Send again anyway?`
+		: 'You already sent these. Send again anyway?'}
+	confirmText={isNotifying ? 'Sending…' : 'Send again'}
+	cancelText="Keep as-is"
+	variant="info"
+	onconfirm={handleConfirmResend}
+	oncancel={() => {
+		showResendConfirm = false;
+		resendLastNotifiedAt = null;
+	}}
+/>
 
 <!-- Cancel Session confirm -->
 <ConfirmDialog

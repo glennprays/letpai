@@ -45,3 +45,18 @@ export async function sendBulkReminder(
 ): Promise<ReminderResponse> {
 	return post(`/sessions/${sessionId}/bulk-reminder`, {}, customFetch, serverToken);
 }
+
+/** Retry the most recent notification for a single participant.
+ *  Not subject to the session-level dirty gate (per-participant
+ *  retries of a failed delivery are always allowed); reminder
+ *  rate-limit still applies when the previous send was a reminder. */
+export async function retryParticipantNotification(
+	participantId: string,
+	customFetch?: typeof fetch,
+	serverToken?: string
+): Promise<{
+	success: boolean;
+	data?: { message: string; status: string; type: string; queued_at: string };
+}> {
+	return post(`/participants/${participantId}/notifications/retry`, {}, customFetch, serverToken);
+}

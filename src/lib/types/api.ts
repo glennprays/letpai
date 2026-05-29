@@ -105,6 +105,18 @@ export interface Participant {
   // proof upload). Drives the "Marked by you" badge + disables the
   // participant-facing upload affordance.
   paid_manually?: boolean;
+  // Latest notification dispatch for this participant. friendly_status
+  // is a UI-stable label mapped at the use-case boundary; raw status
+  // ("queued"/"sent"/"failed") and error_message are also exposed for
+  // a future details disclosure.
+  last_notification?: {
+    log_id: string;
+    type: string;
+    status: 'queued' | 'sent' | 'failed' | string;
+    sent_at: string;
+    error_message?: string | null;
+    friendly_status: string;
+  } | null;
 }
 
 export interface DashboardStats {
@@ -172,6 +184,8 @@ export interface SessionDetail {
   bank_name?: string | null;
   bank_account_number?: string | null;
   bank_account_holder?: string | null;
+  last_notified_at?: string | null;
+  is_dirty?: boolean;
   participants: Participant[];
   bills: BillItem[];
 }
