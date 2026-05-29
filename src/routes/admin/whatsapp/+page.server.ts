@@ -1,58 +1,22 @@
 import type { Actions, PageServerLoad } from './$types';
 import { fail, redirect } from '@sveltejs/kit';
-import {
-	adminLogout,
-	getAdminProfile,
-	getWhatsAppStatus,
-	updateWhatsAppConfig,
-	type AdminProfile,
-	type WhatsAppStatus
-} from '$lib/services/admin';
+import { getWhatsAppStatus, updateWhatsAppConfig, type WhatsAppStatus } from '$lib/services/admin';
 
+// The /admin layout already gates on admin_token and pre-loads the
+// admin profile. Here we just fetch the WhatsApp status sidecar.
 export const load: PageServerLoad = async ({ cookies, fetch }) => {
 	const token = cookies.get('admin_token');
-	if (!token) {
-		throw redirect(303, '/admin/login');
-	}
+	if (!token) throw redirect(303, '/admin/login');
 
-	// Both calls are best-effort; the UI can recover from missing data.
-	const [profile, status] = await Promise.all([
-		getAdminProfile(fetch, token).catch((err): AdminProfile | null => {
-			console.warn('[admin/whatsapp] profile load failed:', err);
-			return null;
-		}),
-		getWhatsAppStatus(fetch, token).catch((err): WhatsAppStatus | null => {
-			console.warn('[admin/whatsapp] status load failed:', err);
-			return null;
-		})
-	]);
+	const status = await getWhatsAppStatus(fetch, token).catch((err): WhatsAppStatus | null => {
+		console.warn('[admin/whatsapp] status load failed:', err);
+		return null;
+	});
 
-	if (profile === null) {
-		// Most likely the token expired — bounce back to login.
-		cookies.delete('admin_token', { path: '/' });
-		throw redirect(303, '/admin/login');
-	}
-
-	return {
-		profile,
-		initialStatus: status
-	};
+	return { initialStatus: status };
 };
 
 export const actions: Actions = {
-	logout: async ({ cookies, fetch }) => {
-		const token = cookies.get('admin_token');
-		if (token) {
-			try {
-				await adminLogout(fetch, token);
-			} catch (err) {
-				console.warn('[admin/whatsapp] logout call failed:', err);
-			}
-		}
-		cookies.delete('admin_token', { path: '/' });
-		throw redirect(303, '/admin/login');
-	},
-
 	updateToken: async ({ request, cookies, fetch }) => {
 		const token = cookies.get('admin_token');
 		if (!token) throw redirect(303, '/admin/login');

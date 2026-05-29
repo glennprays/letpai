@@ -1,9 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { invalidateAll, goto } from '$app/navigation';
+	import { invalidateAll } from '$app/navigation';
 	import {
-		Shield,
-		LogOut,
 		RefreshCw,
 		QrCode,
 		KeyRound,
@@ -130,35 +128,7 @@
 	<title>WhatsApp gateway · Admin</title>
 </svelte:head>
 
-<div class="min-h-screen bg-[#fff8f7]" style="font-family:'Plus Jakarta Sans',sans-serif;">
-	<header
-		class="sticky top-0 z-30 bg-[#fff8f7]/90 backdrop-blur-xl border-b border-[#f5dddb]"
-	>
-		<div class="max-w-4xl mx-auto px-6 h-16 flex items-center justify-between">
-			<div class="flex items-center gap-3">
-				<div
-					class="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#ae2f34] to-[#FF6B6B] flex items-center justify-center"
-				>
-					<Shield size={18} color="#fff" />
-				</div>
-				<div>
-					<p class="text-sm font-semibold text-[#251818] leading-tight">Letpai admin</p>
-					<p class="text-xs text-[#584140] leading-tight">
-						{data.profile.full_name} · {data.profile.role}
-					</p>
-				</div>
-			</div>
-			<form method="POST" action="?/logout" use:enhance>
-				<button
-					type="submit"
-					class="inline-flex items-center gap-2 px-3 py-2 rounded-2xl text-sm font-medium text-[#ae2f34] hover:bg-[#fbe3e1] transition-colors"
-				>
-					<LogOut size={16} /> Sign out
-				</button>
-			</form>
-		</div>
-	</header>
-
+<div style="font-family:'Plus Jakarta Sans',sans-serif;">
 	<main class="max-w-4xl mx-auto px-6 py-10">
 		<div class="mb-8">
 			<h1 class="text-3xl font-bold text-[#251818]">WhatsApp gateway</h1>
