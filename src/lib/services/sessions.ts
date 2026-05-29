@@ -146,3 +146,34 @@ export async function resendNotifications(
 ): Promise<{ success: boolean; message: string }> {
 	return post(`/sessions/${sessionId}/send-notifications/resend`, {}, customFetch, serverToken);
 }
+
+export interface BankAccountInput {
+	bank_name?: string | null;
+	account_number?: string | null;
+	account_holder?: string | null;
+}
+
+/**
+ * Swap the host's transfer destinations. Idempotent — the FE PUTs
+ * the full list every save, the backend transactionally replaces.
+ * Up to 5 accounts; empty array clears.
+ */
+export async function replaceBankAccounts(
+	sessionId: string,
+	accounts: BankAccountInput[],
+	customFetch?: typeof fetch,
+	serverToken?: string
+): Promise<{
+	success: boolean;
+	data: {
+		accounts: Array<{
+			account_id: string;
+			ordinal: number;
+			bank_name?: string | null;
+			account_number?: string | null;
+			account_holder?: string | null;
+		}>;
+	};
+}> {
+	return put(`/sessions/${sessionId}/bank-accounts`, { accounts }, customFetch, serverToken);
+}

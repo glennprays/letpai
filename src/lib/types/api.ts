@@ -184,6 +184,13 @@ export interface SessionDetail {
   bank_name?: string | null;
   bank_account_number?: string | null;
   bank_account_holder?: string | null;
+  bank_accounts?: Array<{
+    account_id: string;
+    ordinal: number;
+    bank_name?: string | null;
+    account_number?: string | null;
+    account_holder?: string | null;
+  }>;
   last_notified_at?: string | null;
   is_dirty?: boolean;
   participants: Participant[];

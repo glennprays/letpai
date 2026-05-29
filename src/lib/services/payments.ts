@@ -27,6 +27,11 @@ export interface PaymentPageData {
 	bank_name?: string | null;
 	bank_account_number?: string | null;
 	bank_account_holder?: string | null;
+	bank_accounts?: Array<{
+		bank_name?: string | null;
+		account_number?: string | null;
+		account_holder?: string | null;
+	}>;
 	link_expires_at?: string;
 	is_expired?: boolean;
 }

@@ -154,29 +154,49 @@
 			</section>
 		{/if}
 
-		{#if data.page.bank_name || data.page.bank_account_number || data.page.bank_account_holder}
-			<section class="bg-white rounded-3xl p-5 mb-6 shadow-[0_1px_3px_rgba(37,24,24,0.04)]">
-				<h2 class="text-sm font-semibold text-[#251818] mb-3">Transfer to</h2>
-				<dl class="text-sm space-y-1.5">
-					{#if data.page.bank_name}
-						<div class="flex justify-between gap-3">
-							<dt class="text-[#584140]">Bank</dt>
-							<dd class="text-[#251818] font-medium">{data.page.bank_name}</dd>
-						</div>
-					{/if}
-					{#if data.page.bank_account_number}
-						<div class="flex justify-between gap-3">
-							<dt class="text-[#584140]">Account no.</dt>
-							<dd class="text-[#251818] font-medium font-mono">{data.page.bank_account_number}</dd>
-						</div>
-					{/if}
-					{#if data.page.bank_account_holder}
-						<div class="flex justify-between gap-3">
-							<dt class="text-[#584140]">Account holder</dt>
-							<dd class="text-[#251818] font-medium">{data.page.bank_account_holder}</dd>
-						</div>
-					{/if}
-				</dl>
+		{#if (data.page.bank_accounts && data.page.bank_accounts.length > 0) || data.page.bank_name || data.page.bank_account_number || data.page.bank_account_holder}
+			{@const accounts = data.page.bank_accounts && data.page.bank_accounts.length > 0
+				? data.page.bank_accounts
+				: [{
+					bank_name: data.page.bank_name ?? null,
+					account_number: data.page.bank_account_number ?? null,
+					account_holder: data.page.bank_account_holder ?? null
+				}]}
+			<section class="mb-6 space-y-3">
+				<h2 class="text-sm font-semibold text-[#251818]">
+					Transfer to {accounts.length > 1 ? `(${accounts.length} options)` : ''}
+				</h2>
+				{#each accounts as acct (acct.account_number ?? acct.bank_name ?? acct.account_holder)}
+					<div class="bg-white rounded-3xl p-5 shadow-[0_1px_3px_rgba(37,24,24,0.04)]">
+						<dl class="text-sm space-y-1.5">
+							{#if acct.bank_name}
+								<div class="flex justify-between gap-3">
+									<dt class="text-[#584140]">Bank</dt>
+									<dd class="text-[#251818] font-medium">{acct.bank_name}</dd>
+								</div>
+							{/if}
+							{#if acct.account_number}
+								<div class="flex justify-between gap-3 items-center">
+									<dt class="text-[#584140]">Account no.</dt>
+									<dd class="flex items-center gap-2">
+										<span class="text-[#251818] font-medium font-mono">{acct.account_number}</span>
+										<button
+											type="button"
+											onclick={() => navigator.clipboard?.writeText(acct.account_number ?? '')}
+											class="text-[11px] underline text-[#ae2f34] hover:opacity-80"
+										>Copy</button>
+									</dd>
+								</div>
+							{/if}
+							{#if acct.account_holder}
+								<div class="flex justify-between gap-3">
+									<dt class="text-[#584140]">Account holder</dt>
+									<dd class="text-[#251818] font-medium">{acct.account_holder}</dd>
+								</div>
+							{/if}
+						</dl>
+					</div>
+				{/each}
 			</section>
 		{/if}
 

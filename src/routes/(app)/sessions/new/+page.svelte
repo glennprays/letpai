@@ -16,6 +16,25 @@
 	let touched = $state<Record<string, boolean>>({});
 	let isSubmitting = $state(false);
 
+	// Repeatable bank-account rows. Capped at 5 to match the backend.
+	// Empty rows are dropped server-side; the FE just hides the
+	// "+ Add" button when the cap is hit.
+	type BankRow = { bank_name: string; account_number: string; account_holder: string };
+	let bankRows = $state<BankRow[]>([
+		{ bank_name: '', account_number: '', account_holder: '' }
+	]);
+	const MAX_BANK_ACCOUNTS = 5;
+	function addBankRow() {
+		if (bankRows.length >= MAX_BANK_ACCOUNTS) return;
+		bankRows = [...bankRows, { bank_name: '', account_number: '', account_holder: '' }];
+	}
+	function removeBankRow(index: number) {
+		bankRows = bankRows.filter((_, i) => i !== index);
+		if (bankRows.length === 0) {
+			bankRows = [{ bank_name: '', account_number: '', account_holder: '' }];
+		}
+	}
+
 	const currencies = [
 		{ code: 'IDR', symbol: 'Rp', name: 'Indonesian Rupiah' },
 		{ code: 'USD', symbol: '$', name: 'US Dollar' },
@@ -142,46 +161,67 @@
 
 			<!-- Bank info (shown to participants on their payment page) -->
 			<div class="border-t border-[#fbe3e1] pt-6">
-				<p class="text-sm font-medium text-[#251818] mb-1">Transfer details <span class="text-[#584140]/60 font-normal">(optional)</span></p>
-				<p class="text-xs text-[#584140] mb-4">Shared on each participant's payment page so they know where to send the money.</p>
+				<div class="flex items-start justify-between gap-3 mb-1">
+					<p class="text-sm font-medium text-[#251818]">Transfer details <span class="text-[#584140]/60 font-normal">(optional)</span></p>
+				</div>
+				<p class="text-xs text-[#584140] mb-4">Add one or more transfer destinations — participants see all of them on their payment page and can pick the easiest.</p>
 
 				<div class="space-y-4">
-					<div>
-						<label for="bank_name" class="block text-sm font-medium text-[#251818] mb-2">Bank / e-wallet</label>
-						<input
-							id="bank_name"
-							name="bank_name"
-							type="text"
-							placeholder="e.g. BCA, GoPay, OVO"
-							maxlength="80"
-							class="w-full px-4 py-3 bg-[#fff0ef]/50 rounded-xl text-[#251818] placeholder:text-[#584140]/50 focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent transition-all disabled:bg-[#fff0ef]"
+					{#each bankRows as row, i (i)}
+						<div class="bg-[#fff0ef]/30 rounded-2xl p-4 border border-[#fbe3e1]">
+							<div class="flex items-center justify-between mb-3">
+								<p class="text-xs font-semibold text-[#584140] uppercase tracking-wide">Account #{i + 1}</p>
+								{#if bankRows.length > 1}
+									<button type="button" onclick={() => removeBankRow(i)} class="text-xs text-[#991B1B] underline hover:opacity-80" disabled={isSubmitting}>
+										Remove
+									</button>
+								{/if}
+							</div>
+							<div class="space-y-3">
+								<input
+									name="bank_name[]"
+									type="text"
+									bind:value={row.bank_name}
+									placeholder="Bank or e-wallet (e.g. BCA, GoPay)"
+									maxlength="80"
+									class="w-full px-4 py-2.5 bg-white rounded-xl text-sm text-[#251818] placeholder:text-[#584140]/50 focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] disabled:bg-[#fff0ef]"
+									disabled={isSubmitting}
+								/>
+								<input
+									name="account_number[]"
+									type="text"
+									bind:value={row.account_number}
+									placeholder="Account number"
+									maxlength="40"
+									class="w-full px-4 py-2.5 bg-white rounded-xl text-sm text-[#251818] placeholder:text-[#584140]/50 focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] disabled:bg-[#fff0ef] font-mono"
+									disabled={isSubmitting}
+								/>
+								<input
+									name="account_holder[]"
+									type="text"
+									bind:value={row.account_holder}
+									placeholder="Account holder name"
+									maxlength="80"
+									class="w-full px-4 py-2.5 bg-white rounded-xl text-sm text-[#251818] placeholder:text-[#584140]/50 focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] disabled:bg-[#fff0ef]"
+									disabled={isSubmitting}
+								/>
+							</div>
+						</div>
+					{/each}
+
+					{#if bankRows.length < MAX_BANK_ACCOUNTS}
+						<button
+							type="button"
+							onclick={addBankRow}
+							class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-[#251818] bg-white hover:bg-[#fff0ef] border-2 border-dashed border-[#fbe3e1] rounded-xl transition-colors disabled:opacity-50"
 							disabled={isSubmitting}
-						/>
-					</div>
-					<div>
-						<label for="bank_account_number" class="block text-sm font-medium text-[#251818] mb-2">Account number</label>
-						<input
-							id="bank_account_number"
-							name="bank_account_number"
-							type="text"
-							placeholder="1234567890"
-							maxlength="40"
-							class="w-full px-4 py-3 bg-[#fff0ef]/50 rounded-xl text-[#251818] placeholder:text-[#584140]/50 focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent transition-all disabled:bg-[#fff0ef] font-mono"
-							disabled={isSubmitting}
-						/>
-					</div>
-					<div>
-						<label for="bank_account_holder" class="block text-sm font-medium text-[#251818] mb-2">Account holder</label>
-						<input
-							id="bank_account_holder"
-							name="bank_account_holder"
-							type="text"
-							placeholder="Name on the account"
-							maxlength="80"
-							class="w-full px-4 py-3 bg-[#fff0ef]/50 rounded-xl text-[#251818] placeholder:text-[#584140]/50 focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent transition-all disabled:bg-[#fff0ef]"
-							disabled={isSubmitting}
-						/>
-					</div>
+						>
+							<Plus class="w-4 h-4" />
+							Add another transfer destination
+						</button>
+					{:else}
+						<p class="text-xs text-[#584140] text-center">Maximum {MAX_BANK_ACCOUNTS} accounts.</p>
+					{/if}
 				</div>
 			</div>
 
