@@ -2,29 +2,55 @@ import { browser } from '$app/environment';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
 
+// Two parallel cookie namespaces exist:
+//   - `token` for end-user sessions (read by /(app) layout gates)
+//   - `admin_token` for /admin sessions
+// When a client-side fetch fires from an /admin/* page we must read the
+// admin cookie, or every browser-side admin API call would land at the
+// backend with no Authorization header → 401 → bounce to /login. When
+// outside /admin we keep the existing user-token behaviour intact.
+function isAdminPath(): boolean {
+	return browser && window.location.pathname.startsWith('/admin');
+}
+
+function readCookie(name: string): string | null {
+	const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]+)`));
+	return match ? decodeURIComponent(match[1]) : null;
+}
+
 // Read the token client-side. Prefer the localStorage cache (written by
 // setToken / initAuth) but fall back to parsing document.cookie so that the
 // brief window between page hydration and initAuth running still authenticates.
 function getToken(): string | null {
 	if (!browser) return null;
+	// On admin pages, only the admin_token cookie is meaningful. The user
+	// localStorage `token` is unrelated and would send a wrong bearer.
+	if (isAdminPath()) {
+		return readCookie('admin_token');
+	}
 	const cached = localStorage.getItem('token');
 	if (cached) return cached;
-	const match = document.cookie.match(/(?:^|; )token=([^;]+)/);
-	return match ? decodeURIComponent(match[1]) : null;
+	return readCookie('token');
 }
 
-// Centralised 401 handling: clear the local cache + bounce to /login.
-// On the server side we just bubble the error so SvelteKit can decide what
-// to do (typically the +page.server.ts will redirect itself).
+// Centralised 401 handling: clear the local cache + bounce to the right
+// login screen. On the server side we just bubble the error so SvelteKit
+// can decide what to do (typically the +page.server.ts will redirect
+// itself).
 function handle401(endpoint: string): never {
 	console.error('[API] 401 Unauthorized for', endpoint);
 	if (browser) {
-		localStorage.removeItem('token');
-		localStorage.removeItem('user');
-		document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-		document.cookie = 'user=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-		const next = encodeURIComponent(window.location.pathname + window.location.search);
-		window.location.href = `/login?return=${next}`;
+		if (isAdminPath()) {
+			document.cookie = 'admin_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+			window.location.href = '/admin/login';
+		} else {
+			localStorage.removeItem('token');
+			localStorage.removeItem('user');
+			document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+			document.cookie = 'user=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+			const next = encodeURIComponent(window.location.pathname + window.location.search);
+			window.location.href = `/login?return=${next}`;
+		}
 	}
 	throw new Error('Unauthorized. Please login again.');
 }
