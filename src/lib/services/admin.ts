@@ -18,8 +18,11 @@ export interface AdminProfile {
 	full_name: string;
 	role: string;
 	is_active: boolean;
+	is_verified?: boolean;
 	password_setup_required?: boolean;
 	last_login_at?: string;
+	created_at?: string;
+	updated_at?: string;
 }
 
 export interface WhatsAppStatus {
@@ -146,4 +149,49 @@ export async function deleteAdmin(
 	serverToken?: string
 ): Promise<{ success?: boolean }> {
 	return del(`/admin/admins/${adminId}`, customFetch, serverToken);
+}
+
+// Backup sign-in: bcrypt-verified password instead of OTP. Useful when
+// the WhatsApp gateway is down or hasn't been paired yet. The admin
+// must have previously set a password via setupAdminPassword(); the
+// backend returns a distinct 400 message when they haven't.
+export interface AdminPasswordLoginResponse {
+	token: string;
+	expires_at: string;
+}
+
+export async function loginAdminWithPassword(
+	whatsapp_number: string,
+	password: string,
+	customFetch?: typeof fetch
+): Promise<AdminPasswordLoginResponse> {
+	return post('/admin/auth/login', { whatsapp_number, password }, customFetch);
+}
+
+export async function updateAdminOwnProfile(
+	body: { full_name: string },
+	customFetch?: typeof fetch,
+	serverToken?: string
+): Promise<{ admin_id: string; full_name: string; message: string }> {
+	return put('/admin/profile', body, customFetch, serverToken);
+}
+
+export async function setupAdminPassword(
+	password: string,
+	customFetch?: typeof fetch,
+	serverToken?: string
+): Promise<{ success?: boolean }> {
+	return put('/admin/profile/setup-password', { password }, customFetch, serverToken);
+}
+
+export interface DisconnectDeviceResponse {
+	connection_status: string;
+	message: string;
+}
+
+export async function disconnectWhatsAppDevice(
+	customFetch?: typeof fetch,
+	serverToken?: string
+): Promise<DisconnectDeviceResponse> {
+	return post('/admin/disconnect-device', {}, customFetch, serverToken);
 }

@@ -150,7 +150,7 @@
 		</div>
 	{/if}
 
-	{#if data.profile?.password_setup_required}
+	{#if (data.profile as { password_setup_required?: boolean } | null)?.password_setup_required}
 		<div
 			class="bg-[#FFFBEB] border border-[#F59E0B]/40 rounded-2xl p-4 flex items-start gap-3 mb-6"
 		>
@@ -158,8 +158,9 @@
 			<div>
 				<p class="text-sm font-medium text-[#92400E]">Set a password</p>
 				<p class="text-xs text-[#92400E]/90 mt-0.5">
-					You're currently signing in by OTP only. Set a backup password so you can sign in if
-					the WhatsApp gateway is down. (Coming soon.)
+					You're currently signing in by OTP only. Set a backup password in
+					<a class="underline" href="/admin/profile">your profile</a> so you can sign in if
+					the WhatsApp gateway is down.
 				</p>
 			</div>
 		</div>

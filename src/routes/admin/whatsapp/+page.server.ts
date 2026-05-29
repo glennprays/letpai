@@ -1,6 +1,11 @@
 import type { Actions, PageServerLoad } from './$types';
 import { fail, redirect } from '@sveltejs/kit';
-import { getWhatsAppStatus, updateWhatsAppConfig, type WhatsAppStatus } from '$lib/services/admin';
+import {
+	disconnectWhatsAppDevice,
+	getWhatsAppStatus,
+	updateWhatsAppConfig,
+	type WhatsAppStatus
+} from '$lib/services/admin';
 
 // The /admin layout already gates on admin_token and pre-loads the
 // admin profile. Here we just fetch the WhatsApp status sidecar.
@@ -27,10 +32,27 @@ export const actions: Actions = {
 
 		try {
 			await updateWhatsAppConfig({ token: newToken }, fetch, token);
-			return { success: true, message: 'Gateway token updated' };
+			return { kind: 'updateToken' as const, success: true, message: 'Gateway token updated' };
 		} catch (err) {
 			const message = err instanceof Error ? err.message : 'Failed to update token';
-			return fail(400, { error: message });
+			return fail(400, { kind: 'updateToken' as const, error: message });
+		}
+	},
+
+	disconnect: async ({ cookies, fetch }) => {
+		const token = cookies.get('admin_token');
+		if (!token) throw redirect(303, '/admin/login');
+
+		try {
+			const res = await disconnectWhatsAppDevice(fetch, token);
+			return {
+				kind: 'disconnect' as const,
+				success: true,
+				message: res.message ?? 'Device disconnected'
+			};
+		} catch (err) {
+			const message = err instanceof Error ? err.message : 'Failed to disconnect device';
+			return fail(400, { kind: 'disconnect' as const, error: message });
 		}
 	}
 };

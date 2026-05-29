@@ -6,6 +6,7 @@
 		LayoutDashboard,
 		MessageCircle,
 		Users,
+		User,
 		LogOut
 	} from 'lucide-svelte';
 	import type { Snippet } from 'svelte';
@@ -19,6 +20,7 @@
 	const nav = $derived([
 		{ href: '/admin', icon: LayoutDashboard, label: 'Dashboard', exact: true },
 		{ href: '/admin/whatsapp', icon: MessageCircle, label: 'WhatsApp', exact: false },
+		{ href: '/admin/profile', icon: User, label: 'Profile', exact: false },
 		...(isSuperAdmin
 			? [{ href: '/admin/admins', icon: Users, label: 'Admins', exact: false }]
 			: [])

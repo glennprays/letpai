@@ -94,6 +94,14 @@
 		}
 	}
 
+	type ActionMsg = { error?: string; success?: boolean; message?: string };
+	const tokenMsg = $derived<ActionMsg | null>(
+		form && (form as { kind?: string }).kind === 'updateToken' ? (form as ActionMsg) : null
+	);
+	const dcMsg = $derived<ActionMsg | null>(
+		form && (form as { kind?: string }).kind === 'disconnect' ? (form as ActionMsg) : null
+	);
+
 	const statusBadge = $derived.by(() => {
 		if (!status) return { label: 'Unknown', tone: 'neutral' as const, Icon: Clock };
 		if (status.is_connected) return { label: 'Connected', tone: 'success' as const, Icon: CheckCircle2 };
@@ -276,16 +284,62 @@
 					autocomplete="off"
 					class="w-full px-4 py-3 bg-[#fff0ef] rounded-2xl text-sm text-[#251818] focus:outline-none focus:ring-2 focus:ring-[#ae2f34]/30 font-mono"
 				/>
-				{#if form && 'error' in form && form.error}
-					<p class="text-sm text-[#EF4444]">{form.error}</p>
-				{:else if form && 'success' in form && form.success}
-					<p class="text-sm text-[#047857]">{form.message ?? 'Saved'}</p>
+				{#if tokenMsg?.error}
+					<p class="text-sm text-[#EF4444]">{tokenMsg.error}</p>
+				{:else if tokenMsg?.success}
+					<p class="text-sm text-[#047857]">{tokenMsg.message ?? 'Saved'}</p>
 				{/if}
 				<button
 					type="submit"
 					class="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-medium text-white bg-[#251818] hover:bg-[#1a1010] transition-colors"
 				>
 					Save token
+				</button>
+			</form>
+		</section>
+
+		<!-- Danger zone: drop the current pairing -->
+		<section class="bg-white rounded-3xl shadow-[0_1px_3px_rgba(37,24,24,0.04)] p-6 mt-6 border border-[#EF4444]/15">
+			<div class="flex items-center gap-2 mb-1">
+				<XCircle size={18} class="text-[#991B1B]" />
+				<h2 class="text-lg font-semibold text-[#251818]">Disconnect device</h2>
+			</div>
+			<p class="text-sm text-[#584140] mb-4">
+				Drops the gateway pairing for the current phone. The next time you generate a QR, the
+				gateway will pair from scratch. Notifications will pause until a new pairing is in
+				place.
+			</p>
+
+			{#if dcMsg?.error}
+				<p class="text-sm text-[#EF4444] mb-3">{dcMsg.error}</p>
+			{:else if dcMsg?.success}
+				<p class="text-sm text-[#047857] mb-3">{dcMsg.message ?? 'Disconnected'}</p>
+			{/if}
+
+			<form
+				method="POST"
+				action="?/disconnect"
+				use:enhance={({ cancel }) => {
+					if (!confirm('Disconnect this device from the gateway?')) {
+						cancel();
+						return;
+					}
+					return async ({ update, result }) => {
+						await update();
+						if (result.type === 'success') {
+							await invalidateAll();
+							await refreshStatus();
+						}
+					};
+				}}
+			>
+				<button
+					type="submit"
+					disabled={!status?.is_connected && !status?.gateway_token_valid}
+					class="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-medium text-[#991B1B] bg-[#EF4444]/10 hover:bg-[#EF4444]/15 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+					title={!status?.gateway_token_valid ? 'No pairing to disconnect' : 'Disconnect device'}
+				>
+					<XCircle size={16} /> Disconnect device
 				</button>
 			</form>
 		</section>

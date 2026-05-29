@@ -1,12 +1,16 @@
 import type { Actions, PageServerLoad } from './$types';
 import { fail, redirect } from '@sveltejs/kit';
 import { dev } from '$app/environment';
-import { initiateAdminLogin, verifyAdminOTP } from '$lib/services/admin';
+import {
+	initiateAdminLogin,
+	loginAdminWithPassword,
+	verifyAdminOTP
+} from '$lib/services/admin';
 
 export const load: PageServerLoad = ({ cookies }) => {
 	const token = cookies.get('admin_token');
 	if (token) {
-		throw redirect(303, '/admin/whatsapp');
+		throw redirect(303, '/admin');
 	}
 	return {};
 };
@@ -63,6 +67,39 @@ export const actions: Actions = {
 			return fail(400, { step: 'verify', error: message, session_id, whatsapp_number });
 		}
 
-		throw redirect(303, '/admin/whatsapp');
+		throw redirect(303, '/admin');
+	},
+
+	password: async ({ request, fetch, cookies }) => {
+		const form = await request.formData();
+		const whatsapp_number = (form.get('whatsapp_number') as string | null)?.trim();
+		const password = (form.get('password') as string | null) ?? '';
+
+		if (!whatsapp_number || whatsapp_number.length < 10) {
+			return fail(400, { step: 'password', error: 'Enter a valid WhatsApp number' });
+		}
+		if (!password || password.length < 8) {
+			return fail(400, {
+				step: 'password',
+				error: 'Password must be at least 8 characters',
+				whatsapp_number
+			});
+		}
+
+		try {
+			const res = await loginAdminWithPassword(whatsapp_number, password, fetch);
+			cookies.set('admin_token', res.token, {
+				path: '/',
+				httpOnly: false,
+				secure: !dev,
+				sameSite: 'lax',
+				maxAge: 60 * 60 * 24 * 7
+			});
+		} catch (err) {
+			const message = err instanceof Error ? err.message : 'Invalid credentials';
+			return fail(401, { step: 'password', error: message, whatsapp_number });
+		}
+
+		throw redirect(303, '/admin');
 	}
 };
