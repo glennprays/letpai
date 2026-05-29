@@ -1,14 +1,13 @@
-import type { Actions, PageServerLoad } from './$types';
-import { fail, redirect } from '@sveltejs/kit';
-import {
-	disconnectWhatsAppDevice,
-	getWhatsAppStatus,
-	updateWhatsAppConfig,
-	type WhatsAppStatus
-} from '$lib/services/admin';
+import type { PageServerLoad } from './$types';
+import { redirect } from '@sveltejs/kit';
+import { getWhatsAppStatus, type WhatsAppStatus } from '$lib/services/admin';
 
 // The /admin layout already gates on admin_token and pre-loads the
 // admin profile. Here we just fetch the WhatsApp status sidecar.
+//
+// updateToken / disconnect actions were removed — there's no longer
+// a UI surface for either. Rotate the gateway token via .env +
+// backend restart; WAGA doesn't expose a gateway-side logout.
 export const load: PageServerLoad = async ({ cookies, fetch }) => {
 	const token = cookies.get('admin_token');
 	if (!token) throw redirect(303, '/admin/login');
@@ -19,40 +18,4 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
 	});
 
 	return { initialStatus: status };
-};
-
-export const actions: Actions = {
-	updateToken: async ({ request, cookies, fetch }) => {
-		const token = cookies.get('admin_token');
-		if (!token) throw redirect(303, '/admin/login');
-
-		const form = await request.formData();
-		const newToken = (form.get('gateway_token') as string | null)?.trim();
-		if (!newToken) return fail(400, { error: 'Paste the gateway token to save it' });
-
-		try {
-			await updateWhatsAppConfig({ token: newToken }, fetch, token);
-			return { kind: 'updateToken' as const, success: true, message: 'Gateway token updated' };
-		} catch (err) {
-			const message = err instanceof Error ? err.message : 'Failed to update token';
-			return fail(400, { kind: 'updateToken' as const, error: message });
-		}
-	},
-
-	disconnect: async ({ cookies, fetch }) => {
-		const token = cookies.get('admin_token');
-		if (!token) throw redirect(303, '/admin/login');
-
-		try {
-			const res = await disconnectWhatsAppDevice(fetch, token);
-			return {
-				kind: 'disconnect' as const,
-				success: true,
-				message: res.message ?? 'Device disconnected'
-			};
-		} catch (err) {
-			const message = err instanceof Error ? err.message : 'Failed to disconnect device';
-			return fail(400, { kind: 'disconnect' as const, error: message });
-		}
-	}
 };
