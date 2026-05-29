@@ -55,13 +55,76 @@ function handle401(endpoint: string): never {
 	throw new Error('Unauthorized. Please login again.');
 }
 
-async function readError(response: Response): Promise<string> {
-	try {
-		const body = await response.json();
-		return body?.error?.message || body?.message || response.statusText;
-	} catch {
-		return response.statusText;
+// ApiError carries the structured pieces from a backend non-2xx response
+// so call sites can branch on `status` (e.g. show a cooldown countdown
+// on 429) instead of fishing strings out of `error.message`. The plain
+// `Error` superclass keeps `instanceof Error` checks working downstream.
+export class ApiError extends Error {
+	status: number;
+	code?: string;
+	retryAfterSeconds?: number;
+	nextAvailableAt?: string;
+	body?: unknown;
+
+	constructor(opts: {
+		status: number;
+		message: string;
+		code?: string;
+		retryAfterSeconds?: number;
+		nextAvailableAt?: string;
+		body?: unknown;
+	}) {
+		super(opts.message);
+		this.name = 'ApiError';
+		this.status = opts.status;
+		this.code = opts.code;
+		this.retryAfterSeconds = opts.retryAfterSeconds;
+		this.nextAvailableAt = opts.nextAvailableAt;
+		this.body = opts.body;
 	}
+}
+
+async function buildApiError(response: Response, endpoint: string): Promise<ApiError> {
+	let body: unknown;
+	try {
+		body = await response.json();
+	} catch {
+		body = undefined;
+	}
+
+	const bodyObj = (typeof body === 'object' && body !== null ? (body as Record<string, unknown>) : {}) as Record<string, unknown>;
+	const errObj = (typeof bodyObj.error === 'object' && bodyObj.error !== null ? (bodyObj.error as Record<string, unknown>) : null);
+
+	const message =
+		(errObj?.message as string | undefined) ||
+		(bodyObj.message as string | undefined) ||
+		response.statusText ||
+		`Request to ${endpoint} failed`;
+
+	// Retry-After can come in as either a numeric seconds JSON field or
+	// the HTTP header (per RFC 7231). The header parses as either an
+	// integer-seconds or an HTTP-date; we only handle the seconds form
+	// because the backend always emits seconds.
+	let retryAfterSeconds: number | undefined;
+	const headerRetry = response.headers.get('Retry-After');
+	if (headerRetry && /^\d+$/.test(headerRetry)) {
+		retryAfterSeconds = parseInt(headerRetry, 10);
+	} else if (typeof bodyObj.retry_after === 'number') {
+		retryAfterSeconds = bodyObj.retry_after;
+	}
+
+	const nextAvailableAt =
+		(bodyObj.next_available_at as string | undefined) ||
+		(errObj?.next_available_at as string | undefined);
+
+	return new ApiError({
+		status: response.status,
+		message,
+		code: errObj?.code as string | undefined,
+		retryAfterSeconds,
+		nextAvailableAt,
+		body
+	});
 }
 
 async function request(
@@ -91,7 +154,7 @@ async function request(
 		if (response.status === 401) {
 			handle401(endpoint);
 		}
-		throw new Error(await readError(response));
+		throw await buildApiError(response, endpoint);
 	}
 
 	// DELETE responses may be empty

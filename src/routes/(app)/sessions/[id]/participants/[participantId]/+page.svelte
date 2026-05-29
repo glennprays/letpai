@@ -20,6 +20,7 @@
 	} from '$lib/services/payments';
 	import { removeParticipant } from '$lib/services/sessions';
 	import { sendParticipantReminder } from '$lib/services/notifications';
+	import { ApiError } from '$lib/services/api';
 	import ConfirmDialog from '$lib/components/ui/ConfirmDialog.svelte';
 	import { toast } from '$lib/stores/toast';
 	import type { PageData } from './$types';
@@ -32,6 +33,49 @@
 	const status = $derived(data.page.payment_status);
 	const isPaid = $derived(status === 'paid');
 	const proofUrl = $derived(data.page.payment_proof_url ?? null);
+
+	// Reminder cooldown — initialised from the server load and refreshed
+	// on each click (so a successful send pushes the next-available
+	// timestamp out for the user). `now` ticks every second whenever a
+	// countdown is showing so the displayed "23h 12m" stays live.
+	// One-shot read of data.reminderStatus is intentional here; the
+	// 24h cooldown timestamp is updated locally on click + on the next
+	// page load. svelte-check warns because it can't infer the intent.
+	// svelte-ignore state_referenced_locally
+	let reminderUnavailableUntil = $state<number | null>(
+		// svelte-ignore state_referenced_locally
+		data.reminderStatus?.can_send === false && data.reminderStatus.next_available_at
+			// svelte-ignore state_referenced_locally
+			? new Date(data.reminderStatus.next_available_at).getTime()
+			: null
+	);
+	let now = $state(Date.now());
+	$effect(() => {
+		if (reminderUnavailableUntil === null) return;
+		const tick = setInterval(() => {
+			now = Date.now();
+			if (reminderUnavailableUntil !== null && now >= reminderUnavailableUntil) {
+				reminderUnavailableUntil = null;
+				clearInterval(tick);
+			}
+		}, 1000);
+		return () => clearInterval(tick);
+	});
+
+	function formatCooldown(ms: number): string {
+		const totalSec = Math.max(0, Math.ceil(ms / 1000));
+		const h = Math.floor(totalSec / 3600);
+		const m = Math.floor((totalSec % 3600) / 60);
+		const s = totalSec % 60;
+		if (h > 0) return `${h}h ${m}m`;
+		if (m > 0) return `${m}m ${s}s`;
+		return `${s}s`;
+	}
+
+	const remainingMs = $derived(
+		reminderUnavailableUntil !== null ? Math.max(0, reminderUnavailableUntil - now) : 0
+	);
+	const reminderDisabled = $derived(acting || remainingMs > 0 || isPaid);
 
 	const statusMeta = $derived.by(() => {
 		switch (status) {
@@ -95,8 +139,23 @@
 		try {
 			const r = await sendParticipantReminder(data.participantId);
 			toast.success(r.message || 'Reminder queued');
+			// Optimistically push the cooldown out by 24h — the next page
+			// load will re-fetch the authoritative timestamp from the
+			// rate-limit service. Done this way so the button locks
+			// immediately and the user can't double-fire while the
+			// goroutine is still dispatching.
+			reminderUnavailableUntil = Date.now() + 24 * 60 * 60 * 1000;
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Reminder failed');
+			if (e instanceof ApiError && e.status === 429) {
+				if (e.nextAvailableAt) {
+					reminderUnavailableUntil = new Date(e.nextAvailableAt).getTime();
+				} else if (typeof e.retryAfterSeconds === 'number') {
+					reminderUnavailableUntil = Date.now() + e.retryAfterSeconds * 1000;
+				}
+				toast.error(e.message || 'Too soon to remind again');
+			} else {
+				toast.error(e instanceof Error ? e.message : 'Reminder failed');
+			}
 		} finally {
 			acting = false;
 		}
@@ -228,10 +287,16 @@
 					<button
 						type="button"
 						onclick={handleRemind}
-						disabled={acting}
-						class="inline-flex items-center gap-2 px-4 py-2 rounded-2xl text-sm font-medium text-[#251818] bg-[#fff0ef] hover:bg-[#fbe3e1] disabled:opacity-50 transition-colors"
+						disabled={reminderDisabled}
+						title={remainingMs > 0 ? `Next reminder available in ${formatCooldown(remainingMs)}` : 'Send WhatsApp reminder'}
+						class="inline-flex items-center gap-2 px-4 py-2 rounded-2xl text-sm font-medium text-[#251818] bg-[#fff0ef] hover:bg-[#fbe3e1] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
 					>
-						<Bell class="w-4 h-4" /> Remind
+						<Bell class="w-4 h-4" />
+						{#if remainingMs > 0}
+							Wait {formatCooldown(remainingMs)}
+						{:else}
+							Remind
+						{/if}
 					</button>
 				{/if}
 				<button
