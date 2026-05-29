@@ -27,10 +27,8 @@
 	// truth, then user actions overwrite the local state.
 	let status = $state<WhatsAppStatus | null>(null);
 	let refreshing = $state(false);
-	let phoneInput = $state('');
 	$effect(() => {
 		status = data.initialStatus;
-		phoneInput = data.initialStatus?.phone_number || '';
 	});
 	let qr = $state<QRCodeResponse | null>(null);
 	let qrLoading = $state(false);
@@ -76,15 +74,12 @@
 
 	async function handleGenerateQR(e: Event) {
 		e.preventDefault();
-		const phone = phoneInput.trim();
-		if (phone.length < 10) {
-			qrError = 'Enter the WhatsApp number to pair with the gateway';
-			return;
-		}
+		// No phone input here — the gateway's JWT is already
+		// phone-scoped. See generateQRCode() in services/admin.ts.
 		qrError = null;
 		qrLoading = true;
 		try {
-			qr = await generateQRCode(phone);
+			qr = await generateQRCode();
 			await refreshStatus();
 		} catch (err) {
 			qr = null;
@@ -166,6 +161,9 @@
 					{#if status?.message}
 						<p class="text-xs text-[#584140] mt-2">{status.message}</p>
 					{/if}
+					<p class="text-xs text-[#584140]/80 mt-1">
+						Phone linked through your gateway token.
+					</p>
 					{#if status?.last_connected_at}
 						<p class="text-xs text-[#584140]/80 mt-1">
 							Last connected {lastConnectedRel(status.last_connected_at)}
@@ -195,24 +193,12 @@
 				<h2 class="text-lg font-semibold text-[#251818]">Pair a device</h2>
 			</div>
 			<p class="text-sm text-[#584140] mb-4">
-				Enter the WhatsApp number this admin will send messages from, then scan the QR with that
-				phone (Settings → Linked devices → Link a device).
+				Click <strong>Generate QR</strong>, then scan it from the WhatsApp phone you want to
+				pair (Settings → Linked devices → Link a device). The gateway already knows which
+				phone to pair from the token you configured server-side.
 			</p>
 
-			<form class="flex flex-col sm:flex-row gap-3 items-stretch sm:items-end" onsubmit={handleGenerateQR}>
-				<div class="flex-1">
-					<label for="phone_number" class="block text-xs font-semibold text-[#584140] mb-1.5">
-						WhatsApp number (E.164, no +)
-					</label>
-					<input
-						id="phone_number"
-						type="tel"
-						inputmode="numeric"
-						bind:value={phoneInput}
-						placeholder="6281234567890"
-						class="w-full px-4 py-3 bg-[#fff0ef] rounded-2xl text-sm text-[#251818] focus:outline-none focus:ring-2 focus:ring-[#ae2f34]/30"
-					/>
-				</div>
+			<form onsubmit={handleGenerateQR}>
 				<button
 					type="submit"
 					disabled={qrLoading}

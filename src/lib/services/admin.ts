@@ -67,12 +67,15 @@ export async function getWhatsAppStatus(
 	return get('/admin/status', customFetch, serverToken);
 }
 
+// No phone parameter: WAGA's JWT (configured via WHATSAPP_API_KEY on
+// the backend) is bound to the phone that originally registered with
+// the gateway, and the SDK derives the phone from the bearer token on
+// every call. Asking the admin to retype it was app-layer ceremony.
 export async function generateQRCode(
-	phone_number: string,
 	customFetch?: typeof fetch,
 	serverToken?: string
 ): Promise<QRCodeResponse> {
-	return post('/admin/qr-code', { phone_number }, customFetch, serverToken);
+	return post('/admin/qr-code', {}, customFetch, serverToken);
 }
 
 export async function updateWhatsAppConfig(
