@@ -43,11 +43,20 @@
 		}
 	});
 
-	// Only show Navbar for public/auth pages (not app pages which have Sidebar)
+	// Suppress the public Navbar on:
+	//   - (app) routes that have their own Sidebar
+	//   - every /admin/* page, which owns its own chrome (admin sidebar
+	//     OR a self-contained card UI on /admin/login and /admin/setup).
+	// Without the admin gate, clicking around the admin panel would
+	// overlay a "Letpai / About / Sign in / Register / Get Started"
+	// (or the logged-in chip) on top of the admin layout.
 	const isAppPage = $derived($page.route.id?.startsWith('/(app)') ?? false);
+	const isAdminPage = $derived(
+		$page.url.pathname === '/admin' || $page.url.pathname.startsWith('/admin/')
+	);
 
 	const navbarVariant = $derived.by(() => {
-		if (isAppPage) return null;
+		if (isAppPage || isAdminPage) return null;
 		const pathname = $page.url.pathname;
 		if (pathname.startsWith('/login') || pathname.startsWith('/register')) {
 			return 'auth';

@@ -7,35 +7,65 @@
 
 	let { data }: { data: PageData } = $props();
 
-	// Local edit buffers keyed by template_id. We keep them outside the
-	// server-supplied list so unsaved edits survive an invalidateAll.
+	// Local edit buffers keyed by template_id. They live outside the
+	// server-supplied list so unsaved edits survive `invalidateAll`.
 	type Draft = { name: string; body: string; description: string };
 	let drafts = $state<Record<string, Draft>>({});
 	let saving = $state<Record<string, boolean>>({});
 	let errors = $state<Record<string, string>>({});
 
-	function draftFor(t: AdminMessageTemplate): Draft {
-		if (!drafts[t.template_id]) {
-			drafts[t.template_id] = {
-				name: t.name,
-				body: t.body,
-				description: t.description ?? ''
-			};
-		}
-		return drafts[t.template_id];
-	}
-
-	function reset(t: AdminMessageTemplate) {
-		drafts[t.template_id] = {
+	function seed(t: AdminMessageTemplate): Draft {
+		return {
 			name: t.name,
 			body: t.body,
 			description: t.description ?? ''
 		};
+	}
+
+	// Seed `drafts` SYNCHRONOUSLY during component init so the first
+	// `{#each}` pass sees a populated map. The previous version called
+	// a function from inside `{@const}` that mutated `$state` during
+	// render — Svelte 5 runes treats that as `state_unsafe_mutation`,
+	// which silently bailed the each-block body on client-side
+	// navigation (the section header rendered, the content didn't).
+	// One-shot read of `data.templates` is intentional; the `$effect`
+	// below picks up subsequent updates after invalidateAll.
+	// svelte-ignore state_referenced_locally
+	for (const t of data.templates) {
+		if (!drafts[t.template_id]) {
+			drafts[t.template_id] = seed(t);
+		}
+	}
+
+	// Keep `drafts` in sync with later changes to `data.templates`
+	// (e.g. after `invalidateAll` following a save, or a template
+	// added/removed server-side). The `!drafts[id]` guard preserves
+	// any unsaved edits on rows the user is currently editing, and
+	// quiesces the effect after one pass.
+	$effect(() => {
+		for (const t of data.templates) {
+			if (!drafts[t.template_id]) {
+				drafts[t.template_id] = seed(t);
+			}
+		}
+		const ids = new Set(data.templates.map((t) => t.template_id));
+		for (const id of Object.keys(drafts)) {
+			if (!ids.has(id)) {
+				delete drafts[id];
+				delete saving[id];
+				delete errors[id];
+			}
+		}
+	});
+
+	function reset(t: AdminMessageTemplate) {
+		drafts[t.template_id] = seed(t);
 		errors[t.template_id] = '';
 	}
 
 	async function save(t: AdminMessageTemplate) {
-		const d = draftFor(t);
+		const d = drafts[t.template_id];
+		if (!d) return;
 		saving[t.template_id] = true;
 		errors[t.template_id] = '';
 		try {
@@ -45,8 +75,13 @@
 				body: d.body
 			});
 			toast.success(`${t.key} saved`);
+			// Intentionally NOT deleting drafts[t.template_id]: the buffer
+			// already matches what we just sent to the server, and
+			// removing it would briefly leave the textarea's bind:value
+			// pointing at undefined until the $effect repopulates on the
+			// next reactive tick — re-introducing the same race the
+			// synchronous seed was added to avoid.
 			await invalidateAll();
-			delete drafts[t.template_id];
 		} catch (err) {
 			const msg = err instanceof Error ? err.message : 'Save failed';
 			errors[t.template_id] = msg;
@@ -88,7 +123,8 @@
 
 	<div class="space-y-6">
 		{#each data.templates as t (t.template_id)}
-			{@const d = draftFor(t)}
+			{@const d = drafts[t.template_id]}
+			{#if d}
 			<section class="bg-white rounded-3xl p-5 shadow-[0_1px_3px_rgba(37,24,24,0.04)]">
 				<div class="flex items-start justify-between gap-3 mb-3">
 					<div>
@@ -177,6 +213,7 @@
 					</div>
 				</div>
 			</section>
+			{/if}
 		{/each}
 	</div>
 </div>
