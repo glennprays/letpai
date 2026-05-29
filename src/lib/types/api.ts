@@ -311,7 +311,13 @@ export interface GroupsResponse {
 }
 
 // Bulk Operations
-export type BulkOperationType = 'delete' | 'update';
+//
+// Backend supports two operations: 'add_to_group' (with group_id) and
+// 'delete'. The earlier BulkOperationType / BulkUpdateRequest pair
+// described a non-existent 'update' shape and was the source of
+// "Operation: failed oneof" 400s in production. See bulkAssignGroup
+// in services/contacts.ts for the canonical group-reassign call.
+export type BulkOperationType = 'add_to_group' | 'delete';
 
 export interface BulkImportRequest {
   contacts: Array<{
@@ -323,23 +329,6 @@ export interface BulkImportRequest {
 
 export interface BulkDeleteRequest {
   contact_ids: string[];
-}
-
-export interface BulkUpdateRequest {
-  contact_ids: string[];
-  updates: {
-    group_id?: string;
-    is_favorite?: boolean;
-  };
-}
-
-export interface BulkOperationRequest {
-  operation: BulkOperationType;
-  contact_ids: string[];
-  updates?: {
-    group_id?: string;
-    is_favorite?: boolean;
-  };
 }
 
 export interface BulkOperationResponse {

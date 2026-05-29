@@ -23,7 +23,7 @@
     deleteContactGroup,
     bulkImportContacts,
     bulkDeleteContacts,
-    bulkUpdateContacts
+    bulkAssignGroup
   } from '$lib/services/contacts';
   import type { Contact, ContactGroup, CreateContactRequest, UpdateContactRequest } from '$lib/types/api';
 
@@ -67,6 +67,28 @@
   let deletingContact = $state<Contact | null>(null);
 
   let isBulkMode = $state(false);
+
+  // Single-open kebab invariant: the page owns the currently-open
+  // contact menu id. ContactCard reads `openMenuId === contact.contact_id`
+  // to decide visibility, and any setOpen swaps id (or nulls it).
+  // A page-level outside-click listener closes whichever menu is open
+  // without each row needing its own document listener.
+  let openMenuId = $state<string | null>(null);
+
+  function handleSetOpenMenu(id: string | null) {
+    openMenuId = id;
+  }
+
+  $effect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (openMenuId === null) return;
+      const target = e.target as HTMLElement | null;
+      if (target && target.closest(`[data-contact-menu="${openMenuId}"]`)) return;
+      openMenuId = null;
+    }
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  });
 
   // Initial filter application
   $effect(() => {
@@ -261,10 +283,13 @@
 
     isSaving = true;
     try {
-      const response = await bulkUpdateContacts({
-        contact_ids: Array.from(selectedContacts),
-        updates: { group_id: groupId || undefined }
-      });
+      // Backend expects `null` to mean "remove from group". Pass the
+      // selected groupId straight through, or null when the bulk bar
+      // emitted an empty string (the "Remove from group" action).
+      const response = await bulkAssignGroup(
+        Array.from(selectedContacts),
+        groupId || null
+      );
       if (response.success) {
         await refreshData();
         selectedContacts = new Set();
@@ -277,18 +302,20 @@
   }
 
   async function handleBulkToggleFavorite(isFavorite: boolean) {
+    // The backend's bulk endpoint only supports add_to_group + delete.
+    // Bulk favorite-toggle is implemented client-side as N individual
+    // PUT /contacts/:id calls. Acceptable for small selections; a
+    // future backend bulk op would replace this loop.
     if (selectedContacts.size === 0) return;
 
     isSaving = true;
     try {
-      const response = await bulkUpdateContacts({
-        contact_ids: Array.from(selectedContacts),
-        updates: { is_favorite: isFavorite }
-      });
-      if (response.success) {
-        await refreshData();
-        selectedContacts = new Set();
-      }
+      const ids = Array.from(selectedContacts);
+      await Promise.all(
+        ids.map((id) => updateContact(id, { is_favorite: isFavorite }))
+      );
+      await refreshData();
+      selectedContacts = new Set();
     } catch (error) {
       console.error('Failed to toggle favorites:', error);
     } finally {
@@ -442,6 +469,8 @@
       <ContactList
         contacts={filteredContacts}
         {selectedContacts}
+        {openMenuId}
+        onSetOpenMenu={handleSetOpenMenu}
         loading={isLoading}
         onSelect={handleSelectContact}
         onEdit={handleEditContact}

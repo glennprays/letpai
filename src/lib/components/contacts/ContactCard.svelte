@@ -9,6 +9,13 @@
   interface Props {
     contact: Contact;
     selected?: boolean;
+    // Shared single-open menu state lifted to the parent. The parent
+    // owns one openMenuId; each card opens only when that id matches
+    // its contact_id. Clicking another row's kebab swaps the id,
+    // which closes the previously-open menu without any per-card
+    // outside-click listener.
+    openMenuId?: string | null;
+    onSetOpenMenu?: (id: string | null) => void;
     onSelect?: () => void;
     onEdit?: (contact: Contact) => void;
     onDelete?: (contact: Contact) => void;
@@ -22,6 +29,8 @@
   let {
     contact,
     selected = false,
+    openMenuId = null,
+    onSetOpenMenu,
     onSelect,
     onEdit,
     onDelete,
@@ -33,30 +42,29 @@
     ...props
   }: Props = $props();
 
-  let showMenu = $state(false);
-  let menuElement = $state<HTMLElement>();
+  const showMenu = $derived(openMenuId === contact.contact_id);
 
   function handleMenuClick(e: MouseEvent) {
     e.stopPropagation();
-    showMenu = !showMenu;
+    if (onSetOpenMenu) onSetOpenMenu(showMenu ? null : contact.contact_id);
   }
 
   function handleFavorite(e: MouseEvent) {
     e.stopPropagation();
     if (onToggleFavorite) onToggleFavorite(contact);
-    showMenu = false;
+    if (onSetOpenMenu) onSetOpenMenu(null);
   }
 
   function handleEdit(e: MouseEvent) {
     e.stopPropagation();
     if (onEdit) onEdit(contact);
-    showMenu = false;
+    if (onSetOpenMenu) onSetOpenMenu(null);
   }
 
   function handleDelete(e: MouseEvent) {
     e.stopPropagation();
     if (onDelete) onDelete(contact);
-    showMenu = false;
+    if (onSetOpenMenu) onSetOpenMenu(null);
   }
 
   function handleCall(e: MouseEvent) {
@@ -91,17 +99,9 @@
     return '+' + formatted;
   }
 
-  // Close menu when clicking outside
-  $effect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (showMenu && menuElement && !menuElement.contains(e.target as Node)) {
-        showMenu = false;
-      }
-    }
-
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
-  });
+  // Outside-click handling lives on the parent (single listener for
+  // all cards) so the menus stay mutually exclusive without each card
+  // owning its own document-level listener.
 </script>
 
 <div
@@ -203,7 +203,7 @@
       {/if}
 
       <!-- More Menu -->
-      <div class="relative" bind:this={menuElement}>
+      <div class="relative" data-contact-menu={contact.contact_id}>
         <button
           onclick={handleMenuClick}
           class="p-2 rounded-full hover:bg-[#fbe3e1] text-[#584140] transition-colors"

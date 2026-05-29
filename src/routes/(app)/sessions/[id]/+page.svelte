@@ -21,6 +21,7 @@
 		ThumbsDown
 	} from 'lucide-svelte';
 	import type { PageData } from './$types';
+	import type { Participant } from '$lib/types/api';
 	import { formatIDR, formatRelativeTime } from '$lib/utils/format';
 	import {
 		addParticipants,
@@ -28,7 +29,8 @@
 		deleteBillItem,
 		calculateSplits,
 		sendNotifications,
-		cancelSession
+		cancelSession,
+		removeParticipant
 	} from '$lib/services/sessions';
 	import { createContact } from '$lib/services/contacts';
 	import { sendParticipantReminder, sendBulkReminder } from '$lib/services/notifications';
@@ -61,6 +63,12 @@
 	let actingPaymentId = $state<string | null>(null);
 	let isBulkApproving = $state(false);
 	let contactsPickerSupported = $state(false);
+
+	// Delete-participant state. We use ConfirmDialog with copy that
+	// branches on payment_status so the host sees the right warning
+	// before nuking a row that already has a proof or has paid.
+	let removingParticipant = $state<Participant | null>(null);
+	let isRemovingParticipant = $state(false);
 
 	const submittedProofs = $derived(
 		(data.session.participants || []).filter((p) => p.payment_status === 'submitted')
@@ -522,6 +530,46 @@
 		}
 	}
 
+	// Status-branched delete copy. Calling out submitted proofs and
+	// (especially) prior payment in plain language is the only thing
+	// stopping a host from accidentally removing someone who's already
+	// settled up — the backend doesn't gate this by design (host owns
+	// their session).
+	const removeConfirmMessage = $derived.by(() => {
+		const p = removingParticipant;
+		if (!p) return '';
+		const name = p.name || 'this participant';
+		if (p.payment_status === 'paid') {
+			return `Remove ${name}? They've paid ${formatIDR(p.share_amount)} — removing won't refund anything, and the remaining shares will rebalance across the rest.`;
+		}
+		if (p.payment_status === 'submitted' || p.payment_status === 'rejected') {
+			return `Remove ${name}? They've already submitted a proof; the upload will be discarded.`;
+		}
+		return `Remove ${name} from this session?`;
+	});
+
+	function openRemoveParticipantDialog(p: Participant) {
+		removingParticipant = p;
+	}
+
+	async function handleRemoveParticipant() {
+		const target = removingParticipant;
+		if (!target) return;
+		isRemovingParticipant = true;
+		try {
+			await removeParticipant(data.session.session_id, target.participant_id);
+			toast.success(`${target.name || 'Participant'} removed`);
+			removingParticipant = null;
+			await invalidateAll();
+		} catch (error) {
+			console.error('Remove participant error:', error);
+			const msg = error instanceof Error ? error.message : 'Failed to remove participant';
+			toast.error(msg);
+		} finally {
+			isRemovingParticipant = false;
+		}
+	}
+
 	async function handleCancelSession() {
 		isCancelling = true;
 		try {
@@ -637,7 +685,7 @@
 			</div>
 
 			<!-- Actions -->
-			{#if data.session.participants && data.session.participants.length > 0}
+			{#if data.session.participants && data.session.participants.length > 1}
 				<div class="mb-4 p-4 bg-[#fff0ef] rounded-2xl flex flex-wrap items-center justify-between gap-3">
 					<div>
 						<h3 class="text-sm font-medium text-[#251818]">Equal Split &amp; Notify</h3>
@@ -705,7 +753,7 @@
 						<li class="flex items-center justify-between p-3 rounded-2xl bg-[#fff0ef]/50">
 							<div class="flex items-center gap-3 min-w-0">
 								<div class="w-10 h-10 bg-[#fff0ef] rounded-full flex items-center justify-center text-sm font-medium text-[#251818] flex-shrink-0">
-									{participant.name.charAt(0).toUpperCase()}
+									{(participant.name || '?').charAt(0).toUpperCase()}
 								</div>
 								<div class="min-w-0">
 									<p class="text-sm font-medium text-[#251818] truncate">{participant.name}</p>
@@ -758,6 +806,16 @@
 										{/if}
 									</button>
 								{/if}
+								<button
+									type="button"
+									onclick={() => openRemoveParticipantDialog(participant)}
+									disabled={isLoading || isRemovingParticipant}
+									class="inline-flex items-center justify-center min-h-[36px] min-w-[36px] rounded-full text-[#991B1B] hover:bg-[#EF4444]/10 disabled:opacity-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6]"
+									title="Remove from session"
+									aria-label="Remove {participant.name || 'participant'} from session"
+								>
+									<Trash2 class="w-4 h-4" />
+								</button>
 							</div>
 						</li>
 					{/each}
@@ -1264,4 +1322,16 @@
 	variant="danger"
 	onconfirm={handleCancelSession}
 	oncancel={() => (showCancelDialog = false)}
+/>
+
+<!-- Remove Participant confirm -->
+<ConfirmDialog
+	open={removingParticipant !== null}
+	title="Remove participant?"
+	message={removeConfirmMessage}
+	confirmText={isRemovingParticipant ? 'Removing…' : 'Remove'}
+	cancelText="Keep"
+	variant="danger"
+	onconfirm={handleRemoveParticipant}
+	oncancel={() => (removingParticipant = null)}
 />

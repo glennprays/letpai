@@ -12,7 +12,6 @@ import type {
 	GroupsResponse,
 	BulkImportRequest,
 	BulkDeleteRequest,
-	BulkUpdateRequest,
 	BulkOperationResponse
 } from '$lib/types/api';
 
@@ -98,10 +97,26 @@ export async function bulkDeleteContacts(
 	return post('/contacts/bulk', { operation: 'delete', ...data }, customFetch, serverToken);
 }
 
-export async function bulkUpdateContacts(
-	data: BulkUpdateRequest,
+// Bulk-assign a set of contacts to a group (or remove them from any
+// group with group_id=null). Matches the backend contract:
+//   POST /contacts/bulk { operation: 'add_to_group', contact_ids, group_id }
+//
+// Replaced an earlier `bulkUpdateContacts` helper that posted
+// operation:'update' with a nested updates object — the backend never
+// supported that shape, so every call returned
+//   {"error":{"message":"Operation: failed \"oneof\""}}.
+// The per-row kebab handles favorite toggling, so there's no bulk
+// favorite operation here.
+export async function bulkAssignGroup(
+	contact_ids: string[],
+	group_id: string | null,
 	customFetch?: typeof fetch,
 	serverToken?: string
 ): Promise<BulkOperationResponse> {
-	return post('/contacts/bulk', { operation: 'update', ...data }, customFetch, serverToken);
+	return post(
+		'/contacts/bulk',
+		{ operation: 'add_to_group', contact_ids, group_id },
+		customFetch,
+		serverToken
+	);
 }

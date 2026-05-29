@@ -10,6 +10,11 @@
     contacts: Contact[];
     loading?: boolean;
     selectedContacts?: Set<string>;
+    // Single-open kebab state lives at the page level. Threading
+    // through ContactList keeps the list component thin while still
+    // enforcing the "only one menu open at a time" invariant.
+    openMenuId?: string | null;
+    onSetOpenMenu?: (id: string | null) => void;
     onSelect?: (contact: Contact) => void;
     onEdit?: (contact: Contact) => void;
     onDelete?: (contact: Contact) => void;
@@ -25,6 +30,8 @@
     contacts,
     loading = false,
     selectedContacts = new Set(),
+    openMenuId = null,
+    onSetOpenMenu,
     onSelect,
     onEdit,
     onDelete,
@@ -81,6 +88,8 @@
       <ContactCard
         {contact}
         selected={selectedContacts.has(contact.contact_id)}
+        {openMenuId}
+        {onSetOpenMenu}
         onSelect={onSelect ? () => onSelect(contact) : undefined}
         onEdit={onEdit ? () => onEdit(contact) : undefined}
         onDelete={onDelete ? () => onDelete(contact) : undefined}
