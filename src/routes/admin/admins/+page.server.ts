@@ -34,6 +34,10 @@ export const actions: Actions = {
 		const whatsapp_number = (form.get('whatsapp_number') as string | null)?.trim() || '';
 		const full_name = (form.get('full_name') as string | null)?.trim() || '';
 		const role = (form.get('role') as string | null) || 'admin';
+		// Temporary password is opt-in. Only forwarded to the backend
+		// when both the toggle is on AND the field has 8+ chars.
+		const setTemp = form.get('set_temp_password') === 'on';
+		const password = setTemp ? ((form.get('password') as string | null) ?? '') : '';
 
 		if (!whatsapp_number || whatsapp_number.length < 10) {
 			return fail(400, {
@@ -62,10 +66,32 @@ export const actions: Actions = {
 				role
 			});
 		}
+		if (setTemp && (password.length < 8 || password.length > 100)) {
+			return fail(400, {
+				kind: 'create' as const,
+				error: 'Temporary password must be 8–100 characters',
+				whatsapp_number,
+				full_name,
+				role
+			});
+		}
 
 		try {
-			await createAdmin({ whatsapp_number, full_name, role }, fetch, token);
-			return { kind: 'create' as const, success: true, message: 'Admin invited' };
+			await createAdmin(
+				{
+					whatsapp_number,
+					full_name,
+					role,
+					...(password ? { password } : {})
+				},
+				fetch,
+				token
+			);
+			return {
+				kind: 'create' as const,
+				success: true,
+				message: password ? 'Admin invited with a temporary password' : 'Admin invited'
+			};
 		} catch (err) {
 			return fail(400, {
 				kind: 'create' as const,

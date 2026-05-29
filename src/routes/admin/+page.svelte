@@ -156,11 +156,12 @@
 		>
 			<AlertTriangle size={18} class="text-[#92400E] mt-0.5 flex-shrink-0" />
 			<div>
-				<p class="text-sm font-medium text-[#92400E]">Set a password</p>
+				<p class="text-sm font-medium text-[#92400E]">Set your own password</p>
 				<p class="text-xs text-[#92400E]/90 mt-0.5">
-					You're currently signing in by OTP only. Set a backup password in
-					<a class="underline" href="/admin/profile">your profile</a> so you can sign in if
-					the WhatsApp gateway is down.
+					Either you haven't picked a password yet, or you're using one another admin set for
+					you. Choose one in
+					<a class="underline" href="/admin/profile">your profile</a> so only you know it and
+					you can sign in even when the WhatsApp gateway is down.
 				</p>
 			</div>
 		</div>

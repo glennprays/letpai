@@ -118,6 +118,10 @@ export interface CreateAdminPayload {
 	whatsapp_number: string;
 	full_name: string;
 	role: 'super_admin' | 'admin';
+	// Optional temporary password. When present, the new admin can
+	// sign in via the password flow immediately — useful before WAGA
+	// is paired. They're still nudged to change it on /admin/profile.
+	password?: string;
 }
 
 export async function createAdmin(
@@ -194,4 +198,29 @@ export async function disconnectWhatsAppDevice(
 	serverToken?: string
 ): Promise<DisconnectDeviceResponse> {
 	return post('/admin/disconnect-device', {}, customFetch, serverToken);
+}
+
+// First-boot wizard helpers (no auth)
+
+export interface NeedsSetupResponse {
+	needs_setup: boolean;
+}
+
+export async function getAdminNeedsSetup(
+	customFetch?: typeof fetch
+): Promise<NeedsSetupResponse> {
+	return get('/admin/auth/needs-setup', customFetch);
+}
+
+export interface BootstrapResponse {
+	token: string;
+	expires_at: string;
+	admin_id: string;
+}
+
+export async function bootstrapSuperAdmin(
+	body: { whatsapp_number: string; full_name: string; password: string },
+	customFetch?: typeof fetch
+): Promise<BootstrapResponse> {
+	return post('/admin/auth/bootstrap', body, customFetch);
 }

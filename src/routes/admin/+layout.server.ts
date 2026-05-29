@@ -7,7 +7,7 @@ import { getAdminProfile } from '$lib/services/admin';
 // every protected page can render the header without an extra round
 // trip.
 export const load: LayoutServerLoad = async ({ cookies, fetch, url }) => {
-	if (url.pathname === '/admin/login') {
+	if (url.pathname === '/admin/login' || url.pathname === '/admin/setup') {
 		return { profile: null };
 	}
 

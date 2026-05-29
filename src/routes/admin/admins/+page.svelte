@@ -18,6 +18,14 @@
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 
 	let showCreate = $state(false);
+	let setTempPassword = $state(false);
+
+	// Reset the temp-password toggle whenever the modal closes so the
+	// next invite starts clean. The toggle drives a name="password"
+	// input; leaving it on while closed could leak a stale value.
+	$effect(() => {
+		if (!showCreate) setTempPassword = false;
+	});
 
 	// Track which row is being acted on so the button knows to spin.
 	let pendingAdminId = $state<string | null>(null);
@@ -314,6 +322,39 @@
 							<option value="admin">Admin</option>
 							<option value="super_admin">Super admin</option>
 						</select>
+					</div>
+
+					<!-- Optional temporary password.
+						Useful when WAGA isn't paired yet — the invited admin can
+						sign in via password instead of OTP. They're still nudged
+						to change it on /admin/profile. -->
+					<div class="pt-1">
+						<label class="flex items-center gap-2 cursor-pointer">
+							<input
+								type="checkbox"
+								name="set_temp_password"
+								bind:checked={setTempPassword}
+								class="w-4 h-4 accent-[#ae2f34]"
+							/>
+							<span class="text-sm text-[#584140]">Set a temporary password</span>
+						</label>
+						{#if setTempPassword}
+							<div class="mt-2">
+								<input
+									name="password"
+									type="password"
+									autocomplete="new-password"
+									placeholder="At least 8 characters"
+									minlength="8"
+									maxlength="100"
+									class="w-full px-4 py-3 bg-[#fff0ef] rounded-2xl text-sm text-[#251818] focus:outline-none focus:ring-2 focus:ring-[#ae2f34]/30 font-mono"
+								/>
+								<p class="text-xs text-[#584140] mt-1">
+									Share it with the new admin securely. They'll be nudged to change it on their first
+									sign in.
+								</p>
+							</div>
+						{/if}
 					</div>
 
 					{#if createForm?.error}

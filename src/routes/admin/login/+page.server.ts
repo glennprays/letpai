@@ -2,16 +2,36 @@ import type { Actions, PageServerLoad } from './$types';
 import { fail, redirect } from '@sveltejs/kit';
 import { dev } from '$app/environment';
 import {
+	getAdminNeedsSetup,
 	initiateAdminLogin,
 	loginAdminWithPassword,
 	verifyAdminOTP
 } from '$lib/services/admin';
 
-export const load: PageServerLoad = ({ cookies }) => {
+export const load: PageServerLoad = async ({ cookies, fetch }) => {
 	const token = cookies.get('admin_token');
 	if (token) {
 		throw redirect(303, '/admin');
 	}
+
+	// First-boot wizard gate: when no usable super admin exists yet,
+	// route the user to /admin/setup instead of showing the login form
+	// (which would fail anyway since no real credentials are configured).
+	// Treat network errors as "skip the check" so a momentary backend
+	// hiccup doesn't lock the user out of the login page.
+	try {
+		const { needs_setup } = await getAdminNeedsSetup(fetch);
+		if (needs_setup) {
+			throw redirect(303, '/admin/setup');
+		}
+	} catch (err) {
+		// Re-throw redirects; swallow everything else.
+		if (err && typeof err === 'object' && 'status' in err && 'location' in err) {
+			throw err;
+		}
+		console.warn('[admin/login] needs-setup check failed:', err);
+	}
+
 	return {};
 };
 
