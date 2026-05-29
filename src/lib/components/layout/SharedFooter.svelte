@@ -3,19 +3,10 @@
   import Logo from "$lib/components/layout/Logo.svelte";
 
   const footerLinks = {
-    product: [
-      { label: "How it works", href: "/" },
-      { label: "Features", href: "/" },
-      { label: "Pricing", href: "/" },
-    ],
-    company: [
-      { label: "About", href: "/" },
-      { label: "Contact", href: "/" },
-    ],
     legal: [
-      { label: "Privacy Policy", href: "/" },
-      { label: "Terms of Service", href: "/" },
-      { label: "Cookie Policy", href: "/" },
+      { label: "Privacy Policy", href: "/privacy" },
+      { label: "Terms of Service", href: "/tos" },
+      { label: "Cookie Policy", href: "/cookies" },
     ],
   };
 </script>
@@ -86,100 +77,6 @@
         </p>
       </div>
 
-      <!-- Product links -->
-      <div style="position: relative; z-index: 1;">
-        <p
-          style="
-            font-size: 11px;
-            font-weight: 700;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-            color: #4B5563;
-            margin: 0 0 16px;
-          "
-        >
-          Product
-        </p>
-        <nav style="display: flex; flex-direction: column; gap: 12px;">
-          {#each footerLinks.product as link}
-            <a
-              href={link.href}
-              style="
-                font-size: 14px;
-                color: #9CA3AF;
-                text-decoration: none;
-                transition: color 0.15s;
-                display: flex;
-                align-items: center;
-                gap: 4px;
-              "
-              onmouseenter={(e) => {
-                const arrow = e.currentTarget.querySelector<HTMLElement>(".link-arrow");
-                if (arrow) arrow.style.transform = "translateX(4px)";
-              }}
-              onmouseleave={(e) => {
-                const arrow = e.currentTarget.querySelector<HTMLElement>(".link-arrow");
-                if (arrow) arrow.style.transform = "translateX(0)";
-              }}
-            >
-              {link.label}
-              <ArrowRight
-                class="link-arrow"
-                size={14}
-                style="transition: transform 0.15s; opacity: 0.6;"
-              />
-            </a>
-          {/each}
-        </nav>
-      </div>
-
-      <!-- Company links -->
-      <div style="position: relative; z-index: 1;">
-        <p
-          style="
-            font-size: 11px;
-            font-weight: 700;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-            color: #4B5563;
-            margin: 0 0 16px;
-          "
-        >
-          Company
-        </p>
-        <nav style="display: flex; flex-direction: column; gap: 12px;">
-          {#each footerLinks.company as link}
-            <a
-              href={link.href}
-              style="
-                font-size: 14px;
-                color: #9CA3AF;
-                text-decoration: none;
-                transition: color 0.15s;
-                display: flex;
-                align-items: center;
-                gap: 4px;
-              "
-              onmouseenter={(e) => {
-                const arrow = e.currentTarget.querySelector<HTMLElement>(".link-arrow");
-                if (arrow) arrow.style.transform = "translateX(4px)";
-              }}
-              onmouseleave={(e) => {
-                const arrow = e.currentTarget.querySelector<HTMLElement>(".link-arrow");
-                if (arrow) arrow.style.transform = "translateX(0)";
-              }}
-            >
-              {link.label}
-              <ArrowRight
-                class="link-arrow"
-                size={14}
-                style="transition: transform 0.15s; opacity: 0.6;"
-              />
-            </a>
-          {/each}
-        </nav>
-      </div>
-
       <!-- Legal links -->
       <div style="position: relative; z-index: 1;">
         <p
@@ -240,7 +137,7 @@
 <style>
   .footer-grid {
     display: grid;
-    grid-template-columns: 2fr 1fr 1fr 1fr;
+    grid-template-columns: 2fr 1fr;
     gap: 48px;
     padding-bottom: 48px;
     border-bottom: 1px solid #1E293B;
@@ -269,13 +166,6 @@
   }
 
   @media (max-width: 768px) {
-    .footer-grid {
-      grid-template-columns: 1fr 1fr;
-      gap: 32px;
-    }
-  }
-
-  @media (max-width: 480px) {
     .footer-grid {
       grid-template-columns: 1fr;
       gap: 32px;

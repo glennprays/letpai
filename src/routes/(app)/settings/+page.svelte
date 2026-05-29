@@ -4,10 +4,10 @@
 	import { auth, logout } from '$lib/stores/auth';
 	import { toast } from '$lib/stores/toast';
 
-	function handleLogout() {
+	async function handleLogout() {
 		logout();
 		toast.success('Logged out');
-		goto('/');
+		await goto('/', { invalidateAll: true });
 	}
 </script>
 

@@ -15,11 +15,15 @@
     mobileMenuOpen = false;
   }
 
-  function handleLogout() {
+  async function handleLogout() {
     logout();
     toast.success('Logged out successfully');
-    goto('/');
     userMenuOpen = false;
+    // `logout()` only clears client-side state. The navbar variant is
+    // derived from `data.isAuthenticated` (SSR'd from the cookie via
+    // routes/+layout.server.ts), so without `invalidateAll` the
+    // landing nav keeps rendering the logged-in chip until refresh.
+    await goto('/', { invalidateAll: true });
   }
 
   function toggleUserMenu() {
@@ -81,6 +85,7 @@
         <a href="/dashboard" class="text-sm font-medium text-[#584140] hover:text-[#251818] transition-colors">Dashboard</a>
         <a href="/sessions" class="text-sm font-medium text-[#584140] hover:text-[#251818] transition-colors">Sessions</a>
         <a href="/contacts" class="text-sm font-medium text-[#584140] hover:text-[#251818] transition-colors">Contacts</a>
+        <a href="/about" class="text-sm font-medium text-[#584140] hover:text-[#251818] transition-colors">About</a>
 
         <div class="user-menu-container relative flex items-center">
           <button
@@ -185,6 +190,7 @@
       <a href="/dashboard" class="text-base font-semibold text-[#251818] hover:text-[#ae2f34] py-4 transition-colors no-underline" onclick={closeMobileMenu}>Dashboard</a>
       <a href="/sessions" class="text-base font-semibold text-[#251818] hover:text-[#ae2f34] py-4 transition-colors no-underline" onclick={closeMobileMenu}>Sessions</a>
       <a href="/contacts" class="text-base font-semibold text-[#251818] hover:text-[#ae2f34] py-4 transition-colors no-underline" onclick={closeMobileMenu}>Contacts</a>
+      <a href="/about" class="text-base font-semibold text-[#251818] hover:text-[#ae2f34] py-4 transition-colors no-underline" onclick={closeMobileMenu}>About</a>
       <a href="/profile" class="text-base font-semibold text-[#251818] hover:text-[#ae2f34] py-4 transition-colors no-underline" onclick={closeMobileMenu}>Profile</a>
       <a href="/settings" class="text-base font-semibold text-[#251818] hover:text-[#ae2f34] py-4 transition-colors no-underline" onclick={closeMobileMenu}>Settings</a>
       <button

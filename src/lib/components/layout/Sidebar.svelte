@@ -34,10 +34,10 @@
     return false;
   }
 
-  function handleLogout() {
+  async function handleLogout() {
     logout();
     toast.success('Logged out successfully');
-    goto('/');
+    await goto('/', { invalidateAll: true });
   }
 </script>
 
