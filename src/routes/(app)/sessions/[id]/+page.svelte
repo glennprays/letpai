@@ -150,15 +150,19 @@
 		return list.includes(id) ? list.filter((x) => x !== id) : [...list, id];
 	}
 
-	// Temporary state for adding bill (single `description` field — matches backend)
+	// Temporary state for adding bill (single `description` field — matches backend).
+	// Amount is held as number|null so it round-trips cleanly with
+	// <input type="number" bind:value> — the earlier string + .trim()
+	// shape broke once Loop 4 switched the input to type=number,
+	// permanently disabling the submit button.
 	let newBillName = $state('');
-	let newBillAmount = $state('');
+	let newBillAmount = $state<number | null>(null);
 	let newBillScope = $state<'everyone' | 'specific'>('everyone');
 	let newBillParticipantIds = $state<string[]>([]);
 
 	function resetAddBill() {
 		newBillName = '';
-		newBillAmount = '';
+		newBillAmount = null;
 		newBillScope = 'everyone';
 		newBillParticipantIds = [];
 	}
@@ -362,8 +366,8 @@
 	}
 
 	async function handleAddBill() {
-		if (!newBillName.trim() || !newBillAmount.trim()) return;
-		const amount = parseFloat(newBillAmount);
+		if (!newBillName.trim() || newBillAmount === null) return;
+		const amount = newBillAmount;
 		if (!Number.isFinite(amount) || amount <= 0) {
 			toast.error('Enter a valid amount');
 			return;
@@ -1350,14 +1354,14 @@
 				inputmode="numeric"
 				min="1"
 				step="1"
-				maxlength={12}
 				onpaste={(e) => {
 					// Strip non-digit chars on paste so "Rp 50.000" pastes as 50000.
 					const text = e.clipboardData?.getData('text') ?? '';
 					const cleaned = text.replace(/\D+/g, '');
 					if (cleaned !== text) {
 						e.preventDefault();
-						newBillAmount = cleaned;
+						const parsed = parseInt(cleaned, 10);
+						newBillAmount = Number.isFinite(parsed) ? parsed : null;
 					}
 				}}
 				class="w-full px-4 py-2.5 bg-[#fff0ef]/50 rounded-xl text-sm text-[#251818] focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent"
@@ -1405,8 +1409,8 @@
 		</div>
 
 		<!-- Preview -->
-		{#if newBillAmount}
-			{@const amount = parseFloat(newBillAmount || '0')}
+		{#if newBillAmount !== null && newBillAmount > 0}
+			{@const amount = newBillAmount}
 			{@const splitCount = newBillScope === 'specific' ? newBillParticipantIds.length : (data.session.participants?.length || 0)}
 			{@const sharePer = splitCount > 0 ? amount / splitCount : 0}
 			<div class="p-3 bg-[#fff0ef] rounded-2xl space-y-1">
@@ -1430,7 +1434,7 @@
 			</button>
 			<button
 				onclick={handleAddBill}
-				disabled={isLoading || !newBillName.trim() || !newBillAmount.trim()}
+				disabled={isLoading || !newBillName.trim() || newBillAmount === null || !(newBillAmount > 0)}
 				class="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-gradient-to-br from-[#ae2f34] to-[#FF6B6B] rounded-xl hover:opacity-95 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
 			>
 				{#if isLoading}
