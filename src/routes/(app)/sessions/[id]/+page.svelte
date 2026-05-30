@@ -18,7 +18,11 @@
 		Bell,
 		ImageIcon,
 		ThumbsUp,
-		ThumbsDown
+		ThumbsDown,
+		MoreVertical,
+		Pencil,
+		Wallet,
+		Copy
 	} from 'lucide-svelte';
 	import type { PageData } from './$types';
 	import type { Participant } from '$lib/types/api';
@@ -31,7 +35,10 @@
 		sendNotifications,
 		resendNotifications,
 		cancelSession,
-		removeParticipant
+		removeParticipant,
+		updateSession,
+		replaceBankAccounts,
+		type BankAccountInput
 	} from '$lib/services/sessions';
 	import { createContact } from '$lib/services/contacts';
 	import {
@@ -432,6 +439,32 @@
 	let showResendConfirm = $state(false);
 	let resendLastNotifiedAt = $state<string | null>(null);
 
+	// pollUntilSent runs a short invalidate loop after a send/retry so
+	// the per-participant chips flip from "Sending…" to "Sent" /
+	// "Failed" without the host having to refresh. The async backend
+	// goroutine writes its log row a moment after the HTTP send
+	// returns, so a single invalidate (the way the page originally
+	// worked) frequently caught the row in `queued` and stuck the
+	// chip there.
+	let pollingNotifications = $state(false);
+	async function pollUntilSent(opts: { tries?: number; everyMs?: number } = {}) {
+		const tries = opts.tries ?? 5;
+		const everyMs = opts.everyMs ?? 1500;
+		pollingNotifications = true;
+		try {
+			for (let i = 0; i < tries; i++) {
+				await new Promise((r) => setTimeout(r, everyMs));
+				await invalidateAll();
+				const anyQueued = (data.session.participants ?? []).some(
+					(p) => p.last_notification?.status === 'queued'
+				);
+				if (!anyQueued) return;
+			}
+		} finally {
+			pollingNotifications = false;
+		}
+	}
+
 	async function handleSendNotifications() {
 		if (!data.session.participants?.length) {
 			toast.error('Add participants first');
@@ -440,7 +473,7 @@
 		isNotifying = true;
 		try {
 			await sendNotifications(data.session.session_id);
-			toast.success('Notifications sent');
+			toast.success('Sending — chips will update as messages land');
 			await invalidateAll();
 		} catch (error) {
 			if (
@@ -458,13 +491,16 @@
 		} finally {
 			isNotifying = false;
 		}
+		// Background poll outside the isNotifying spinner so the
+		// button doesn't stay disabled for the entire 7-second window.
+		pollUntilSent();
 	}
 
 	async function handleConfirmResend() {
 		isNotifying = true;
 		try {
 			await resendNotifications(data.session.session_id);
-			toast.success('Notifications re-sent');
+			toast.success('Re-sending — chips will update as messages land');
 			await invalidateAll();
 		} catch (error) {
 			console.error('Resend notifications error:', error);
@@ -490,6 +526,10 @@
 		} finally {
 			retryingParticipantId = null;
 		}
+		// Same short poll as the bulk send so the single retry's
+		// "Sending…" → "Sent" / "Failed" transition lands without a
+		// manual refresh.
+		pollUntilSent();
 	}
 
 	// Send vs Resend label is server-driven via is_dirty (computed
@@ -679,6 +719,119 @@
 			showCancelDialog = false;
 		}
 	}
+
+	// Overflow menu (replaces the lone X icon that sat next to the
+	// status badge — too easy to click by accident, and Cancel is
+	// always one-tap-away-from-data-loss). Edit / Bank accounts /
+	// Cancel session all live under the same trigger now.
+	let showOverflowMenu = $state(false);
+	$effect(() => {
+		if (!showOverflowMenu) return;
+		function handleClickOutside(e: MouseEvent) {
+			const t = e.target as HTMLElement | null;
+			if (t && t.closest('[data-session-overflow]')) return;
+			showOverflowMenu = false;
+		}
+		document.addEventListener('click', handleClickOutside);
+		return () => document.removeEventListener('click', handleClickOutside);
+	});
+
+	// Edit-session modal (title + description). PUT /sessions/:id is
+	// already wired; just need a local form + invalidate.
+	let showEditSession = $state(false);
+	let editTitle = $state('');
+	let editDescription = $state('');
+	let isSavingEdit = $state(false);
+	function openEditSession() {
+		editTitle = data.session.title ?? '';
+		editDescription = data.session.description ?? '';
+		showEditSession = true;
+		showOverflowMenu = false;
+	}
+	async function handleSaveEdit() {
+		const title = editTitle.trim();
+		if (!title) {
+			toast.error('Title is required.');
+			return;
+		}
+		isSavingEdit = true;
+		try {
+			await updateSession(data.session.session_id, {
+				title,
+				description: editDescription.trim()
+			});
+			toast.success('Session updated');
+			showEditSession = false;
+			await invalidateAll();
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : 'Save failed');
+		} finally {
+			isSavingEdit = false;
+		}
+	}
+
+	// Bank-accounts management modal. Reuses the repeatable-rows
+	// shape from the new-session form; PUTs /sessions/:id/bank-accounts.
+	type BankRow = { bank_name: string; account_number: string; account_holder: string };
+	const MAX_BANK_ACCOUNTS = 5;
+	let showBankModal = $state(false);
+	let bankRows = $state<BankRow[]>([]);
+	let isSavingBanks = $state(false);
+	function openBankModal() {
+		const existing = data.session.bank_accounts ?? [];
+		bankRows = existing.length
+			? existing.map((a) => ({
+					bank_name: a.bank_name ?? '',
+					account_number: a.account_number ?? '',
+					account_holder: a.account_holder ?? ''
+			  }))
+			: [{ bank_name: '', account_number: '', account_holder: '' }];
+		showBankModal = true;
+		showOverflowMenu = false;
+	}
+	function addBankRow() {
+		if (bankRows.length >= MAX_BANK_ACCOUNTS) return;
+		bankRows = [...bankRows, { bank_name: '', account_number: '', account_holder: '' }];
+	}
+	function removeBankRow(i: number) {
+		bankRows = bankRows.filter((_, idx) => idx !== i);
+		if (bankRows.length === 0) {
+			bankRows = [{ bank_name: '', account_number: '', account_holder: '' }];
+		}
+	}
+	async function handleSaveBanks() {
+		// Drop fully-blank rows up front — backend would silently
+		// drop them too but this keeps the count we report honest.
+		const accounts: BankAccountInput[] = bankRows
+			.map((r) => ({
+				bank_name: r.bank_name.trim() || undefined,
+				account_number: r.account_number.trim() || undefined,
+				account_holder: r.account_holder.trim() || undefined
+			}))
+			.filter((r) => r.bank_name || r.account_number || r.account_holder);
+		isSavingBanks = true;
+		try {
+			await replaceBankAccounts(data.session.session_id, accounts);
+			toast.success(accounts.length ? 'Bank accounts updated' : 'Bank accounts cleared');
+			showBankModal = false;
+			await invalidateAll();
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : 'Save failed');
+		} finally {
+			isSavingBanks = false;
+		}
+	}
+
+	// Tap-to-copy a bank account number on the inline card.
+	async function copyText(text: string | null | undefined) {
+		if (!text) return;
+		try {
+			await navigator.clipboard?.writeText(text);
+			toast.success('Copied');
+		} catch {
+			toast.error('Copy failed');
+		}
+	}
 </script>
 
 <div class="min-h-screen">
@@ -705,15 +858,54 @@
 					{data.session.status}
 				</span>
 				{#if data.session.status !== 'cancelled' && data.session.status !== 'completed'}
-					<button
-						type="button"
-						onclick={() => (showCancelDialog = true)}
-						class="inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded-full text-[#584140] hover:bg-[#fbe3e1] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6]"
-						title="Cancel session"
-						aria-label="Cancel session"
-					>
-						<XCircle class="w-5 h-5" />
-					</button>
+					<div class="relative" data-session-overflow>
+						<button
+							type="button"
+							onclick={(e) => { e.stopPropagation(); showOverflowMenu = !showOverflowMenu; }}
+							class="inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded-full text-[#584140] hover:bg-[#fbe3e1] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6]"
+							title="More actions"
+							aria-haspopup="menu"
+							aria-expanded={showOverflowMenu}
+							aria-label="More actions"
+						>
+							<MoreVertical class="w-5 h-5" />
+						</button>
+						{#if showOverflowMenu}
+							<div
+								role="menu"
+								class="absolute right-0 top-[calc(100%+8px)] w-[240px] bg-white rounded-2xl shadow-[0_24px_48px_-4px_rgba(37,24,24,0.18)] p-1.5 z-30 animate-[fadeInDown_0.15s_ease-out]"
+							>
+								<button
+									type="button"
+									role="menuitem"
+									onclick={openEditSession}
+									class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-[#251818] hover:bg-[#fff0ef] transition-colors"
+								>
+									<Pencil class="w-4 h-4 text-[#584140]" />
+									<span>Edit title &amp; description</span>
+								</button>
+								<button
+									type="button"
+									role="menuitem"
+									onclick={openBankModal}
+									class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-[#251818] hover:bg-[#fff0ef] transition-colors"
+								>
+									<Wallet class="w-4 h-4 text-[#584140]" />
+									<span>Manage bank accounts</span>
+								</button>
+								<div class="h-px bg-[#fbe3e1] my-1.5"></div>
+								<button
+									type="button"
+									role="menuitem"
+									onclick={() => { showOverflowMenu = false; showCancelDialog = true; }}
+									class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-[#991B1B] hover:bg-[#EF4444]/10 transition-colors"
+								>
+									<XCircle class="w-4 h-4" />
+									<span>Cancel session…</span>
+								</button>
+							</div>
+						{/if}
+					</div>
 				{/if}
 			</div>
 		</header>
@@ -765,6 +957,58 @@
 				</div>
 			</div>
 		</div>
+
+		<!-- Bank accounts (host view) -->
+		<section class="bg-white rounded-2xl p-6 mb-6 shadow-[0_1px_3px_rgba(37,24,24,0.04)]">
+			<div class="flex items-center justify-between mb-4">
+				<h2 class="text-lg font-semibold text-[#251818]">Transfer destinations</h2>
+				<button
+					type="button"
+					onclick={openBankModal}
+					class="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-[#251818] bg-[#fff0ef] hover:bg-[#fbe3e1] rounded-xl transition-colors"
+				>
+					<Pencil class="w-3.5 h-3.5" />
+					{data.session.bank_accounts && data.session.bank_accounts.length > 0 ? 'Manage' : 'Add'}
+				</button>
+			</div>
+			{#if data.session.bank_accounts && data.session.bank_accounts.length > 0}
+				<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+					{#each data.session.bank_accounts as acct (acct.account_id)}
+						<div class="rounded-2xl border border-[#fbe3e1] bg-[#fff0ef]/40 p-4">
+							{#if acct.bank_name}
+								<p class="text-xs uppercase tracking-wider text-[#584140] font-semibold">{acct.bank_name}</p>
+							{:else}
+								<p class="text-xs uppercase tracking-wider text-[#584140]/60 font-semibold">Bank #{acct.ordinal + 1}</p>
+							{/if}
+							{#if acct.account_number}
+								<div class="mt-1 flex items-center gap-2">
+									<p class="text-sm font-mono text-[#251818]">{acct.account_number}</p>
+									<button
+										type="button"
+										onclick={() => copyText(acct.account_number)}
+										title="Copy account number"
+										aria-label="Copy account number"
+										class="text-[#584140] hover:text-[#251818]"
+									>
+										<Copy class="w-3.5 h-3.5" />
+									</button>
+								</div>
+							{/if}
+							{#if acct.account_holder}
+								<p class="mt-1 text-sm text-[#584140]">{acct.account_holder}</p>
+							{/if}
+						</div>
+					{/each}
+				</div>
+			{:else}
+				<div class="rounded-2xl border border-dashed border-[#fbe3e1] p-5 text-center">
+					<Wallet class="w-7 h-7 mx-auto text-[#584140]/40 mb-2" />
+					<p class="text-sm text-[#584140]">
+						No transfer destinations yet. Add one so participants know where to pay.
+					</p>
+				</div>
+			{/if}
+		</section>
 
 		<!-- Participants Section -->
 		<section class="bg-white rounded-2xl p-6 mb-6 shadow-[0_1px_3px_rgba(37,24,24,0.04)]">
@@ -874,9 +1118,13 @@
 									</span>
 									{#if participant.last_notification}
 										{@const ln = participant.last_notification}
+										{@const isSending = ln.status === 'queued' && !ln.friendly_status.includes('Stuck')}
 										{@const canRetry = ln.friendly_status.includes('retry') || ln.friendly_status.includes('Failed') || ln.friendly_status.includes('Stuck')}
 										<div class="mt-1 flex items-center gap-1.5 justify-end">
-											<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium {chipTone(ln.friendly_status)}">
+											<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium {chipTone(ln.friendly_status)}" class:animate-pulse={isSending}>
+												{#if isSending}
+													<Loader2 class="w-2.5 h-2.5 animate-spin" />
+												{/if}
 												{ln.friendly_status}
 											</span>
 											{#if canRetry}
@@ -1455,6 +1703,82 @@
 	onsubmit={submitReject}
 	oncancel={() => (rejectingParticipant = null)}
 />
+
+<!-- Edit session (title + description) -->
+<Modal bind:open={showEditSession} title="Edit session">
+	<div class="space-y-4">
+		<div>
+			<label for="edit_title" class="block text-sm font-medium text-[#251818] mb-1">
+				Title <span class="text-[#ae2f34]">*</span>
+			</label>
+			<input
+				id="edit_title"
+				type="text"
+				bind:value={editTitle}
+				maxlength={200}
+				disabled={isSavingEdit}
+				class="w-full px-4 py-2.5 bg-[#fff0ef]/50 rounded-xl text-sm text-[#251818] focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]"
+			/>
+		</div>
+		<div>
+			<label for="edit_desc" class="block text-sm font-medium text-[#251818] mb-1">
+				Description <span class="text-[#584140]/60 font-normal">(optional)</span>
+			</label>
+			<textarea
+				id="edit_desc"
+				rows="3"
+				bind:value={editDescription}
+				maxlength={1000}
+				disabled={isSavingEdit}
+				class="w-full px-4 py-2.5 bg-[#fff0ef]/50 rounded-xl text-sm text-[#251818] focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] resize-none"
+			></textarea>
+			<p class="text-[11px] text-[#584140]/70 mt-1 text-right">{editDescription.length}/1000</p>
+		</div>
+		<div class="flex justify-end gap-2 pt-2">
+			<button type="button" onclick={() => (showEditSession = false)} disabled={isSavingEdit} class="px-4 py-2 rounded-2xl text-sm font-medium text-[#251818] hover:bg-[#fff0ef] disabled:opacity-50">Cancel</button>
+			<button type="button" onclick={handleSaveEdit} disabled={isSavingEdit || !editTitle.trim()} class="inline-flex items-center gap-2 px-4 py-2 rounded-2xl text-sm font-medium text-white bg-gradient-to-br from-[#ae2f34] to-[#FF6B6B] hover:opacity-95 disabled:opacity-50">
+				{#if isSavingEdit}<Loader2 class="w-4 h-4 animate-spin" />{/if}
+				Save
+			</button>
+		</div>
+	</div>
+</Modal>
+
+<!-- Manage bank accounts -->
+<Modal bind:open={showBankModal} title="Bank accounts">
+	<div class="space-y-3">
+		<p class="text-xs text-[#584140]">
+			Add up to {MAX_BANK_ACCOUNTS} transfer destinations. Participants see all of them on their payment page.
+		</p>
+		{#each bankRows as row, i (i)}
+			<div class="bg-[#fff0ef]/40 rounded-2xl p-4 border border-[#fbe3e1]">
+				<div class="flex items-center justify-between mb-2">
+					<p class="text-xs font-semibold text-[#584140] uppercase tracking-wide">Account #{i + 1}</p>
+					{#if bankRows.length > 1}
+						<button type="button" onclick={() => removeBankRow(i)} disabled={isSavingBanks} class="text-xs text-[#991B1B] underline hover:opacity-80 disabled:opacity-50">Remove</button>
+					{/if}
+				</div>
+				<div class="space-y-2">
+					<input type="text" bind:value={row.bank_name} placeholder="Bank or e-wallet (e.g. BCA, GoPay)" maxlength={80} disabled={isSavingBanks} class="w-full px-3 py-2 bg-white rounded-xl text-sm text-[#251818] focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]" />
+					<input type="text" bind:value={row.account_number} placeholder="Account number" maxlength={40} disabled={isSavingBanks} class="w-full px-3 py-2 bg-white rounded-xl text-sm font-mono text-[#251818] focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]" />
+					<input type="text" bind:value={row.account_holder} placeholder="Account holder name" maxlength={80} disabled={isSavingBanks} class="w-full px-3 py-2 bg-white rounded-xl text-sm text-[#251818] focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]" />
+				</div>
+			</div>
+		{/each}
+		{#if bankRows.length < MAX_BANK_ACCOUNTS}
+			<button type="button" onclick={addBankRow} disabled={isSavingBanks} class="w-full inline-flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-[#251818] bg-white hover:bg-[#fff0ef] border-2 border-dashed border-[#fbe3e1] rounded-xl disabled:opacity-50">
+				<Plus class="w-4 h-4" /> Add another
+			</button>
+		{/if}
+		<div class="flex justify-end gap-2 pt-2">
+			<button type="button" onclick={() => (showBankModal = false)} disabled={isSavingBanks} class="px-4 py-2 rounded-2xl text-sm font-medium text-[#251818] hover:bg-[#fff0ef] disabled:opacity-50">Cancel</button>
+			<button type="button" onclick={handleSaveBanks} disabled={isSavingBanks} class="inline-flex items-center gap-2 px-4 py-2 rounded-2xl text-sm font-medium text-white bg-gradient-to-br from-[#ae2f34] to-[#FF6B6B] hover:opacity-95 disabled:opacity-50">
+				{#if isSavingBanks}<Loader2 class="w-4 h-4 animate-spin" />{/if}
+				Save
+			</button>
+		</div>
+	</div>
+</Modal>
 
 <!-- Resend (force) confirm -->
 <ConfirmDialog
