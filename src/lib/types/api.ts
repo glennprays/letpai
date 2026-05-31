@@ -86,6 +86,23 @@ export interface BillItem {
   // Per-bill participant assignment. Empty array means "applies to
   // everyone in the session" (legacy default).
   participant_ids?: string[];
+  // Fee flags: whether service charge and tax apply to this item.
+  // Defaults to true for both. Used when session has fee_config.
+  includes_service_charge?: boolean;
+  includes_tax?: boolean;
+}
+
+// Bill image attachment for session receipts/bills
+export interface BillImage {
+  bill_image_id: string;
+  session_id: string;
+  image_url: string;           // S3 URL (not publicly accessible without auth)
+  thumbnail_url?: string;       // Thumbnail version
+  file_name: string;
+  file_format: 'jpg' | 'jpeg' | 'png' | 'webp';
+  file_size: number;           // bytes
+  uploaded_at: string;
+  ordinal: number;              // display order
 }
 
 export interface Participant {
@@ -117,6 +134,23 @@ export interface Participant {
     error_message?: string | null;
     friendly_status: string;
   } | null;
+  // Fee breakdown for this participant (computed when session has fee_config)
+  fee_breakdown?: ParticipantFeeBreakdown;
+}
+
+// Fee configuration for a session
+export interface FeeConfig {
+  service_charge_percentage?: number;   // e.g., 10 for 10%
+  tax_percentage?: number;              // e.g., 8 for 8% GST
+}
+
+// Participant's fee breakdown (computed proportionally)
+export interface ParticipantFeeBreakdown {
+  participant_id: string;
+  items_total: number;           // Sum of assigned bill items
+  service_charge_share: number;  // This participant's share of service charge
+  tax_share: number;             // This participant's share of tax
+  total: number;                 // items_total + service_charge_share + tax_share
 }
 
 export interface DashboardStats {
@@ -195,6 +229,10 @@ export interface SessionDetail {
   is_dirty?: boolean;
   participants: Participant[];
   bills: BillItem[];
+  // Bill images attached to this session (receipts, invoices, etc.)
+  bill_images?: BillImage[];
+  // Fee configuration for this session (optional)
+  fee_config?: FeeConfig | null;
 }
 
 export interface SessionResponse {
@@ -247,16 +285,23 @@ export interface CreateBillItemRequest {
   amount: number;
   category?: string;
   participant_ids?: string[];
+  // Fee flags: whether service charge and tax apply to this item.
+  // Omit or pass true for default behavior (fees apply).
+  includes_service_charge?: boolean;
+  includes_tax?: boolean;
 }
 
 // For UpdateBillItem the backend treats a missing `participant_ids` key as
 // "leave assignments untouched", an explicit empty array as "reset to
 // everyone", and a populated array as "replace assignments".
+// Same logic applies to fee flags: omit to leave unchanged.
 export interface UpdateBillItemRequest {
   description?: string;
   amount?: number;
   category?: string;
   participant_ids?: string[];
+  includes_service_charge?: boolean;
+  includes_tax?: boolean;
 }
 
 export interface BillItemResponse {
@@ -269,6 +314,39 @@ export interface UpdateBillItemResponse {
   success: boolean;
   data: BillItem;
   message: string;
+}
+
+// Bill Image Types
+export interface BillImageResponse {
+  success: boolean;
+  data: BillImage;
+  message?: string;
+}
+
+export interface BillImagesResponse {
+  success: boolean;
+  data: BillImage[];
+  message?: string;
+}
+
+export interface BillImageSignedUrlResponse {
+  success: boolean;
+  data: {
+    url: string;
+    expires_at: string;
+  };
+}
+
+// Fee Configuration Types
+export interface FeeConfigResponse {
+  success: boolean;
+  data: FeeConfig;
+  message?: string;
+}
+
+export interface UpdateFeeConfigRequest {
+  service_charge_percentage?: number;
+  tax_percentage?: number;
 }
 
 // Contacts Types

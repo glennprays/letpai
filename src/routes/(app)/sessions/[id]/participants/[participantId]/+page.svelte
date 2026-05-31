@@ -211,7 +211,7 @@
 			<statusMeta.Icon class="w-5 h-5 flex-shrink-0" />
 			<div class="flex-1">
 				<p class="text-sm font-semibold">{statusMeta.label}</p>
-				<p class="text-sm">Share: <strong>{formatIDR(data.page.share_amount)}</strong></p>
+				<p class="text-sm">Share: <strong>{formatIDR(data.page.fee_breakdown?.total ?? data.page.share_amount)}</strong></p>
 			</div>
 		</section>
 
@@ -235,6 +235,35 @@
 				</ul>
 			{/if}
 		</section>
+
+			{#if data.page.fee_breakdown && (data.page.fee_breakdown.service_charge_share > 0 || data.page.fee_breakdown.tax_share > 0)}
+				<section class="bg-white rounded-3xl p-5 mb-6 shadow-[0_1px_3px_rgba(37,24,24,0.04)]">
+					<h2 class="text-sm font-semibold text-[#251818] mb-3">Fee breakdown</h2>
+					<ul class="space-y-2">
+						<li class="flex items-center justify-between text-sm">
+							<span class="text-[#584140]">Your items</span>
+							<span class="text-[#251818]">{formatIDR(data.page.fee_breakdown.items_total)}</span>
+						</li>
+						{#if data.page.fee_breakdown.service_charge_share > 0}
+							<li class="flex items-center justify-between text-sm">
+								<span class="text-[#584140]">Service charge</span>
+								<span class="text-[#251818]">{formatIDR(data.page.fee_breakdown.service_charge_share)}</span>
+							</li>
+						{/if}
+						{#if data.page.fee_breakdown.tax_share > 0}
+							<li class="flex items-center justify-between text-sm">
+								<span class="text-[#584140]">Tax</span>
+								<span class="text-[#251818]">{formatIDR(data.page.fee_breakdown.tax_share)}</span>
+							</li>
+						{/if}
+						<li class="h-px bg-[#fbe3e1] my-1"></li>
+						<li class="flex items-center justify-between text-sm font-semibold">
+							<span class="text-[#251818]">Total due</span>
+							<span class="text-[#ae2f34]">{formatIDR(data.page.fee_breakdown.total)}</span>
+						</li>
+					</ul>
+				</section>
+			{/if}
 
 		{#if proofUrl}
 			<section class="bg-white rounded-3xl p-5 mb-6 shadow-[0_1px_3px_rgba(37,24,24,0.04)]">

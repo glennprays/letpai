@@ -34,6 +34,20 @@ export interface PaymentPageData {
 	}>;
 	link_expires_at?: string;
 	is_expired?: boolean;
+	// Bill images attached to the session (read-only view for participants)
+	bill_images?: Array<{
+		bill_image_id: string;
+		image_url: string;
+		thumbnail_url?: string;
+		file_name: string;
+	}>;
+	// Fee breakdown for this participant
+	fee_breakdown?: {
+		items_total: number;
+		service_charge_share: number;
+		tax_share: number;
+		total: number;
+	};
 }
 
 export interface SubmitPaymentResult {

@@ -11,7 +11,14 @@ import type {
 	CreateBillItemRequest,
 	BillItemResponse,
 	UpdateBillItemRequest,
-	UpdateBillItemResponse
+	UpdateBillItemResponse,
+	BillImage,
+	BillImageResponse,
+	BillImagesResponse,
+	BillImageSignedUrlResponse,
+	FeeConfig,
+	FeeConfigResponse,
+	UpdateFeeConfigRequest
 } from '$lib/types/api';
 
 export async function getSessions(
@@ -176,4 +183,75 @@ export async function replaceBankAccounts(
 	};
 }> {
 	return put(`/sessions/${sessionId}/bank-accounts`, { accounts }, customFetch, serverToken);
+}
+
+/**
+ * Upload a bill/receipt image for the session.
+ * Uses base64 encoding (same pattern as payment proof upload).
+ */
+export async function uploadBillImage(
+	sessionId: string,
+	imageBase64: string,
+	fileName: string,
+	fileFormat?: string,
+	customFetch?: typeof fetch,
+	serverToken?: string
+): Promise<BillImageResponse> {
+	return post(`/sessions/${sessionId}/bill-images`, {
+		image: imageBase64,
+		file_name: fileName,
+		file_format: fileFormat
+	}, customFetch, serverToken);
+}
+
+/**
+ * List all bill images for a session.
+ */
+export async function getBillImages(
+	sessionId: string,
+	customFetch?: typeof fetch,
+	serverToken?: string
+): Promise<BillImagesResponse> {
+	return get(`/sessions/${sessionId}/bill-images`, customFetch, serverToken);
+}
+
+/**
+ * Get a signed URL for viewing a bill image.
+ * The signed URL expires after a short time (typically 5-15 minutes).
+ * Access control: verifies user is a session participant.
+ */
+export async function getBillImageSignedUrl(
+	sessionId: string,
+	imageId: string,
+	customFetch?: typeof fetch,
+	serverToken?: string
+): Promise<BillImageSignedUrlResponse> {
+	return get(`/sessions/${sessionId}/bill-images/${imageId}`, customFetch, serverToken);
+}
+
+/**
+ * Delete a bill image from the session.
+ * Only the session host can delete images.
+ */
+export async function deleteBillImage(
+	sessionId: string,
+	imageId: string,
+	customFetch?: typeof fetch,
+	serverToken?: string
+): Promise<{ success: boolean; message: string }> {
+	return del(`/sessions/${sessionId}/bill-images/${imageId}`, customFetch, serverToken);
+}
+
+/**
+ * Update the fee configuration for a session.
+ * Sets service charge and/or tax percentages.
+ * After updating, calculateSplits should be called to recalculate shares.
+ */
+export async function updateFeeConfig(
+	sessionId: string,
+	config: UpdateFeeConfigRequest,
+	customFetch?: typeof fetch,
+	serverToken?: string
+): Promise<FeeConfigResponse> {
+	return put(`/sessions/${sessionId}/fee-config`, config, customFetch, serverToken);
 }

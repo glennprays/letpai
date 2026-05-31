@@ -31,7 +31,6 @@
 	import {
 		addParticipants,
 		addBillItem,
-		updateBillItem,
 		deleteBillItem,
 		calculateSplits,
 		sendNotifications,
@@ -178,66 +177,6 @@
 		newBillAmount = null;
 		newBillScope = 'everyone';
 		newBillParticipantIds = [];
-		newBillIncludesServiceCharge = true;
-		newBillIncludesTax = true;
-		// Pre-fill fee % from session config if it exists
-		newBillFeeSC = data.session.fee_config?.service_charge_percentage ?? 0;
-		newBillFeeTax = data.session.fee_config?.tax_percentage ?? 0;
-	}
-
-	// Edit bill state
-	let showEditBillModal = $state(false);
-	let editBillId = $state('');
-	let editBillName = $state('');
-	let editBillAmount = $state<number | null>(null);
-	let editBillScope = $state<'everyone' | 'specific'>('everyone');
-	let editBillParticipantIds = $state<string[]>([]);
-
-	function openEditBillModal(item: { bill_item_id: string; description: string; amount: number; participant_ids?: string[]; includes_service_charge?: boolean; includes_tax?: boolean }) {
-		editBillId = item.bill_item_id;
-		editBillName = item.description;
-		editBillAmount = item.amount;
-		editBillParticipantIds = item.participant_ids ?? [];
-		editBillScope = editBillParticipantIds.length > 0 ? 'specific' : 'everyone';
-		editBillIncludesServiceCharge = item.includes_service_charge !== false;
-		editBillIncludesTax = item.includes_tax !== false;
-		editBillFeeSC = data.session.fee_config?.service_charge_percentage ?? 0;
-		editBillFeeTax = data.session.fee_config?.tax_percentage ?? 0;
-		showEditBillModal = true;
-	}
-
-	async function handleEditBill() {
-		if (!editBillName.trim() || editBillAmount === null) return;
-		const amount = editBillAmount;
-		if (!Number.isFinite(amount) || amount <= 0) {
-			toast.error('Enter a valid amount');
-			return;
-		}
-		isLoading = true;
-		try {
-			await updateBillItem(data.session.session_id, editBillId, {
-				description: editBillName.trim(),
-				amount,
-				participant_ids: editBillScope === 'specific' ? editBillParticipantIds : [],
-				includes_service_charge: editBillIncludesServiceCharge,
-				includes_tax: editBillIncludesTax
-			});
-			if (data.session.participants?.length) {
-				try {
-					await calculateSplits(data.session.session_id);
-				} catch (e) {
-					console.warn('Auto-recalculate splits failed:', e);
-				}
-			}
-			showEditBillModal = false;
-			await invalidateAll();
-			toast.success('Bill updated');
-		} catch (error) {
-			console.error('Edit bill error:', error);
-			toast.error('Failed to update bill');
-		} finally {
-			isLoading = false;
-		}
 	}
 
 	// Bill image upload state
@@ -297,7 +236,7 @@
 						resolve(comma >= 0 ? result.slice(comma + 1) : result);
 					};
 					reader.onerror = () => reject(reader.error);
-					reader.readAsDataURL(selectedFile!);
+					reader.readAsDataURL(selectedFile);
 				}),
 				selectedFile.name,
 				ext || undefined
@@ -326,12 +265,6 @@
 			console.error('Delete error:', error);
 			toast.error('Failed to remove image');
 		}
-	}
-
-	function toggleEditBillParticipant(id: string) {
-		editBillParticipantIds = editBillParticipantIds.includes(id)
-			? editBillParticipantIds.filter((x) => x !== id)
-			: [...editBillParticipantIds, id];
 	}
 
 	function toggleBillParticipant(id: string) {
@@ -550,9 +483,7 @@
 			await addBillItem(data.session.session_id, {
 				description: newBillName.trim(),
 				amount,
-				participant_ids: newBillScope === 'specific' ? newBillParticipantIds : [],
-				includes_service_charge: newBillIncludesServiceCharge,
-				includes_tax: newBillIncludesTax
+				participant_ids: newBillScope === 'specific' ? newBillParticipantIds : []
 			});
 			// Recompute splits across participants now that bill totals changed
 			if (data.session.participants?.length) {
@@ -995,34 +926,102 @@
 		}
 	}
 
-	// Fee helper: save fee config to session (called from bill item modals)
-	async function saveFeeConfigIfNeeded(sc: number, tax: number) {
-		const currentSC = data.session.fee_config?.service_charge_percentage ?? 0;
-		const currentTax = data.session.fee_config?.tax_percentage ?? 0;
-		if (sc === currentSC && tax === currentTax) return;
+	// Fee configuration state
+	let showFeeModal = $state(false);
+	let feeServiceCharge = $state<number>(0);
+	let feeTax = $state<number>(0);
+	let isSavingFee = $state(false);
+
+	function openFeeModal() {
+		feeServiceCharge = data.session.fee_config?.service_charge_percentage ?? 0;
+		feeTax = data.session.fee_config?.tax_percentage ?? 0;
+		showFeeModal = true;
+		showOverflowMenu = false;
+	}
+
+	async function handleSaveFee() {
+		isSavingFee = true;
 		try {
 			await updateFeeConfig(data.session.session_id, {
-				service_charge_percentage: sc || undefined,
-				tax_percentage: tax || undefined
+				service_charge_percentage: feeServiceCharge || undefined,
+				tax_percentage: feeTax || undefined
 			});
-		} catch (e) {
-			console.warn('Save fee config failed:', e);
+			// Recalculate splits with new fee configuration
+			if (data.session.participants?.length) {
+				try {
+					await calculateSplits(data.session.session_id);
+				} catch (e) {
+					console.warn('Auto-recalculate splits failed:', e);
+				}
+			}
+			showFeeModal = false;
+			await invalidateAll();
+			toast.success('Fee settings saved');
+		} catch (error) {
+			console.error('Save fee error:', error);
+			toast.error(error instanceof Error ? error.message : 'Save failed');
+		} finally {
+			isSavingFee = false;
 		}
 	}
 
-	// Per-bill fee state (used in add & edit modals)
+	// Per-bill fee flags state
 	let newBillIncludesServiceCharge = $state(true);
 	let newBillIncludesTax = $state(true);
-	let newBillFeeSC = $state<number>(0);
-	let newBillFeeTax = $state<number>(0);
 
-	// Edit bill fee state
-	let editBillIncludesServiceCharge = $state(true);
-	let editBillIncludesTax = $state(true);
-	let editBillFeeSC = $state<number>(0);
-	let editBillFeeTax = $state<number>(0);
+	// Override resetAddBill to reset fee flags
+	resetAddBill = function() {
+		newBillName = '';
+		newBillAmount = null;
+		newBillScope = 'everyone';
+		newBillParticipantIds = [];
+		newBillIncludesServiceCharge = true;
+		newBillIncludesTax = true;
+	};
 
-	// Derived: session has fee config already
+	// Override handleAddBill to include fee flags
+	handleAddBill = async function() {
+		if (!newBillName.trim() || newBillAmount === null) return;
+		const amount = newBillAmount;
+		if (!Number.isFinite(amount) || amount <= 0) {
+			toast.error('Enter a valid amount');
+			return;
+		}
+
+		if (newBillScope === 'specific' && newBillParticipantIds.length === 0) {
+			toast.error('Pick at least one participant for this bill');
+			return;
+		}
+
+		isLoading = true;
+		try {
+			await addBillItem(data.session.session_id, {
+				description: newBillName.trim(),
+				amount,
+				participant_ids: newBillScope === 'specific' ? newBillParticipantIds : [],
+				includes_service_charge: newBillIncludesServiceCharge,
+				includes_tax: newBillIncludesTax
+			});
+			// Recompute splits across participants now that bill totals changed
+			if (data.session.participants?.length) {
+				try {
+					await calculateSplits(data.session.session_id);
+				} catch (e) {
+					console.warn('Auto-recalculate splits failed:', e);
+				}
+			}
+			resetAddBill();
+			showAddBillModal = false;
+			await invalidateAll();
+		} catch (error) {
+			console.error('Add bill error:', error);
+			toast.error('Failed to add bill');
+		} finally {
+			isLoading = false;
+		}
+	};
+
+	// Derived: session has fee config
 	const sessionHasFees = $derived(
 		(data.session.fee_config?.service_charge_percentage ?? 0) > 0 ||
 		(data.session.fee_config?.tax_percentage ?? 0) > 0
@@ -1088,6 +1087,16 @@
 									<Wallet class="w-4 h-4 text-[#584140]" />
 									<span>Manage bank accounts</span>
 								</button>
+								<button
+									type="button"
+									role="menuitem"
+									onclick={openFeeModal}
+									class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-[#251818] hover:bg-[#fff0ef] transition-colors"
+								>
+									<Percent class="w-4 h-4 text-[#584140]" />
+									<span>Fee settings</span>
+								</button>
+								<div class="h-px bg-[#fbe3e1] my-1.5"></div>
 								<button
 									type="button"
 									role="menuitem"
@@ -1890,120 +1899,6 @@
 	</div>
 </Modal>
 
-<!-- Edit Bill Modal -->
-<Modal bind:open={showEditBillModal} title="Edit Bill Item" onclose={() => showEditBillModal = false}>
-	<div class="space-y-4">
-		<div>
-			<label for="edit_bill_name" class="block text-sm font-medium text-[#251818] mb-1">Description</label>
-			<input
-				type="text"
-				id="edit_bill_name"
-				bind:value={editBillName}
-				maxlength="200"
-				placeholder="e.g., Nasi Goreng"
-				class="w-full px-4 py-2.5 bg-[#fff0ef]/50 rounded-xl text-sm text-[#251818] focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]"
-			/>
-		</div>
-
-		<div>
-			<label for="edit_bill_amount" class="block text-sm font-medium text-[#251818] mb-1">Amount (IDR)</label>
-			<input
-				type="number"
-				id="edit_bill_amount"
-				bind:value={editBillAmount}
-				min="1"
-				step="1"
-				placeholder="e.g., 50000"
-				class="w-full px-4 py-2.5 bg-[#fff0ef]/50 rounded-xl text-sm text-[#251818] focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]"
-			/>
-		</div>
-
-		<!-- Participant scope -->
-		<div>
-			<label class="block text-sm font-medium text-[#251818] mb-2">Split with</label>
-			<div class="flex gap-2">
-				<button
-					type="button"
-					onclick={() => { editBillScope = 'everyone'; editBillParticipantIds = []; }}
-					class={editBillScope === 'everyone' ? 'flex-1 py-2 text-sm font-medium rounded-xl bg-[#FF6B6B] text-white' : 'flex-1 py-2 text-sm font-medium rounded-xl bg-[#fff0ef] text-[#584140] hover:bg-[#fbe3e1]'}
-				>
-					Everyone
-				</button>
-				<button
-					type="button"
-					onclick={() => editBillScope = 'specific'}
-					class={editBillScope === 'specific' ? 'flex-1 py-2 text-sm font-medium rounded-xl bg-[#FF6B6B] text-white' : 'flex-1 py-2 text-sm font-medium rounded-xl bg-[#fff0ef] text-[#584140] hover:bg-[#fbe3e1]'}
-				>
-					Specific people
-				</button>
-			</div>
-			{#if editBillScope === 'specific' && data.session.participants?.length}
-				<div class="mt-2 space-y-1">
-					{#each data.session.participants as p}
-						<label class="flex items-center gap-2 cursor-pointer">
-							<input
-								type="checkbox"
-								checked={editBillParticipantIds.includes(p.participant_id)}
-								onchange={() => toggleEditBillParticipant(p.participant_id)}
-								class="w-4 h-4 accent-[#ae2f34]"
-							/>
-							<span class="text-sm text-[#251818]">{p.name}</span>
-						</label>
-					{/each}
-				</div>
-			{/if}
-		</div>
-
-		<!-- Fee flags (shown when session has fee config) -->
-		{#if sessionHasFees}
-			<div class="pt-2 border-t border-[#fbe3e1]">
-				<p class="block text-sm font-medium text-[#251818] mb-2">Fees apply to this item</p>
-				{#if data.session.fee_config?.service_charge_percentage}
-					<label class="flex items-center gap-2 mb-2 cursor-pointer">
-						<input
-							type="checkbox"
-							bind:checked={editBillIncludesServiceCharge}
-							class="w-4 h-4 accent-[#ae2f34]"
-						/>
-						<span class="text-sm text-[#251818]">Service charge ({data.session.fee_config.service_charge_percentage}%)</span>
-					</label>
-				{/if}
-				{#if data.session.fee_config?.tax_percentage}
-					<label class="flex items-center gap-2 cursor-pointer">
-						<input
-							type="checkbox"
-							bind:checked={editBillIncludesTax}
-							class="w-4 h-4 accent-[#ae2f34]"
-						/>
-						<span class="text-sm text-[#251818]">Tax ({data.session.fee_config.tax_percentage}%)</span>
-					</label>
-				{/if}
-			</div>
-		{/if}
-
-		<div class="flex gap-3 pt-2">
-			<button
-				onclick={() => showEditBillModal = false}
-				disabled={isLoading}
-				class="flex-1 px-4 py-2.5 text-sm font-medium text-[#251818] bg-white rounded-xl hover:bg-[#fff0ef] transition-colors disabled:opacity-50"
-			>
-				Cancel
-			</button>
-			<button
-				onclick={handleEditBill}
-				disabled={isLoading}
-				class="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-gradient-to-br from-[#ae2f34] to-[#FF6B6B] rounded-xl hover:opacity-95 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-			>
-				{#if isLoading}
-					<Loader2 class="w-4 h-4 animate-spin mx-auto" />
-				{:else}
-					Save Changes
-				{/if}
-			</button>
-		</div>
-	</div>
-</Modal>
-
 <!-- Add Bill Modal -->
 <Modal bind:open={showAddBillModal} title="Add Bill Item" onclose={resetAddBill}>
 	<div class="space-y-4">
@@ -2087,71 +1982,6 @@
 			{/if}
 		</div>
 
-			<!-- Fee & Tax section -->
-			<div class="pt-2 border-t border-[#fbe3e1]">
-				{#if sessionHasFees}
-					<p class="block text-sm font-medium text-[#251818] mb-2">Fees apply to this item</p>
-					{#if data.session.fee_config?.service_charge_percentage}
-						<label class="flex items-center gap-2 mb-2 cursor-pointer">
-							<input
-								type="checkbox"
-								checked={newBillIncludesServiceCharge}
-								onchange={() => newBillIncludesServiceCharge = !newBillIncludesServiceCharge}
-								class="w-4 h-4 accent-[#ae2f34]"
-							/>
-							<span class="text-sm text-[#251818]">Service charge ({data.session.fee_config.service_charge_percentage}%)</span>
-						</label>
-					{/if}
-					{#if data.session.fee_config?.tax_percentage}
-						<label class="flex items-center gap-2 cursor-pointer">
-							<input
-								type="checkbox"
-								checked={newBillIncludesTax}
-								onchange={() => newBillIncludesTax = !newBillIncludesTax}
-								class="w-4 h-4 accent-[#ae2f34]"
-							/>
-							<span class="text-sm text-[#251818]">Tax ({data.session.fee_config.tax_percentage}%)</span>
-						</label>
-					{/if}
-				{:else}
-					<p class="block text-sm font-medium text-[#251818] mb-2">Service charge & tax <span class="font-normal text-[#584140]">(optional)</span></p>
-					<div class="grid grid-cols-2 gap-3">
-						<div>
-							<div class="relative">
-								<input
-									type="number"
-									bind:value={newBillFeeSC}
-									min="0"
-									max="100"
-									step="0.1"
-									placeholder="0"
-									class="w-full pl-3 pr-8 py-2 bg-[#fff0ef]/50 rounded-xl text-sm text-[#251818] focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]"
-								/>
-								<span class="absolute right-3 top-1/2 -translate-y-1/2 text-[#584140] text-xs">%</span>
-							</div>
-							<p class="text-[10px] text-[#584140] mt-0.5">Service charge</p>
-						</div>
-						<div>
-							<div class="relative">
-								<input
-									type="number"
-									bind:value={newBillFeeTax}
-									min="0"
-									max="100"
-									step="0.1"
-									placeholder="0"
-									class="w-full pl-3 pr-8 py-2 bg-[#fff0ef]/50 rounded-xl text-sm text-[#251818] focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]"
-								/>
-								<span class="absolute right-3 top-1/2 -translate-y-1/2 text-[#584140] text-xs">%</span>
-							</div>
-							<p class="text-[10px] text-[#584140] mt-0.5">Tax (GST/VAT)</p>
-						</div>
-					</div>
-					<p class="text-[10px] text-[#584140] mt-1">Set once — next items will reuse these rates</p>
-				{/if}
-			</div>
-
-		<!-- Preview -->
 		<!-- Preview -->
 		{#if newBillAmount !== null && newBillAmount > 0}
 			{@const amount = newBillAmount}
@@ -2275,6 +2105,110 @@
 		</div>
 	</div>
 </Modal>
+	<!-- Fee Configuration Modal -->
+	<Modal bind:open={showFeeModal} title="Fee Settings" onclose={() => showFeeModal = false}>
+		<div class="space-y-4">
+			<p class="text-sm text-[#584140]">
+				Add service charge and tax. Fees are distributed proportionally based on each participant's share of bill items.
+			</p>
+
+			<div>
+				<label for="service_charge" class="block text-sm font-medium text-[#251818] mb-1">
+					Service Charge (%)
+				</label>
+				<div class="relative">
+					<input
+						type="number"
+						id="service_charge"
+						bind:value={feeServiceCharge}
+						min="0"
+						max="100"
+						step="0.1"
+						placeholder="e.g., 10"
+						disabled={isSavingFee}
+						class="w-full pl-4 pr-10 py-2.5 bg-[#fff0ef]/50 rounded-xl text-sm text-[#251818] focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]"
+					/>
+					<span class="absolute right-4 top-1/2 -translate-y-1/2 text-[#584140] text-sm">%</span>
+				</div>
+				<p class="text-[11px] text-[#584140] mt-1">Restaurant service charge, delivery fee, etc.</p>
+			</div>
+
+			<div>
+				<label for="tax_rate" class="block text-sm font-medium text-[#251818] mb-1">
+					Tax (%)
+				</label>
+				<div class="relative">
+					<input
+						type="number"
+						id="tax_rate"
+						bind:value={feeTax}
+						min="0"
+						max="100"
+						step="0.1"
+						placeholder="e.g., 8"
+						disabled={isSavingFee}
+						class="w-full pl-4 pr-10 py-2.5 bg-[#fff0ef]/50 rounded-xl text-sm text-[#251818] focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]"
+					/>
+					<span class="absolute right-4 top-1/2 -translate-y-1/2 text-[#584140] text-sm">%</span>
+				</div>
+				<p class="text-[11px] text-[#584140] mt-1">GST, VAT, or sales tax (applied after service charge)</p>
+			</div>
+
+			<!-- Preview -->
+			{#if feeServiceCharge > 0 || feeTax > 0}
+				<div class="p-3 bg-[#fff0ef] rounded-2xl space-y-1">
+					<p class="text-xs text-[#584140] font-medium">Example breakdown</p>
+					<div class="flex items-center justify-between text-sm">
+						<span class="text-[#251818]">Bill total</span>
+						<span class="font-semibold text-[#251818]">{formatIDR(data.session.total_amount)}</span>
+					</div>
+					{#if feeServiceCharge > 0}
+						<div class="flex items-center justify-between text-sm">
+							<span class="text-[#584140]">Service charge ({feeServiceCharge}%)</span>
+							<span class="text-[#251818]">{formatIDR(data.session.total_amount * feeServiceCharge / 100)}</span>
+						</div>
+					{/if}
+					{#if feeTax > 0}
+						{@const taxableAmount = data.session.total_amount * (1 + (feeServiceCharge || 0) / 100)}
+						<div class="flex items-center justify-between text-sm">
+							<span class="text-[#584140]">Tax ({feeTax}% on {formatIDR(taxableAmount).trim()})</span>
+							<span class="text-[#251818]">{formatIDR(taxableAmount * feeTax / 100)}</span>
+						</div>
+					{/if}
+					<div class="h-px bg-[#fbe3e1] my-1"></div>
+					<div class="flex items-center justify-between text-sm font-semibold">
+						<span class="text-[#251818]">Total with fees</span>
+						<span class="text-[#ae2f34]">{formatIDR(data.session.total_amount * (1 + (feeServiceCharge || 0) / 100) * (1 + feeTax / 100))}</span>
+					</div>
+				</div>
+			{/if}
+
+			<div class="flex justify-end gap-2 pt-2">
+				<button
+					type="button"
+					onclick={() => showFeeModal = false}
+					disabled={isSavingFee}
+					class="px-4 py-2 rounded-2xl text-sm font-medium text-[#251818] hover:bg-[#fff0ef] disabled:opacity-50"
+				>
+					Cancel
+				</button>
+				<button
+					type="button"
+					onclick={handleSaveFee}
+					disabled={isSavingFee}
+					class="inline-flex items-center gap-2 px-4 py-2 rounded-2xl text-sm font-medium text-white bg-gradient-to-br from-[#ae2f34] to-[#FF6B6B] hover:opacity-95 disabled:opacity-50"
+				>
+					{#if isSavingFee}
+						<Loader2 class="w-4 h-4 animate-spin" />
+					{:else}
+						Save
+					{/if}
+				</button>
+			</div>
+		</div>
+	</Modal>
+
+
 <!-- Resend (force) confirm -->
 <ConfirmDialog
 	open={showResendConfirm}

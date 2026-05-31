@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Camera, CheckCircle2, Clock, Loader2, Upload, XCircle } from 'lucide-svelte';
+	import { Camera, CheckCircle2, Clock, Loader2, Upload, XCircle, Receipt, ImageIcon } from 'lucide-svelte';
 	import { invalidateAll } from '$app/navigation';
 	import { formatIDR } from '$lib/utils/format';
 	import { submitPayment } from '$lib/services/payments';
@@ -111,7 +111,7 @@
 </script>
 
 <svelte:head>
-	<title>Pay {formatIDR(data.page.share_amount)} · Letpai</title>
+	<title>Pay {formatIDR(data.page.fee_breakdown?.total ?? data.page.share_amount)} · Letpai</title>
 </svelte:head>
 
 <main class="min-h-screen bg-[#fff8f7] py-10 px-4">
@@ -122,7 +122,7 @@
 				{data.page.session_name}
 			</h1>
 			<p class="text-sm text-[#584140] mt-1">Hi {data.page.participant_name}, your share is:</p>
-			<p class="text-4xl font-bold text-[#251818] mt-2">{formatIDR(data.page.share_amount)}</p>
+			<p class="text-4xl font-bold text-[#251818] mt-2">{formatIDR(data.page.fee_breakdown?.total ?? data.page.share_amount)}</p>
 		</header>
 
 		<section
@@ -153,6 +153,61 @@
 				</ul>
 			</section>
 		{/if}
+
+			{#if data.page.bill_images && data.page.bill_images.length > 0}
+				<section class="bg-white rounded-3xl p-5 mb-6 shadow-[0_1px_3px_rgba(37,24,24,0.04)]">
+					<h2 class="text-sm font-semibold text-[#251818] mb-3">Bill Attachments</h2>
+					<div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+						{#each data.page.bill_images as img (img.bill_image_id)}
+							<a
+								href={img.image_url}
+								target="_blank"
+								rel="noopener noreferrer"
+								class="block aspect-square rounded-2xl overflow-hidden bg-[#fff0ef] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6]"
+								title="Open full size"
+							>
+								<img
+									src={img.thumbnail_url || img.image_url}
+									alt={img.file_name}
+									class="w-full h-full object-cover"
+								/>
+							</a>
+						{/each}
+					</div>
+					<p class="text-xs text-[#584140] mt-2 text-center">
+						Original bill images from the host
+					</p>
+				</section>
+			{/if}
+
+			{#if data.page.fee_breakdown && (data.page.fee_breakdown.service_charge_share > 0 || data.page.fee_breakdown.tax_share > 0)}
+				<section class="bg-white rounded-3xl p-5 mb-6 shadow-[0_1px_3px_rgba(37,24,24,0.04)]">
+					<h2 class="text-sm font-semibold text-[#251818] mb-3">Fee breakdown</h2>
+					<ul class="space-y-2">
+						<li class="flex items-center justify-between text-sm">
+							<span class="text-[#584140]">Your items</span>
+							<span class="text-[#251818]">{formatIDR(data.page.fee_breakdown.items_total)}</span>
+						</li>
+						{#if data.page.fee_breakdown.service_charge_share > 0}
+							<li class="flex items-center justify-between text-sm">
+								<span class="text-[#584140]">Service charge</span>
+								<span class="text-[#251818]">{formatIDR(data.page.fee_breakdown.service_charge_share)}</span>
+							</li>
+						{/if}
+						{#if data.page.fee_breakdown.tax_share > 0}
+							<li class="flex items-center justify-between text-sm">
+								<span class="text-[#584140]">Tax</span>
+								<span class="text-[#251818]">{formatIDR(data.page.fee_breakdown.tax_share)}</span>
+							</li>
+						{/if}
+						<li class="h-px bg-[#fbe3e1] my-1"></li>
+						<li class="flex items-center justify-between text-sm font-semibold">
+							<span class="text-[#251818]">Total due</span>
+							<span class="text-[#ae2f34]">{formatIDR(data.page.fee_breakdown.total)}</span>
+						</li>
+					</ul>
+				</section>
+			{/if}
 
 		{#if (data.page.bank_accounts && data.page.bank_accounts.length > 0) || data.page.bank_name || data.page.bank_account_number || data.page.bank_account_holder}
 			{@const accounts = data.page.bank_accounts && data.page.bank_accounts.length > 0
