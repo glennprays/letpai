@@ -547,6 +547,10 @@
 
 		isLoading = true;
 		try {
+			// Save fee percentages to session if user entered them
+			if (newBillFeeSC > 0 || newBillFeeTax > 0) {
+				await saveFeeConfigIfNeeded(newBillFeeSC, newBillFeeTax);
+			}
 			await addBillItem(data.session.session_id, {
 				description: newBillName.trim(),
 				amount,
