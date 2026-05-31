@@ -1368,6 +1368,13 @@
 									<p class="text-sm font-medium text-[#251818]">
 										{formatIDR(participant.share_amount)}
 									</p>
+									{#if participant.fee_breakdown && (participant.fee_breakdown.service_charge_share > 0 || participant.fee_breakdown.tax_share > 0)}
+										<div class="mt-1 text-right space-y-0.5">
+											<span class="block text-[10px] text-[#584140]">+ SC: {formatIDR(participant.fee_breakdown.service_charge_share)}</span>
+											<span class="block text-[10px] text-[#584140]">+ Tax: {formatIDR(participant.fee_breakdown.tax_share)}</span>
+											<span class="block text-[11px] font-semibold text-[#ae2f34]">= {formatIDR(participant.fee_breakdown.total)}</span>
+										</div>
+									{/if}
 									<span class="inline-block px-2 py-0.5 rounded-full text-[11px] font-medium {paymentStatusBadgeClass(participant.payment_status)}">
 										{paymentStatusLabel(participant)}
 									</span>
@@ -2155,23 +2162,51 @@
 				{/if}
 			</div>
 
-		<!-- Preview -->
-		<!-- Preview -->
-		{#if newBillAmount !== null && newBillAmount > 0}
-			{@const amount = newBillAmount}
-			{@const splitCount = newBillScope === 'specific' ? newBillParticipantIds.length : (data.session.participants?.length || 0)}
-			{@const sharePer = splitCount > 0 ? amount / splitCount : 0}
-			<div class="p-3 bg-[#fff0ef] rounded-2xl space-y-1">
-				<p class="text-xs text-[#584140] font-medium">Preview</p>
-				<div class="flex items-center justify-between text-sm">
-					<span class="text-[#251818]">{newBillName.trim() || 'New bill'}</span>
-					<span class="font-semibold text-[#251818]">{formatIDR(amount)}</span>
+			<!-- Preview -->
+			{#if newBillAmount !== null && newBillAmount > 0}
+				{@const amount = newBillAmount}
+				{@const splitCount = newBillScope === 'specific' ? newBillParticipantIds.length : (data.session.participants?.length || 0)}
+				{@const sharePer = splitCount > 0 ? amount / splitCount : 0}
+				{@const feeSC = sessionHasFees ? (data.session.fee_config?.service_charge_percentage ?? 0) : (newBillFeeSC || 0)}
+				{@const feeTax = sessionHasFees ? (data.session.fee_config?.tax_percentage ?? 0) : (newBillFeeTax || 0)}
+				{@const scPerPerson = splitCount > 0 ? sharePer * feeSC / 100 : 0}
+				{@const taxableBase = sharePer + scPerPerson}
+				{@const taxPerPerson = splitCount > 0 ? taxableBase * feeTax / 100 : 0}
+				{@const totalPerPerson = sharePer + scPerPerson + taxPerPerson}
+				<div class="p-3 bg-[#fff0ef] rounded-2xl space-y-1">
+					<p class="text-xs text-[#584140] font-medium">Preview</p>
+					<div class="flex items-center justify-between text-sm">
+						<span class="text-[#251818]">{newBillName.trim() || 'New bill'}</span>
+						<span class="font-semibold text-[#251818]">{formatIDR(amount)}</span>
+					</div>
+					{#if splitCount > 0}
+						<div class="h-px bg-[#fbe3e1] my-1"></div>
+						<p class="text-xs text-[#584140]">Each person:</p>
+						<div class="flex items-center justify-between text-xs">
+							<span class="text-[#584140]">Items share</span>
+							<span class="text-[#251818]">{formatIDR(sharePer)}</span>
+						</div>
+						{#if feeSC > 0}
+							<div class="flex items-center justify-between text-xs">
+								<span class="text-[#584140]">Service charge ({feeSC}%)</span>
+								<span class="text-[#251818]">+ {formatIDR(scPerPerson)}</span>
+							</div>
+						{/if}
+						{#if feeTax > 0}
+							<div class="flex items-center justify-between text-xs">
+								<span class="text-[#584140]">Tax ({feeTax}%)</span>
+								<span class="text-[#251818]">+ {formatIDR(taxPerPerson)}</span>
+							</div>
+						{/if}
+						<div class="h-px bg-[#fbe3e1] my-1"></div>
+						<div class="flex items-center justify-between text-sm font-semibold">
+							<span class="text-[#251818]">Total per person</span>
+							<span class="text-[#ae2f34]">{formatIDR(totalPerPerson)}</span>
+						</div>
+						<p class="text-[10px] text-[#584140] mt-1">({splitCount} {splitCount === 1 ? 'person' : 'people'})</p>
+					{/if}
 				</div>
-				{#if splitCount > 0}
-					<p class="text-xs text-[#584140]">Each pays {formatIDR(sharePer)} ({splitCount} {splitCount === 1 ? 'person' : 'people'})</p>
-				{/if}
-			</div>
-		{/if}
+			{/if}
 
 		<div class="flex gap-3 pt-2">
 			<button
