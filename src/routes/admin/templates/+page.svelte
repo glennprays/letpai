@@ -1,9 +1,10 @@
 <script lang="ts">
 	import { invalidateAll } from '$app/navigation';
-	import { Loader2, Save, FileText, AlertCircle } from 'lucide-svelte';
+	import { Loader2, Save, FileText, AlertCircle, Send } from 'lucide-svelte';
 	import { updateAdminTemplate, type AdminMessageTemplate } from '$lib/services/admin';
 	import { toast } from '$lib/stores/toast';
 	import type { PageData } from './$types';
+	import TestSendModal from './TestSendModal.svelte';
 
 	let { data }: { data: PageData } = $props();
 
@@ -13,6 +14,7 @@
 	let drafts = $state<Record<string, Draft>>({});
 	let saving = $state<Record<string, boolean>>({});
 	let errors = $state<Record<string, string>>({});
+	let testTemplate = $state<AdminMessageTemplate | null>(null);
 
 	function seed(t: AdminMessageTemplate): Draft {
 		return {
@@ -191,6 +193,15 @@
 					<div class="flex justify-end gap-2">
 						<button
 							type="button"
+							onclick={() => testTemplate = t}
+							disabled={saving[t.template_id]}
+							class="px-4 py-2 text-sm font-medium text-[#ae2f34] hover:bg-[#fff0ef] rounded-xl transition-colors inline-flex items-center gap-1.5 disabled:opacity-50"
+						>
+							<Send size={14} />
+							Send Test
+						</button>
+						<button
+							type="button"
 							onclick={() => reset(t)}
 							disabled={saving[t.template_id]}
 							class="px-4 py-2 text-sm font-medium text-[#251818] hover:bg-[#fff0ef] rounded-xl transition-colors disabled:opacity-50"
@@ -217,3 +228,7 @@
 		{/each}
 	</div>
 </div>
+
+{#if testTemplate}
+	<TestSendModal template={testTemplate} onclose={() => testTemplate = null} />
+{/if}

@@ -104,6 +104,33 @@ export async function updateAdminTemplate(
 	return res;
 }
 
+// Test-send: render a template with sample data and deliver it to a
+// phone number via the WhatsApp gateway.  The admin sees the rendered
+// preview and can verify the message looks right on a real device.
+export interface TestSendRequest {
+	phone_number: string;
+	variables?: Record<string, string>;
+}
+
+export interface TestSendResponse {
+	rendered: string;
+	message_id?: string;
+	status: string;
+}
+
+export async function testSendAdminTemplate(
+	key: string,
+	body: TestSendRequest,
+	customFetch?: typeof fetch,
+	serverToken?: string
+): Promise<TestSendResponse> {
+	const res = (await post(`/admin/templates/${key}/test-send`, body, customFetch, serverToken)) as
+		| { data: TestSendResponse }
+		| TestSendResponse;
+	if ('data' in res) return res.data;
+	return res;
+}
+
 export async function getWhatsAppStatus(
 	customFetch?: typeof fetch,
 	serverToken?: string
