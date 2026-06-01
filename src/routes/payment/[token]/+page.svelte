@@ -140,17 +140,67 @@
 				<h2 class="text-sm font-semibold text-[#251818] mb-3">What you're paying for</h2>
 				<ul class="space-y-3">
 					{#each data.page.bill_items as item}
+						{@const hasSc = data.page.fee_config && item.includes_service_charge && (data.page.fee_config.service_charge_percentage ?? 0) > 0}
+						{@const hasTax = data.page.fee_config && item.includes_tax && (data.page.fee_config.tax_percentage ?? 0) > 0}
+						{@const itemSc = hasSc ? Math.round(item.your_share * (data.page.fee_config!.service_charge_percentage!) / 100) : 0}
+						{@const itemTax = hasTax ? Math.round((item.your_share + itemSc) * (data.page.fee_config!.tax_percentage!) / 100) : 0}
+						{@const itemTotal = item.your_share + itemSc + itemTax}
 						<li class="text-sm">
 							<div class="flex items-start justify-between gap-3">
 								<span class="text-[#251818] truncate">{item.description}</span>
-								<span class="text-[#251818] font-semibold flex-shrink-0">{formatIDR(item.your_share)}</span>
+								<span class="text-[#251818] font-semibold flex-shrink-0">{formatIDR(itemTotal)}</span>
 							</div>
-							<p class="text-xs text-[#584140] mt-0.5">
-								{formatIDR(item.amount)} ÷ {item.shared_with} {item.shared_with === 1 ? 'person' : 'people'}
-							</p>
+							<div class="flex items-center justify-between text-xs mt-0.5">
+								<span class="text-[#584140]">{formatIDR(item.amount)} ÷ {item.shared_with} {item.shared_with === 1 ? 'person' : 'people'}</span>
+								<span class="text-[#251818]">{formatIDR(item.your_share)}</span>
+							</div>
+							{#if hasSc || hasTax}
+								<div class="mt-1 space-y-0.5">
+									{#if hasSc}
+										<div class="flex items-center justify-between text-xs">
+											<span class="text-[#584140]">+ Service charge ({data.page.fee_config!.service_charge_percentage}%)</span>
+											<span class="text-[#251818]">{formatIDR(itemSc)}</span>
+										</div>
+									{/if}
+									{#if hasTax}
+										<div class="flex items-center justify-between text-xs">
+											<span class="text-[#584140]">+ Tax ({data.page.fee_config!.tax_percentage}%)</span>
+											<span class="text-[#251818]">{formatIDR(itemTax)}</span>
+										</div>
+									{/if}
+								</div>
+							{/if}
 						</li>
 					{/each}
 				</ul>
+				{#if data.page.fee_breakdown}
+					<div class="mt-4 pt-3 border-t border-[#fbe3e1]">
+						<p class="text-xs font-semibold text-[#584140] uppercase tracking-wide mb-2">Summary</p>
+						<div class="space-y-1">
+							<div class="flex items-center justify-between text-sm">
+								<span class="text-[#584140]">Total items</span>
+								<span class="text-[#251818]">{formatIDR(data.page.fee_breakdown.items_total)}</span>
+							</div>
+							{#if data.page.fee_breakdown.service_charge_share > 0}
+								<div class="flex items-center justify-between text-sm">
+									<span class="text-[#584140]">Total service charge</span>
+									<span class="text-[#251818]">{formatIDR(data.page.fee_breakdown.service_charge_share)}</span>
+								</div>
+							{/if}
+							{#if data.page.fee_breakdown.tax_share > 0}
+								<div class="flex items-center justify-between text-sm">
+									<span class="text-[#584140]">Total tax</span>
+									<span class="text-[#251818]">{formatIDR(data.page.fee_breakdown.tax_share)}</span>
+								</div>
+							{/if}
+						</div>
+						<div class="h-px bg-[#fbe3e1] my-2"></div>
+						<div class="flex items-center justify-between text-sm font-semibold">
+							<span class="text-[#251818]">Total due</span>
+							<span class="text-[#ae2f34]">{formatIDR(data.page.fee_breakdown.total)}</span>
+						</div>
+					</div>
+				{/if}
 			</section>
 		{/if}
 
