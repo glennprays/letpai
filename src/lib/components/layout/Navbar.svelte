@@ -15,18 +15,21 @@
     mobileMenuOpen = false;
   }
 
-  function handleLogout() {
+  async function handleLogout() {
     logout();
     toast.success('Logged out successfully');
-    goto('/');
     userMenuOpen = false;
+    // `logout()` only clears client-side state. The navbar variant is
+    // derived from `data.isAuthenticated` (SSR'd from the cookie via
+    // routes/+layout.server.ts), so without `invalidateAll` the
+    // landing nav keeps rendering the logged-in chip until refresh.
+    await goto('/', { invalidateAll: true });
   }
 
   function toggleUserMenu() {
     userMenuOpen = !userMenuOpen;
   }
 
-  // Close user menu when clicking outside
   function handleClickOutside(event: MouseEvent) {
     const target = event.target as HTMLElement;
     if (!target.closest('.user-menu-container')) {
@@ -34,7 +37,6 @@
     }
   }
 
-  // Get avatar URL with fallback
   function getUserAvatar(avatarUrl: string | undefined | null, fullName: string | undefined | null): string {
     return getAvatarWithFallback(avatarUrl, fullName, $auth.user?.whatsapp_number, $auth.user?.user_id);
   }
@@ -43,398 +45,165 @@
 <svelte:window onclick={handleClickOutside} />
 
 <header
-  class="navbar"
+  class="sticky top-0 z-50 bg-[#fff8f7]/90 backdrop-blur-xl font-sans animate-[fadeInDown_0.3s_ease-out]"
 >
-  <div class="navbar-inner">
-    <a href="/" class="logo-link" onclick={(e) => { if ($page.url.pathname === '/') e.preventDefault(); }}>
+  <div class="max-w-[1200px] mx-auto h-16 px-6 flex items-center justify-between">
+    <a
+      href="/"
+      class="inline-flex no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fff8f7] rounded-2xl"
+      onclick={(e) => { if ($page.url.pathname === '/') e.preventDefault(); }}
+    >
       <Logo size="md" />
     </a>
 
     {#if variant === 'full'}
-      <nav class="desktop-nav">
-        <a href="/about" class="nav-link">About</a>
-        <a href="/login" class="nav-link">Sign in</a>
-        <a href="/register" class="nav-link">Register</a>
+      <nav aria-label="Primary" class="hidden md:flex items-center gap-8">
+        <a href="/about" class="text-sm font-medium text-[#584140] hover:text-[#251818] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6] rounded-md">About</a>
+        <a href="/login" class="text-sm font-medium text-[#584140] hover:text-[#251818] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6] rounded-md">Sign in</a>
+        <a href="/register" class="text-sm font-medium text-[#584140] hover:text-[#251818] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6] rounded-md">Register</a>
         <button
-          class="btn-coral"
+          class="inline-flex items-center gap-2 px-5 h-11 rounded-2xl text-[15px] font-semibold text-white bg-gradient-to-br from-[#ae2f34] to-[#FF6B6B] shadow-[0_4px_14px_rgba(174,47,52,0.18)] hover:shadow-[0_6px_20px_rgba(174,47,52,0.24)] hover:opacity-95 active:scale-[0.98] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fff8f7]"
           onclick={() => goto('/register')}
         >
           Get Started <ArrowRight size={16} />
         </button>
       </nav>
 
-      <button class="hamburger" onclick={() => (mobileMenuOpen = !mobileMenuOpen)} aria-label="Toggle menu">
-        {#if mobileMenuOpen}
-          <X size={24} color="#111827" />
-        {:else}
-          <Menu size={24} color="#111827" />
-        {/if}
+      <button
+        class="md:hidden inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded-2xl text-[#251818] hover:bg-[#fbe3e1] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6]"
+        onclick={() => (mobileMenuOpen = !mobileMenuOpen)}
+        aria-label="Toggle menu"
+      >
+        {#if mobileMenuOpen}<X size={24} />{:else}<Menu size={24} />{/if}
       </button>
     {:else if variant === 'auth'}
-      <nav class="desktop-nav">
-        <a href="/" class="nav-link">Back to home</a>
+      <nav aria-label="Primary" class="hidden md:flex items-center gap-8">
+        <a href="/" class="text-sm font-medium text-[#584140] hover:text-[#251818] transition-colors">Back to home</a>
       </nav>
     {:else if variant === 'loggedIn'}
-      <nav class="desktop-nav">
-        <a href="/dashboard" class="nav-link">Dashboard</a>
-        <a href="/sessions" class="nav-link">Sessions</a>
-        <a href="/contacts" class="nav-link">Contacts</a>
+      <nav aria-label="Primary" class="hidden md:flex items-center gap-8">
+        <a href="/dashboard" class="text-sm font-medium text-[#584140] hover:text-[#251818] transition-colors">Dashboard</a>
+        <a href="/sessions" class="text-sm font-medium text-[#584140] hover:text-[#251818] transition-colors">Sessions</a>
+        <a href="/contacts" class="text-sm font-medium text-[#584140] hover:text-[#251818] transition-colors">Contacts</a>
+        <a href="/about" class="text-sm font-medium text-[#584140] hover:text-[#251818] transition-colors">About</a>
 
-        <div class="user-menu-container">
-          <button class="user-avatar-btn" onclick={toggleUserMenu} aria-label="User menu">
-            <div class="user-avatar">
+        <div class="user-menu-container relative flex items-center">
+          <button
+            class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#fbe3e1] hover:bg-[#f5dddb] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6]"
+            onclick={toggleUserMenu}
+            aria-label="User menu"
+            aria-haspopup="menu"
+            aria-expanded={userMenuOpen}
+          >
+            <div class="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0">
               <img
                 src={getUserAvatar($auth.user?.avatar_url, $auth.user?.full_name)}
                 alt={getFirstName($auth.user?.full_name, $auth.user?.whatsapp_number)}
                 class="w-full h-full rounded-full object-cover"
               />
             </div>
-            <span class="user-name">{getFirstName($auth.user?.full_name, $auth.user?.whatsapp_number)}</span>
+            <span class="text-sm font-semibold text-[#251818] max-w-[120px] truncate">
+              {getFirstName($auth.user?.full_name, $auth.user?.whatsapp_number)}
+            </span>
           </button>
 
           {#if userMenuOpen}
-            <div class="user-dropdown">
-              <div class="user-info">
-                <div class="user-avatar-large">
+            <div
+              role="menu"
+              class="absolute top-[calc(100%+8px)] right-0 w-[280px] bg-white rounded-[20px] shadow-[0_24px_48px_-4px_rgba(37,24,24,0.12)] p-3 animate-[fadeInDown_0.2s_ease-out] z-[100]"
+            >
+              <div class="flex items-center gap-3 p-2">
+                <div class="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0">
                   <img
                     src={getUserAvatar($auth.user?.avatar_url, $auth.user?.full_name)}
                     alt={getFirstName($auth.user?.full_name, $auth.user?.whatsapp_number)}
                     class="w-full h-full rounded-full object-cover"
                   />
                 </div>
-                <div class="user-details">
-                  <span class="user-display-name">{getFirstName($auth.user?.full_name, $auth.user?.whatsapp_number)}</span>
-                  <span class="user-phone">{$auth.user?.whatsapp_number || ''}</span>
+                <div class="flex flex-col gap-0.5 overflow-hidden">
+                  <span class="text-sm font-semibold text-[#251818] truncate">{getFirstName($auth.user?.full_name, $auth.user?.whatsapp_number)}</span>
+                  <span class="text-xs text-[#584140] truncate">{$auth.user?.whatsapp_number || ''}</span>
                 </div>
               </div>
-              <div class="dropdown-divider"></div>
-              <a href="/profile" class="dropdown-item" onclick={() => userMenuOpen = false}>
-                <User size={16} />
-                Profile
+              <div class="h-2"></div>
+              <a
+                href="/profile"
+                role="menuitem"
+                class="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-[#251818] rounded-[14px] hover:bg-[#fff0ef] transition-colors no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6]"
+                onclick={() => userMenuOpen = false}
+              >
+                <User size={16} /> Profile
               </a>
-              <a href="/settings" class="dropdown-item" onclick={() => userMenuOpen = false}>
-                <Settings size={16} />
-                Settings
+              <a
+                href="/settings"
+                role="menuitem"
+                class="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-[#251818] rounded-[14px] hover:bg-[#fff0ef] transition-colors no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6]"
+                onclick={() => userMenuOpen = false}
+              >
+                <Settings size={16} /> Settings
               </a>
-              <div class="dropdown-divider"></div>
-              <button class="dropdown-item logout-item" onclick={handleLogout}>
-                <LogOut size={16} />
-                Logout
+              <div class="h-2"></div>
+              <button
+                role="menuitem"
+                class="flex items-center gap-3 px-3 py-2.5 w-full text-left text-sm font-medium text-[#ae2f34] rounded-[14px] hover:bg-[#fbe3e1] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6]"
+                onclick={handleLogout}
+              >
+                <LogOut size={16} /> Logout
               </button>
             </div>
           {/if}
         </div>
       </nav>
 
-      <button class="hamburger" onclick={() => (mobileMenuOpen = !mobileMenuOpen)} aria-label="Toggle menu">
-        {#if mobileMenuOpen}
-          <X size={24} color="#111827" />
-        {:else}
-          <Menu size={24} color="#111827" />
-        {/if}
+      <button
+        class="md:hidden inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded-2xl text-[#251818] hover:bg-[#fbe3e1] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6]"
+        onclick={() => (mobileMenuOpen = !mobileMenuOpen)}
+        aria-label="Toggle menu"
+      >
+        {#if mobileMenuOpen}<X size={24} />{:else}<Menu size={24} />{/if}
       </button>
     {/if}
   </div>
 
   {#if mobileMenuOpen && variant === 'full'}
-    <div class="mobile-menu">
-      <a href="/about" class="mobile-link" onclick={closeMobileMenu}>About</a>
-      <a href="/login" class="mobile-link" onclick={closeMobileMenu}>Sign in</a>
-      <a href="/register" class="mobile-link" onclick={closeMobileMenu}>Register</a>
+    <nav
+      aria-label="Mobile"
+      class="md:hidden flex flex-col gap-0 px-6 pb-6 bg-[#fff0ef] animate-[fadeIn_0.2s_ease-out]"
+    >
+      <a href="/about" class="text-base font-semibold text-[#251818] hover:text-[#ae2f34] py-4 transition-colors no-underline" onclick={closeMobileMenu}>About</a>
+      <a href="/login" class="text-base font-semibold text-[#251818] hover:text-[#ae2f34] py-4 transition-colors no-underline" onclick={closeMobileMenu}>Sign in</a>
+      <a href="/register" class="text-base font-semibold text-[#251818] hover:text-[#ae2f34] py-4 transition-colors no-underline" onclick={closeMobileMenu}>Register</a>
       <button
-        class="btn-coral mobile-cta"
+        class="mt-4 w-full inline-flex items-center justify-center gap-2 px-6 h-12 rounded-2xl text-base font-semibold text-white bg-gradient-to-br from-[#ae2f34] to-[#FF6B6B] hover:opacity-95 active:scale-[0.98] transition-all duration-150"
         onclick={() => { mobileMenuOpen = false; goto('/register'); }}
       >
         Get Started <ArrowRight size={16} />
       </button>
-    </div>
+    </nav>
   {/if}
 
   {#if mobileMenuOpen && variant === 'loggedIn'}
-    <div class="mobile-menu">
-      <a href="/dashboard" class="mobile-link" onclick={closeMobileMenu}>Dashboard</a>
-      <a href="/sessions" class="mobile-link" onclick={closeMobileMenu}>Sessions</a>
-      <a href="/contacts" class="mobile-link" onclick={closeMobileMenu}>Contacts</a>
-      <a href="/profile" class="mobile-link" onclick={closeMobileMenu}>Profile</a>
-      <a href="/settings" class="mobile-link" onclick={closeMobileMenu}>Settings</a>
+    <nav
+      aria-label="Mobile"
+      class="md:hidden flex flex-col gap-0 px-6 pb-6 bg-[#fff0ef] animate-[fadeIn_0.2s_ease-out]"
+    >
+      <a href="/dashboard" class="text-base font-semibold text-[#251818] hover:text-[#ae2f34] py-4 transition-colors no-underline" onclick={closeMobileMenu}>Dashboard</a>
+      <a href="/sessions" class="text-base font-semibold text-[#251818] hover:text-[#ae2f34] py-4 transition-colors no-underline" onclick={closeMobileMenu}>Sessions</a>
+      <a href="/contacts" class="text-base font-semibold text-[#251818] hover:text-[#ae2f34] py-4 transition-colors no-underline" onclick={closeMobileMenu}>Contacts</a>
+      <a href="/about" class="text-base font-semibold text-[#251818] hover:text-[#ae2f34] py-4 transition-colors no-underline" onclick={closeMobileMenu}>About</a>
+      <a href="/profile" class="text-base font-semibold text-[#251818] hover:text-[#ae2f34] py-4 transition-colors no-underline" onclick={closeMobileMenu}>Profile</a>
+      <a href="/settings" class="text-base font-semibold text-[#251818] hover:text-[#ae2f34] py-4 transition-colors no-underline" onclick={closeMobileMenu}>Settings</a>
       <button
-        class="mobile-logout-btn"
+        class="mt-4 w-full inline-flex items-center justify-center gap-2 px-6 h-12 rounded-2xl text-base font-semibold text-[#ae2f34] bg-[#fbe3e1] hover:bg-[#f5dddb] active:scale-[0.98] transition-all duration-150"
         onclick={() => { handleLogout(); mobileMenuOpen = false; }}
       >
-        <LogOut size={16} />
-        Logout
+        <LogOut size={16} /> Logout
       </button>
-    </div>
+    </nav>
   {/if}
 </header>
 
 <style>
-  .navbar {
-    position: sticky;
-    top: 0;
-    z-index: 50;
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border-bottom: 1px solid #F3F4F6;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    animation: fadeInDown 0.3s ease-out;
-  }
-
-  .navbar-inner {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 24px;
-    height: 64px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .logo-link {
-    display: inline-flex;
-    text-decoration: none;
-  }
-
-  .desktop-nav {
-    display: flex;
-    align-items: center;
-    gap: 32px;
-  }
-
-  .nav-link {
-    font-size: 14px;
-    font-weight: 500;
-    color: #4b5563;
-    text-decoration: none;
-    transition: color 0.15s;
-  }
-
-  .nav-link:hover {
-    color: #111827;
-  }
-
-  .hamburger {
-    display: none;
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 10px;
-    min-height: 44px;
-    min-width: 44px;
-  }
-
-  .btn-coral {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    background: #ff6b6b;
-    color: #fff;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-weight: 700;
-    font-size: 15px;
-    padding: 10px 22px;
-    border-radius: 100px;
-    border: none;
-    cursor: pointer;
-    transition: background 0.15s, transform 0.12s, box-shadow 0.15s;
-    box-shadow: 0 4px 14px rgba(255, 107, 107, 0.35);
-  }
-
-  .btn-coral:hover {
-    background: #ff5252;
-    transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
-  }
-
-  .mobile-menu {
-    display: none;
-    flex-direction: column;
-    gap: 0;
-    padding: 0 24px 24px;
-    border-top: 1px solid #F3F4F6;
-    animation: fadeIn 0.2s ease-out;
-  }
-
-  .mobile-link {
-    font-size: 16px;
-    font-weight: 600;
-    color: #111827;
-    text-decoration: none;
-    padding: 16px 0;
-    border-bottom: 1px solid #F3F4F6;
-    transition: color 0.15s;
-  }
-
-  .mobile-link:hover {
-    color: #FF6B6B;
-  }
-
-  .mobile-cta {
-    margin-top: 16px;
-    width: 100%;
-    justify-content: center;
-    font-size: 16px;
-    padding: 14px 24px;
-  }
-
-  .user-menu-container {
-    position: relative;
-    display: flex;
-    align-items: center;
-  }
-
-  .user-avatar-btn {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 12px;
-    background: #F9FAFB;
-    border: 1px solid #E5E7EB;
-    border-radius: 100px;
-    cursor: pointer;
-    transition: all 0.15s;
-  }
-
-  .user-avatar-btn:hover {
-    background: #F3F4F6;
-    border-color: #D1D5DB;
-  }
-
-  .user-avatar {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-  }
-
-  .user-name {
-    font-size: 14px;
-    font-weight: 600;
-    color: #374151;
-    max-width: 120px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .user-dropdown {
-    position: absolute;
-    top: calc(100% + 8px);
-    right: 0;
-    width: 280px;
-    background: white;
-    border: 1px solid #E5E7EB;
-    border-radius: 12px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-    padding: 12px;
-    animation: fadeInDown 0.2s ease-out;
-    z-index: 100;
-  }
-
-  .user-info {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 8px;
-  }
-
-  .user-avatar-large {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-  }
-
-  .user-details {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    overflow: hidden;
-  }
-
-  .user-display-name {
-    font-size: 14px;
-    font-weight: 600;
-    color: #111827;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .user-phone {
-    font-size: 12px;
-    color: #6B7280;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .dropdown-divider {
-    height: 1px;
-    background: #E5E7EB;
-    margin: 8px 0;
-  }
-
-  .dropdown-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 12px;
-    font-size: 14px;
-    font-weight: 500;
-    color: #374151;
-    text-decoration: none;
-    border-radius: 8px;
-    transition: background 0.15s;
-    cursor: pointer;
-    background: none;
-    border: none;
-    width: 100%;
-    text-align: left;
-  }
-
-  .dropdown-item:hover {
-    background: #F9FAFB;
-  }
-
-  .logout-item {
-    color: #DC2626;
-  }
-
-  .logout-item:hover {
-    background: #FEF2F2;
-  }
-
-  .mobile-logout-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    margin-top: 16px;
-    padding: 14px 24px;
-    font-size: 16px;
-    font-weight: 600;
-    color: #DC2626;
-    background: #FEF2F2;
-    border: none;
-    border-radius: 100px;
-    cursor: pointer;
-    transition: background 0.15s;
-  }
-
-  .mobile-logout-btn:hover {
-    background: #FEE2E2;
-  }
-
   @keyframes fadeInDown {
     from {
       opacity: 0;
@@ -449,29 +218,5 @@
   @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
-  }
-
-  @media (max-width: 768px) {
-    .desktop-nav {
-      display: none;
-    }
-
-    .hamburger {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .mobile-menu {
-      display: flex;
-    }
-
-    .user-name {
-      display: none;
-    }
-
-    .user-dropdown {
-      display: none;
-    }
   }
 </style>

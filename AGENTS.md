@@ -8,26 +8,28 @@
 
 Letpai is a bill splitting application with WhatsApp integration. Frontend built with SvelteKit 2 + Svelte 5 (runes) + Tailwind CSS v4, targeting youth (18-30) in Indonesia.
 
-### Design Philosophy: Anti-AI Slop
+### Design Philosophy: The Social Ledger
+
+Most financial apps feel like spreadsheets — cold, rigid, utilitarian. Letpai treats bill splitting as a social event, not a transaction. The aesthetic is **high-end editorial**: intentional asymmetry, tonal depth, generous whitespace, and a warm Coral/Teal/Purple palette layered over a soft brownish-cream canvas.
 
 **Core Principles:**
-- ✅ **High contrast** - black/white with vibrant coral red (#FF6B6B) accents
-- ✅ **Bold typography** - Space Grotesk at large sizes for impact
-- ✅ **Angular edges** - sharp corners on cards, buttons (minimal border-radius: 4-8px)
-- ✅ **Geometric shapes** - circles, squares, triangles as design elements
-- ✅ **Strategic whitespace** - let elements breathe
-- ✅ **Intentional asymmetry** - break the grid for visual interest
-- ✅ **Punchy micro-interactions** - subtle but satisfying feedback (150-200ms)
+- ✅ **Tonal layering** — boundaries come from background-color shifts between surface tiers, not from gray lines
+- ✅ **Editorial typography** — Plus Jakarta Sans, large display sizes for monetary values (money should feel significant)
+- ✅ **Generous radii** — `rounded-2xl`/`rounded-3xl` (24–32px) on cards, `rounded-2xl` on buttons, `rounded-full` on pills
+- ✅ **Soft ambient depth** — tinted, low-opacity shadows for floating elements only; tonal layering for everything else
+- ✅ **Signature gradient** — 135° `#ae2f34` → `#FF6B6B` reserved for primary CTAs and hero/marketing sections
+- ✅ **Intentional asymmetry** — break the grid in editorial sections; treat whitespace as first-class
+- ✅ **Snappy micro-interactions** — 150–200ms transitions, distinct hover/focus/active states
+- ✅ **Lucide icons only** — 2px stroke, no emojis, no AI-generated illustrations
 
 **What We're AVOIDING:**
-- ❌ Generic gradients (purple-to-pink, teal-to-blue fades)
-- ❌ Soft drop shadows everywhere (only strategic use)
-- ❌ Rounded corners on everything (use angular edges strategically)
+- ❌ 1px solid borders for sectioning content (use surface-tier shifts instead)
+- ❌ Pure-black drop shadows (always tint with `on-surface` `#251818`)
+- ❌ Sharp corners (`rounded-sm` 4px only in narrow utility contexts)
+- ❌ Gradients on cards, list items, or backgrounds (reserve the signature gradient)
+- ❌ Hard-coded hex values outside design tokens (always pull from `design.ts` / `app.css`)
+- ❌ `text-gray-*` utilities (use `text-[#251818]` `on-surface` or `text-[#584140]` `on-surface-variant`)
 - ❌ Corporate blue/green palettes (trust but boring)
-- ❌ Skeleton loaders (use real content placeholders)
-- ❌ AI-generated illustrations (use bold icons/typography instead)
-- ❌ Subtle animations (use intentional, snappy transitions)
-- ❌ Perfect symmetry (break the grid intentionally)
 - ❌ Emojis on UI (use Lucide icons instead)
 
 ### Tech Stack
@@ -50,13 +52,11 @@ Letpai is a bill splitting application with WhatsApp integration. Frontend built
 
 Before starting any task, ALWAYS read these brief files to understand the context:
 
-1. **Anti-AI Design Plan**: `docs/ANTI_AI_DESIGN_PLAN.md`
-   - Complete anti-AI slop design philosophy
-   - Design system (colors, typography, spacing, border radius)
-   - Component specifications (Button, Badge, Card, Input, Toast)
-   - Development phases (Phase 1-5)
-   - Landing page design (hero + features grid)
-   - Visual style guidelines (brutalist + vibrant)
+1. **Design Tokens (Source of Truth)**: `src/lib/constants/design.ts` and `src/app.css`
+   - Canonical color palette (primary/secondary/tertiary, Social Ledger surfaces, on-surface)
+   - Spacing, radii, shadows
+   - Tailwind v4 `@theme` directive in `app.css` mirrors the TS tokens — both must stay in sync
+   - Reference these — do not invent ad-hoc values in components
 
 2. **API Specification**: `~/projects/letpai-backend/docs/swagger.yaml`
    - Complete API endpoints with request/response schemas
@@ -139,81 +139,84 @@ static/                    # Static assets
 ### Color Palette
 
 ```typescript
-// src/lib/constants/design.ts
+// src/lib/constants/design.ts — Social Ledger palette
 
 export const colors = {
-  // Primary - Coral Red (action-oriented)
+  // Primary - Coral Red (gradient pair: deep → bright)
   primary: {
-    DEFAULT: '#FF6B6B',    // Coral red - bold, action-oriented
-    hover: '#EE5A5A',
-    contrast: '#CC4444',
+    DEFAULT: '#FF6B6B',   // Coral red (gradient top)
+    hover:   '#EE5A5A',
+    contrast:'#CC4444',
+    deep:    '#ae2f34',   // Deep coral (gradient base, hover-emphasis text)
   },
-  
-  // Secondary - Teal Blue (secondary actions)
+
+  // Secondary - Teal Blue
   secondary: {
-    DEFAULT: '#14B8A6',    // Teal blue
-    hover: '#10A392',
+    DEFAULT: '#14B8A6',
+    hover:   '#10A392',
+    deep:    '#006b5f',
+    light:   '#6df5e1',
   },
-  
-  // Accents
-  accent: {
-    purple: '#8B5CF6',
-    yellow: '#F59E0B',
-  },
-  
-  // Status Colors (high contrast)
+
+  // Tertiary - Purple (premium/settled states)
+  tertiary: { DEFAULT: '#842bd2' },
+
+  // Status Colors (functional only — never decorative)
   status: {
-    pending: '#F59E0B',      // Yellow - attention
-    submitted: '#3B82F6',    // Blue - in progress
-    paid: '#10B981',         // Green - success
-    rejected: '#EF4444',     // Red - needs action
+    pending:   '#F59E0B',
+    submitted: '#3B82F6',
+    paid:      '#10B981',
+    rejected:  '#EF4444',
   },
-  
-  // Neutral (high contrast)
-  neutral: {
-    white: '#FFFFFF',
-    black: '#000000',
-    gray: {
-      50: '#F8FAFC',
-      100: '#F1F5F9',
-      200: '#E2E8F0',
-      300: '#CBD5E1',
-      400: '#94A3B8',
-      500: '#64748B',
-      600: '#475569',
-      700: '#334155',
-      800: '#1E293B',
-      900: '#0F172A',
-    }
-  }
+
+  // Social Ledger Surfaces (tonal layering, lightest → darkest)
+  surfaces: {
+    surface:          '#fff8f7',  // Canvas / page background
+    containerLow:     '#fff0ef',  // Section backgrounds
+    containerLowest:  '#ffffff',  // Cards that need to "pop"
+    container:        '#ffe9e7',  // Elevated sections
+    containerHigh:    '#fbe3e1',  // Hover states
+    containerHighest: '#f5dddb',  // Sunken inputs
+    dim:              '#ecd5d3',  // Subdued backgrounds
+  },
+
+  // On-Surface (text/icon colors)
+  onSurface: {
+    DEFAULT: '#251818',  // Primary text
+    variant: '#584140',  // Secondary/label text
+  },
+
+  outline: { variant: '#e0bfbd' },  // Ghost borders only (15% opacity for a11y)
 };
 ```
 
+**Token discipline:** never hard-code hex values in components when a token exists. The `@theme` block in `src/app.css` mirrors these so Tailwind utilities like `bg-surface`, `text-on-surface`, `rounded-xl` resolve correctly.
+
 ### Typography
 
-**Font:** Space Grotesk (Google Fonts via @fontsource)
-- Weights: 400 (regular), 500 (medium), 600 (semibold), 700 (bold)
+**Font:** Plus Jakarta Sans (Google Fonts via @fontsource)
+- Weights: 400 (regular), 500 (medium), 600 (semibold), 700 (bold), 800 (extrabold)
 - Fallbacks: system-ui, sans-serif
 
-**Scale:**
+**Scale (editorial — money should feel significant):**
 ```css
-/* Display - Large amounts, hero text */
-.display-1: 64px / 1.1    /* Total: Rp 500.000 */
-.display-2: 48px / 1.2    /* Session name */
+/* Display - Monetary values, hero totals */
+.display-1: 48px / 1.2  /* tight tracking, weight 700 */
+.display-2: 36px / 1.2
 
 /* Headings */
-.h1: 32px / 1.3         /* Page titles */
-.h2: 24px / 1.4         /* Section titles */
-.h3: 20px / 1.4         /* Card titles */
+.h1: 32px / 1.2   weight 700  letter-spacing -0.02em
+.h2: 24px / 1.3   weight 600  letter-spacing -0.01em
+.h3: 18px / 1.4   weight 600
 
 /* Body */
-.body: 16px / 1.5       /* Default body text */
-.body-sm: 14px / 1.5    /* Secondary text */
-.caption: 12px / 1.5    /* Labels, badges */
-
-/* Numbers */
-.mono: 16px / 1.4        /* Amounts, phone numbers */
+.body-lg:  18px / 1.6   weight 400
+.body:     16px / 1.6   weight 400
+.body-sm:  14px / 1.5   weight 400
+.caption:  12px / 1.5   weight 500
 ```
+
+**Color rule:** primary text uses `text-[#251818]` (`on-surface`); secondary/labels use `text-[#584140]` (`on-surface-variant`). Never `text-gray-*`.
 
 ### Spacing System (8px base)
 
@@ -229,94 +232,101 @@ export const spacing = {
 };
 ```
 
-### Border Radius (Brutalist)
+### Border Radius (Social Ledger — generous & friendly)
 
-```typescript
-export const borderRadius = {
-  none: '0',        // Brutalist edges
-  sm: '4px',        // Minimal rounding
-  DEFAULT: '8px',   // Standard
-  lg: '12px',       // Cards (max we'll go)
-  xl: '16px',       // Never use (too soft)
-  full: '9999px',   // Badges only
-};
+Tailwind v4 radii are wired in `src/app.css`:
+
+```css
+--radius-sm:      4px;   /* narrow utility contexts only (inline tags, code chips) */
+--radius-icon:   14px;   /* icon containers, small avatars */
+--radius-default:18px;   /* small buttons, chips */
+--radius-card:   20px;   /* small cards, list items */
+--radius-lg:     24px;   /* standard cards, modals */
+--radius-xl:     28px;   /* hero/feature cards */
+--radius-full:  100px;   /* pills, badges, circular buttons */
 ```
 
-**Rule:** Prefer `none` or `sm` for buttons, inputs. Use `default` or `lg` for cards only.
+**Rules:**
+- Cards: `rounded-2xl` (24px) or `rounded-3xl` (28–32px) — never less.
+- Buttons: `rounded-2xl` standard; `rounded-full` for icon-only/pill buttons.
+- Inputs: `rounded-2xl`. Pills/badges: `rounded-full`.
+- **Forbidden**: sharp corners (`rounded-none`) anywhere user-facing. `rounded-sm` only for inline tags or code chips.
 
-### Shadows (Strategic)
+### Shadows & Depth (Social Ledger)
 
-```typescript
-export const shadows = {
-  none: 'none',
-  sm: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
-  DEFAULT: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',  // Subtle depth
-  lg: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-  bold: '4px 4px 0 0 rgba(0, 0, 0, 1)',  // Brutalist offset shadow
-};
+Depth is conveyed primarily through **tonal layering** (stacking surface tiers), not shadows. Shadows are reserved for genuinely floating elements.
+
+```css
+/* Cards — subtle ambient */
+box-shadow: 0 1px 3px rgba(37, 24, 24, 0.04);
+
+/* Cards on hover — slightly more lift */
+box-shadow: 0 10px 30px rgba(37, 24, 24, 0.06);
+
+/* Modals / dropdowns / FABs — diffused, low-opacity */
+box-shadow: 0 24px 48px -4px rgba(37, 24, 24, 0.12);
 ```
 
-**Rule:** Use `bold` shadow sparingly for emphasis. Default to `none` or `sm`.
+**Rules:**
+- Shadow color must be tinted with `on-surface` `#251818` — **never pure black**.
+- Opacity ≤ 12% always.
+- Default to no shadow + a surface-tier shift. Only add a shadow when the element genuinely floats.
+- **Forbidden**: brutalist offset shadows (`4px 4px 0 #000`), pure-black drop shadows, heavy opacity (> 12%).
 
 ---
 
 ## Component Specifications
 
-### Button (Brutalist)
+### Button (Social Ledger)
 
 **Variants:**
-1. **Primary** - Coral red background, white text, sharp corners (4px radius)
-2. **Secondary** - Transparent, coral red border, coral red text
-3. **Ghost** - Transparent, no border, gray text
+1. **Primary** — signature gradient `from-[#ae2f34] to-[#FF6B6B]`, white text, `rounded-2xl`. Used for the highest-intent action on a screen.
+2. **Secondary** — `bg-[#6df5e1]` (secondary container) with `text-[#006b5f]` (on-secondary-container). No border.
+3. **Ghost** — text-only `text-[#ae2f34]`, hover shifts to `bg-[#fbe3e1]` (surface-container-high).
 
 **Sizes:**
-- `sm`: 36px height, 12px padding
-- `default`: 40px height, 16px padding
-- `lg`: 48px height, 24px padding
+- `sm`: 36px height, 14px horizontal padding
+- `default`: 44px height (matches mobile touch target), 20px horizontal padding
+- `lg`: 52px height, 28px horizontal padding
 
 **States:**
-- Hover: Slightly darker shade (10%)
-- Active: Scale down slightly (0.98)
-- Disabled: 50% opacity, no pointer events
-- Loading: Spinner icon, disabled state
+- Hover: gradient deepens / secondary darkens by ~5%
+- Active: scale down to 0.98
+- Disabled: 50% opacity, `pointer-events: none`
+- Loading: spinner, disabled state
 
 **Example:**
 ```svelte
-<!-- Primary button -->
-<button class="bg-[#FF6B6B] hover:bg-[#EE5A5A] text-white 
-           rounded-sm px-4 py-2 font-medium 
-           transition-colors duration-150">
+<!-- Primary CTA -->
+<button class="bg-gradient-to-br from-[#ae2f34] to-[#FF6B6B] text-white
+               rounded-2xl px-5 h-11 font-semibold
+               hover:opacity-95 active:scale-[0.98]
+               transition duration-150">
   Send Notifications
 </button>
 
-<!-- Secondary button -->
-<button class="border-2 border-[#FF6B6B] text-[#FF6B6B] 
-           hover:bg-[#FF6B6B] hover:text-white
-           rounded-sm px-4 py-2 font-medium 
-           transition-all duration-150">
+<!-- Secondary -->
+<button class="bg-[#6df5e1] text-[#006b5f]
+               rounded-2xl px-5 h-11 font-semibold
+               hover:bg-[#4fdbc8] transition duration-150">
   Cancel
 </button>
 ```
 
 ### Badge (Status)
 
-**Variants:**
-- `pending`: Yellow background (#F59E0B), dark text
-- `submitted`: Blue background (#3B82F6), white text
-- `paid`: Green background (#10B981), white text
-- `rejected`: Red background (#EF4444), white text
+**Variants** — low-opacity background tint + saturated text for sophistication:
+- `pending`: `bg-[#F59E0B]/15 text-[#92400E]`
+- `submitted`: `bg-[#3B82F6]/15 text-[#1E40AF]`
+- `paid`: `bg-[#10B981]/15 text-[#047857]`
+- `rejected`: `bg-[#EF4444]/15 text-[#991B1B]`
 
-**Style:**
-- Border radius: `full` (pill shape)
-- Padding: 4px 12px
-- Font: Space Grotesk Medium, 12px
-- Uppercase text
+**Style:** `rounded-full`, padding `px-3 py-1`, Plus Jakarta Sans Medium 12px, **not uppercase** (editorial feel).
 
-**Example:**
 ```svelte
-<span class="inline-flex items-center px-3 py-1 rounded-full 
-            text-xs font-medium uppercase
-            bg-[#10B981] text-white">
+<span class="inline-flex items-center px-3 py-1 rounded-full
+             text-xs font-medium
+             bg-[#10B981]/15 text-[#047857]">
   Paid
 </span>
 ```
@@ -324,38 +334,39 @@ export const shadows = {
 ### Card
 
 **Style:**
-- Background: White
-- Border: 2px solid gray-200 (visible border, not shadow)
-- Border radius: 12px (lg - max we'll go)
-- Padding: 24px (lg)
-- Hover: Border color changes to coral red (optional)
+- Background: `bg-white` (surface-container-lowest) for cards that need to "pop", or `bg-[#fff0ef]` (surface-container-low) for sectioning
+- **No 1px borders.** Distinguish from background via surface-tier shift
+- Border radius: `rounded-2xl` (24px) or `rounded-3xl` (28px) for hero cards
+- Subtle ambient shadow on lift-able cards: `shadow-[0_1px_3px_rgba(37,24,24,0.04)]`
+- Padding: 24px (`p-6`) min, 32px (`p-8`) for content-heavy cards
+- Hover: shift to `bg-[#fff0ef]` or add ambient shadow
 
-**Example:**
 ```svelte
-<div class="bg-white border-2 border-gray-200 rounded-lg p-6 
-           hover:border-[#FF6B6B] transition-colors duration-150">
-  <h3 class="text-lg font-semibold mb-2">Session Name</h3>
-  <p class="text-gray-600">Description...</p>
+<div class="bg-white rounded-3xl p-8
+            shadow-[0_1px_3px_rgba(37,24,24,0.04)]
+            hover:shadow-[0_10px_30px_rgba(37,24,24,0.06)]
+            transition duration-150">
+  <h3 class="text-xl font-semibold mb-2 text-[#251818]">Session Name</h3>
+  <p class="text-[#584140]">Description…</p>
 </div>
 ```
 
-### Input
+### Input ("Sunken" surface)
 
 **Style:**
-- Border: 2px solid gray-300
-- Border radius: 4px (sm - minimal)
-- Padding: 12px 16px
-- Focus: Border coral red, no box-shadow (brutalist)
-- Error: Border red-500
+- Background: `bg-[#f5dddb]` (surface-container-highest) — feels recessed
+- **No solid border.** Focus state uses a 2px `secondary` underline or soft `primary` glow
+- Border radius: `rounded-2xl`
+- Padding: `px-4 py-3`
+- Text color: `text-[#251818]`, placeholder: `text-[#584140]`
 
-**Example:**
 ```svelte
-<input type="text" 
-       class="w-full border-2 border-gray-300 rounded-sm 
-              px-4 py-3 font-medium
-              focus:border-[#FF6B6B] focus:outline-none
-              placeholder:text-gray-400
-              transition-colors duration-150"
+<input type="text"
+       class="w-full bg-[#f5dddb] rounded-2xl
+              px-4 py-3 font-medium text-[#251818]
+              placeholder:text-[#584140]
+              focus:outline-none focus:ring-2 focus:ring-[#ae2f34]/30
+              transition duration-150"
        placeholder="Session name" />
 ```
 
@@ -547,18 +558,23 @@ export const colors = {
 ### Common Tailwind Patterns
 
 ```svelte
-<!-- Primary Button -->
-<button class="bg-[#FF6B6B] hover:bg-[#EE5A5A] text-white rounded-lg px-6 py-3">
+<!-- Primary CTA (signature gradient) -->
+<button class="bg-gradient-to-br from-[#ae2f34] to-[#FF6B6B] text-white
+               rounded-2xl px-5 h-11 font-semibold
+               hover:opacity-95 active:scale-[0.98] transition duration-150">
   Create Session
 </button>
 
-<!-- Card -->
-<div class="bg-white rounded-xl shadow-sm p-5 hover:shadow-md transition">
+<!-- Card (tonal layering + ambient shadow on hover) -->
+<div class="bg-white rounded-3xl p-6
+            shadow-[0_1px_3px_rgba(37,24,24,0.04)]
+            hover:shadow-[0_10px_30px_rgba(37,24,24,0.06)] transition">
   <SessionCard />
 </div>
 
-<!-- Status Badge -->
-<span class="px-3 py-1 rounded-full text-xs font-medium bg-green-500 text-white">
+<!-- Status Badge (low-opacity tint) -->
+<span class="px-3 py-1 rounded-full text-xs font-medium
+             bg-[#10B981]/15 text-[#047857]">
   Paid
 </span>
 ```
@@ -592,20 +608,21 @@ export const colors = {
   } = $props<T>();
 
   const variants = {
-    primary: 'bg-[#FF6B6B] hover:bg-[#EE5A5A] text-white',
-    secondary: 'border-2 border-[#FF6B6B] text-[#FF6B6B]',
-    tertiary: 'bg-gray-200 text-gray-700'
+    primary:   'bg-gradient-to-br from-[#ae2f34] to-[#FF6B6B] text-white hover:opacity-95',
+    secondary: 'bg-[#6df5e1] text-[#006b5f] hover:bg-[#4fdbc8]',
+    ghost:     'text-[#ae2f34] hover:bg-[#fbe3e1]',
   };
 
   const sizes = {
-    sm: 'h-8 px-3 text-sm',
-    md: 'h-10 px-6',
-    lg: 'h-12 px-8 text-lg'
+    sm: 'h-9 px-4 text-sm',
+    md: 'h-11 px-5',
+    lg: 'h-13 px-7 text-lg'
   };
 </script>
 
 <button
-  class={cn('rounded-sm font-medium transition', variants[variant], sizes[size], className)}
+  class={cn('rounded-2xl font-semibold transition duration-150 active:scale-[0.98]',
+            variants[variant], sizes[size], className)}
   {...props}
 >
   {@render children()}
@@ -734,13 +751,14 @@ export interface ApiResponse<T> {
 ## Important Notes
 
 - **ALWAYS** use runes syntax (`$props`, `$state`, `$derived`, `$effect`)
-- **FOLLOW** design system from `docs/ANTI_AI_DESIGN_PLAN.md`
+- **FOLLOW** the Social Ledger design system — tokens from `src/lib/constants/design.ts` + `src/app.css`
+- **NO HARD-CODED HEX** values outside design tokens
 - **MOBILE-FIRST** responsive design
-- **REFERENCE** API spec from swagger.yaml before implementing endpoints
+- **REFERENCE** API spec from `~/projects/letpai-backend/docs/swagger.yaml` before implementing endpoints
 - **USE** TanStack Query for server state, Svelte stores for global state
 - **TYPE** all components and API responses
-- **NO EMOJIS** on UI - use Lucide icons instead
-- **TEST** on mobile viewport (375px minimum)
+- **NO EMOJIS** on UI — use Lucide icons (2px stroke)
+- **TEST** on mobile viewport (375px minimum) and desktop (1280px)
 
 ---
 

@@ -14,27 +14,9 @@
 
 	let { children, data }: Props = $props();
 
-	// Create reactive state for auth data
-	let authData = $state({
-		isAuthenticated: data.isAuthenticated,
-		token: data.token,
-		user: data.user
-	});
-
-	// Update authData when data prop changes
-	$effect(() => {
-		authData = {
-			isAuthenticated: data.isAuthenticated,
-			token: data.token,
-			user: data.user
-		};
-	});
-
 	// Initialize auth store from server-provided data
 	onMount(() => {
-		// Use server-provided auth state if available, otherwise check localStorage
 		if (data.isAuthenticated && data.token) {
-			// IMPORTANT: Sync server token to localStorage for client-side API calls
 			if (!localStorage.getItem('token')) {
 				localStorage.setItem('token', data.token);
 			}
@@ -48,7 +30,6 @@
 				isAuthenticated: true
 			});
 		} else {
-			// Fallback to cookies for client-side navigation
 			const cookieToken = document.cookie
 				.split('; ')
 				.find(row => row.startsWith('token='))
@@ -62,20 +43,26 @@
 		}
 	});
 
-	// Determine navbar variant based on route and auth state
-	const navbarVariant = $derived.by(() => {
-		const pathname = $page.url.pathname;
+	// Suppress the public Navbar on:
+	//   - (app) routes that have their own Sidebar
+	//   - every /admin/* page, which owns its own chrome (admin sidebar
+	//     OR a self-contained card UI on /admin/login and /admin/setup).
+	// Without the admin gate, clicking around the admin panel would
+	// overlay a "Letpai / About / Sign in / Register / Get Started"
+	// (or the logged-in chip) on top of the admin layout.
+	const isAppPage = $derived($page.route.id?.startsWith('/(app)') ?? false);
+	const isAdminPage = $derived(
+		$page.url.pathname === '/admin' || $page.url.pathname.startsWith('/admin/')
+	);
 
-		// Auth pages get minimal navbar
+	const navbarVariant = $derived.by(() => {
+		if (isAppPage || isAdminPage) return null;
+		const pathname = $page.url.pathname;
 		if (pathname.startsWith('/login') || pathname.startsWith('/register')) {
 			return 'auth';
-		}
-		// Protected pages get logged-in navbar if authenticated
-		else if (authData.isAuthenticated && authData.token) {
+		} else if (data.isAuthenticated && data.token) {
 			return 'loggedIn';
-		}
-		// Default to full navbar
-		else {
+		} else {
 			return 'full';
 		}
 	});
@@ -85,6 +72,8 @@
 	<link rel="icon" href={favicon} />
 </svelte:head>
 
-<Navbar variant={navbarVariant} />
+{#if navbarVariant}
+	<Navbar variant={navbarVariant} />
+{/if}
 
 {@render children()}

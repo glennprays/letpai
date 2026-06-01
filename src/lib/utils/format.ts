@@ -7,14 +7,17 @@ export function formatCurrency(amount: number, currency = 'IDR'): string {
 	}).format(amount);
 }
 
-export function formatIDR(cents: number): string {
-	const rupiah = cents / 100;
+/**
+ * Format a monetary amount in IDR base currency (rupiah, not cents).
+ * The backend stores amounts in base currency units (e.g. 50000 = Rp 50.000).
+ */
+export function formatIDR(amount: number): string {
 	return new Intl.NumberFormat('id-ID', {
 		style: 'currency',
 		currency: 'IDR',
 		minimumFractionDigits: 0,
 		maximumFractionDigits: 0
-	}).format(rupiah);
+	}).format(amount);
 }
 
 export function formatPhoneNumber(phone: string): string {

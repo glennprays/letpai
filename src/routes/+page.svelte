@@ -1,6 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { user } from "$lib/stores/auth";
+  import { auth } from "$lib/stores/auth";
   import Button from "$lib/components/ui/Button.svelte";
   import SharedFooter from "$lib/components/layout/SharedFooter.svelte";
   import {
@@ -10,21 +10,20 @@
     CheckCircle,
     ArrowRight,
   } from "lucide-svelte";
-  import { initAuth } from "$lib/stores/auth";
 
-  $effect(() => {
-    if ($user.isAuthenticated) {
-      goto("/dashboard");
-    }
-  });
+  const cta = $derived(
+    $auth.isAuthenticated
+      ? { label: "Go to Dashboard", href: "/dashboard" }
+      : { label: "Get Started", href: "/login" }
+  );
 
-  function handleGetStarted() {
-    goto("/login");
+  function handleCta() {
+    goto(cta.href);
   }
 </script>
 
 <div
-  class="min-h-screen bg-white flex flex-col"
+  class="min-h-screen bg-[#fff8f7] flex flex-col"
   style="font-family:'Plus Jakarta Sans',sans-serif;"
 >
   <main class="flex-1">
@@ -34,7 +33,7 @@
         <!-- Left: text -->
         <div>
           <h2
-            style="font-size:clamp(32px,4.5vw,62px); font-weight:800; line-height:1.08; letter-spacing:-0.03em; color:#111827; margin:0 0 24px;"
+            style="font-size:clamp(32px,4.5vw,62px); font-weight:800; line-height:1.08; letter-spacing:-0.03em; color:#251818; margin:0 0 24px;"
           >
             <span class="hero-word" style="animation-delay:0s;"
               >Split bills</span
@@ -44,12 +43,12 @@
             ><br />
             <span
               class="hero-word"
-              style="animation-delay:0.16s; color:#FF6B6B;">with friends.</span
+              style="animation-delay:0.16s; color:#ae2f34;">with friends.</span
             >
           </h2>
 
           <p
-            style="font-size:17px; color:#6B7280; line-height:1.7; margin:0 0 36px; font-weight:400; max-width:400px;"
+            style="font-size:17px; color:#584140; line-height:1.7; margin:0 0 36px; font-weight:400; max-width:400px;"
           >
             WhatsApp notifications included. No app needed for participants —
             just a link and they're done.
@@ -58,8 +57,8 @@
           <div
             style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;"
           >
-            <button class="btn-coral" onclick={handleGetStarted}>
-              Get Started <ArrowRight size={16} />
+            <button class="btn-coral" onclick={handleCta}>
+              {cta.label} <ArrowRight size={16} />
             </button>
             <span style="font-size:13px; color:#9CA3AF; font-weight:500;"
               >Free to use · No sign-up for friends</span
@@ -71,16 +70,16 @@
         <div class="hero-mockup-wrapper">
           <!-- Background blob -->
           <div
-            style="position:absolute; inset:0; background:linear-gradient(135deg,#FF6B6B18,#14B8A618); border-radius:32px; transform:rotate(2deg);"
+            style="position:absolute; inset:0; background:linear-gradient(135deg,#ae2f3418,#14B8A618); border-radius:32px; transform:rotate(2deg);"
           ></div>
 
           <!-- Card -->
           <div
-            style="position:relative; background:#fff; border-radius:24px; padding:0; border:1.5px solid #F0F0F0; box-shadow:0 20px 60px rgba(0,0,0,0.08); overflow:hidden;"
+            style="position:relative; background:#fff; border-radius:24px; padding:0; box-shadow:0 1px 3px rgba(37,24,24,0.04); overflow:hidden;"
           >
             <!-- Card header -->
             <div
-              style="background:linear-gradient(135deg,#FF6B6B,#ff5252); padding:20px 24px; display:flex; align-items:center; justify-content:space-between;"
+              style="background:linear-gradient(135deg,#ae2f34,#FF6B6B); padding:20px 24px; display:flex; align-items:center; justify-content:space-between;"
             >
               <div>
                 <p
@@ -112,34 +111,34 @@
             <div style="padding:8px 0;">
               {#each [{ name: "Alex T.", initials: "A", amount: "$24.50", paid: true }, { name: "Priya M.", initials: "P", amount: "$24.50", paid: false }, { name: "Sam K.", initials: "S", amount: "$24.50", paid: false }] as person}
                 <div
-                  style="display:flex; align-items:center; justify-content:space-between; padding:12px 24px; border-bottom:1px solid #F9FAFB;"
+                  style="display:flex; align-items:center; justify-content:space-between; padding:12px 24px;"
                 >
                   <div style="display:flex; align-items:center; gap:12px;">
                     <div
                       style="width:36px; height:36px; border-radius:50%; background:{person.paid
                         ? '#DCFCE7'
-                        : '#F3F4F6'}; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; color:{person.paid
+                        : '#fff0ef'}; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; color:{person.paid
                         ? '#16A34A'
-                        : '#6B7280'};"
+                        : '#584140'};"
                     >
                       {person.initials}
                     </div>
                     <span
-                      style="font-size:14px; font-weight:600; color:#111827;"
+                      style="font-size:14px; font-weight:600; color:#251818;"
                       >{person.name}</span
                     >
                   </div>
                   <div style="display:flex; align-items:center; gap:10px;">
                     <span
-                      style="font-size:15px; font-weight:700; color:#111827;"
+                      style="font-size:15px; font-weight:700; color:#251818;"
                       >{person.amount}</span
                     >
                     <span
                       style="font-size:11px; font-weight:700; padding:3px 10px; border-radius:100px; background:{person.paid
                         ? '#DCFCE7'
-                        : '#FEF2F2'}; color:{person.paid
+                        : '#fff0ef'}; color:{person.paid
                         ? '#16A34A'
-                        : '#EF4444'};"
+                        : '#ae2f34'};"
                     >
                       {person.paid ? "Paid" : "Pending"}
                     </span>
@@ -151,7 +150,7 @@
             <!-- WhatsApp button -->
             <div style="padding:16px 24px;">
               <button
-                style="width:100%; background:#25D366; color:#fff; border:none; border-radius:12px; padding:13px; font-family:'Plus Jakarta Sans',sans-serif; font-weight:700; font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; transition:background 0.15s;"
+                style="width:100%; background:#25D366; color:#fff; border:none; border-radius:16px; padding:13px; font-family:'Plus Jakarta Sans',sans-serif; font-weight:700; font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; transition:background 0.15s;"
                 onmouseenter={(e) =>
                   (e.currentTarget.style.background = "#1ebe59")}
                 onmouseleave={(e) =>
@@ -184,7 +183,7 @@
             Why Letpai
           </p>
           <h3
-            style="font-size:clamp(26px,3vw,38px); font-weight:800; color:#111827; margin:0; letter-spacing:-0.02em;"
+            style="font-size:clamp(26px,3vw,38px); font-weight:800; color:#251818; margin:0; letter-spacing:-0.02em;"
           >
             Built for the group chat era
           </h3>
@@ -195,22 +194,22 @@
           <!-- Big card: WhatsApp -->
           <div
             class="feature-card"
-            style="grid-column:span 2; background:linear-gradient(135deg,#FFF5F5,#fff); display:flex; gap:32px; align-items:flex-start;"
+            style="grid-column:span 2; background:linear-gradient(135deg,#fff0ef,#fff); display:flex; gap:32px; align-items:flex-start;"
           >
             <div
               class="icon-bubble"
-              style="background:#FF6B6B; flex-shrink:0; width:56px; height:56px; border-radius:18px;"
+              style="background:#ae2f34; flex-shrink:0; width:56px; height:56px; border-radius:18px;"
             >
               <MessageCircle size={26} color="#fff" />
             </div>
             <div>
               <h4
-                style="font-size:20px; font-weight:800; color:#111827; margin:0 0 10px; letter-spacing:-0.02em;"
+                style="font-size:20px; font-weight:800; color:#251818; margin:0 0 10px; letter-spacing:-0.02em;"
               >
                 WhatsApp Integration
               </h4>
               <p
-                style="font-size:15px; color:#6B7280; margin:0 0 20px; line-height:1.65; max-width:520px;"
+                style="font-size:15px; color:#584140; margin:0 0 20px; line-height:1.65; max-width:520px;"
               >
                 Participants receive instant notifications with personal payment
                 links. No app installation needed — they tap, pay, and you're
@@ -219,7 +218,7 @@
               <div style="display:flex; gap:8px; flex-wrap:wrap;">
                 {#each ["Automatic messages", "Payment tracking", "One-tap access"] as tag}
                   <span
-                    style="font-size:12px; font-weight:600; padding:5px 12px; border-radius:100px; background:#fff; border:1.5px solid #F0F0F0; color:#6B7280;"
+                    style="font-size:12px; font-weight:600; padding:5px 12px; border-radius:100px; background:#fff0ef; color:#584140;"
                     >{tag}</span
                   >
                 {/each}
@@ -229,16 +228,16 @@
 
           <!-- Small cards -->
           <div class="feature-card">
-            <div class="icon-bubble" style="background:#14B8A6;">
+            <div class="icon-bubble" style="background:#ae2f34;">
               <Smartphone size={22} color="#fff" />
             </div>
             <h4
-              style="font-size:17px; font-weight:800; color:#111827; margin:0 0 8px; letter-spacing:-0.01em;"
+              style="font-size:17px; font-weight:800; color:#251818; margin:0 0 8px; letter-spacing:-0.01em;"
             >
               Create in Seconds
             </h4>
             <p
-              style="font-size:14px; color:#6B7280; margin:0; line-height:1.6;"
+              style="font-size:14px; color:#584140; margin:0; line-height:1.6;"
             >
               Quick setup — name the session, add bills and people, send. Done
               in under a minute.
@@ -246,16 +245,16 @@
           </div>
 
           <div class="feature-card">
-            <div class="icon-bubble" style="background:#14B8A6;">
+            <div class="icon-bubble" style="background:#ae2f34;">
               <Camera size={22} color="#fff" />
             </div>
             <h4
-              style="font-size:17px; font-weight:800; color:#111827; margin:0 0 8px; letter-spacing:-0.01em;"
+              style="font-size:17px; font-weight:800; color:#251818; margin:0 0 8px; letter-spacing:-0.01em;"
             >
               Proof Upload
             </h4>
             <p
-              style="font-size:14px; color:#6B7280; margin:0; line-height:1.6;"
+              style="font-size:14px; color:#584140; margin:0; line-height:1.6;"
             >
               Easy photo capture and submission. No more "I already paid" —
               you'll have proof on file.
@@ -263,16 +262,16 @@
           </div>
 
           <div class="feature-card">
-            <div class="icon-bubble" style="background:#FF6B6B;">
+            <div class="icon-bubble" style="background:#ae2f34;">
               <CheckCircle size={22} color="#fff" />
             </div>
             <h4
-              style="font-size:17px; font-weight:800; color:#111827; margin:0 0 8px; letter-spacing:-0.01em;"
+              style="font-size:17px; font-weight:800; color:#251818; margin:0 0 8px; letter-spacing:-0.01em;"
             >
               No App Needed
             </h4>
             <p
-              style="font-size:14px; color:#6B7280; margin:0; line-height:1.6;"
+              style="font-size:14px; color:#584140; margin:0; line-height:1.6;"
             >
               Friends pay via a link in their browser. No downloads, no
               sign-ups, no friction.
@@ -280,16 +279,16 @@
           </div>
 
           <div class="feature-card">
-            <div class="icon-bubble" style="background:#FF6B6B;">
+            <div class="icon-bubble" style="background:#ae2f34;">
               <ArrowRight size={22} color="#fff" />
             </div>
             <h4
-              style="font-size:17px; font-weight:800; color:#111827; margin:0 0 8px; letter-spacing:-0.01em;"
+              style="font-size:17px; font-weight:800; color:#251818; margin:0 0 8px; letter-spacing:-0.01em;"
             >
               Real-time Dashboard
             </h4>
             <p
-              style="font-size:14px; color:#6B7280; margin:0; line-height:1.6;"
+              style="font-size:14px; color:#584140; margin:0; line-height:1.6;"
             >
               See who has paid, who is pending, and close the session when
               everyone's settled up.
@@ -307,7 +306,7 @@
             Process
           </p>
           <h3
-            style="font-size:clamp(26px,3vw,38px); font-weight:800; color:#111827; margin:0; letter-spacing:-0.02em;"
+            style="font-size:clamp(26px,3vw,38px); font-weight:800; color:#251818; margin:0; letter-spacing:-0.02em;"
           >
             How It Works
           </h3>
@@ -318,22 +317,23 @@
           <!-- Connector line (desktop only) -->
           <div class="steps-connector"></div>
 
-          {#each [{ n: "01", icon: Smartphone, bg: "#FF6B6B", title: "Create Session", body: "Add participants and bills. Set equal or custom splits in seconds." }, { n: "02", icon: MessageCircle, bg: "#14B8A6", title: "Send via WhatsApp", body: "One click notifies everyone with their personal payment link." }, { n: "03", icon: Camera, bg: "#14B8A6", title: "Track Payments", body: "Real-time status updates as proof uploads come in. Close when settled." }] as step}
+          {#each [{ n: "01", icon: Smartphone, bg: "#ae2f34", title: "Create Session", body: "Add participants and bills. Set equal or custom splits in seconds." }, { n: "02", icon: MessageCircle, bg: "#ae2f34", title: "Send via WhatsApp", body: "One click notifies everyone with their personal payment link." }, { n: "03", icon: Camera, bg: "#ae2f34", title: "Track Payments", body: "Real-time status updates as proof uploads come in. Close when settled." }] as step}
+            {@const StepIcon = step.icon}
             <div class="step-card" style="position:relative; z-index:1;">
               <!-- Step dot -->
               <div
                 style="width:44px; height:44px; border-radius:14px; background:{step.bg}; display:flex; align-items:center; justify-content:center; margin-bottom:20px; box-shadow:0 4px 12px {step.bg}44;"
               >
-                <svelte:component this={step.icon} size={20} color="#fff" />
+                <StepIcon size={20} color="#fff" />
               </div>
               <span class="step-number">{step.n}</span>
               <h4
-                style="font-size:17px; font-weight:800; color:#111827; margin:0 0 10px; letter-spacing:-0.01em;"
+                style="font-size:17px; font-weight:800; color:#251818; margin:0 0 10px; letter-spacing:-0.01em;"
               >
                 {step.title}
               </h4>
               <p
-                style="font-size:14px; color:#6B7280; margin:0; line-height:1.65;"
+                style="font-size:14px; color:#584140; margin:0; line-height:1.65;"
               >
                 {step.body}
               </p>
@@ -359,17 +359,17 @@
             >
               Ready to split your first bill?
             </h3>
-            <p style="font-size:15px; color:#6B7280; margin:0;">
+            <p style="font-size:15px; color:rgba(255,255,255,0.8); margin:0;">
               Free forever for groups. No credit card needed.
             </p>
           </div>
 
           <button
-            class="btn-coral"
+            class="btn-white"
             style="position:relative; z-index:1; white-space:nowrap; font-size:16px; padding:15px 32px;"
-            onclick={handleGetStarted}
+            onclick={handleCta}
           >
-            Get Started Free <ArrowRight size={16} />
+            {cta.label} <ArrowRight size={16} />
           </button>
         </div>
       </section>
@@ -386,7 +386,7 @@
 
   :global(body) {
     font-family: "Plus Jakarta Sans", sans-serif;
-    background: #ffffff;
+    background: #fff8f7;
     margin: 0;
   }
 
@@ -409,41 +409,62 @@
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    background: #ff6b6b;
+    background: linear-gradient(to bottom right, #ae2f34, #FF6B6B);
     color: #fff;
     font-family: "Plus Jakarta Sans", sans-serif;
     font-weight: 700;
     font-size: 15px;
     padding: 13px 28px;
-    border-radius: 100px;
+    border-radius: 16px;
     border: none;
     cursor: pointer;
     transition:
-      background 0.15s,
       transform 0.12s,
       box-shadow 0.15s;
-    box-shadow: 0 4px 14px rgba(255, 107, 107, 0.35);
+    box-shadow: 0 4px 14px rgba(174, 47, 52, 0.35);
   }
   .btn-coral:hover {
-    background: #ff5252;
     transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+    box-shadow: 0 6px 20px rgba(174, 47, 52, 0.4);
+  }
+
+  /* White CTA for gradient banner */
+  .btn-white {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #fff;
+    color: #ae2f34;
+    font-family: "Plus Jakarta Sans", sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    padding: 13px 28px;
+    border-radius: 16px;
+    border: none;
+    cursor: pointer;
+    transition:
+      transform 0.12s,
+      box-shadow 0.15s;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+  }
+  .btn-white:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
   }
 
   /* Feature card */
   .feature-card {
     background: #fff;
-    border: 1.5px solid #f0f0f0;
-    border-radius: 20px;
+    border: none;
+    border-radius: 24px;
     padding: 28px;
+    box-shadow: 0 1px 3px rgba(37, 24, 24, 0.04);
     transition:
-      border-color 0.2s,
       box-shadow 0.2s,
       transform 0.2s;
   }
   .feature-card:hover {
-    border-color: #ff6b6b;
-    box-shadow: 0 8px 32px rgba(255, 107, 107, 0.1);
+    box-shadow: 0 8px 32px rgba(174, 47, 52, 0.08);
     transform: translateY(-2px);
   }
 
@@ -461,17 +482,16 @@
   /* Step card */
   .step-card {
     background: #fff;
-    border: 1.5px solid #f0f0f0;
-    border-radius: 20px;
+    border: none;
+    border-radius: 24px;
     padding: 32px 28px;
+    box-shadow: 0 1px 3px rgba(37, 24, 24, 0.04);
     transition:
-      border-color 0.2s,
       box-shadow 0.2s,
       transform 0.2s;
   }
   .step-card:hover {
-    border-color: #14b8a6;
-    box-shadow: 0 8px 32px rgba(20, 184, 166, 0.1);
+    box-shadow: 0 8px 32px rgba(174, 47, 52, 0.08);
     transform: translateY(-2px);
   }
 
@@ -480,7 +500,7 @@
     font-weight: 700;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: #9ca3af;
+    color: #ae2f34;
     margin-bottom: 16px;
     display: block;
   }
@@ -501,7 +521,7 @@
 
   .why-section {
     padding: 56px 24px;
-    background: #FAFAFA;
+    background: #fff0ef;
     border-radius: 32px;
     margin: 0 16px 16px;
   }
@@ -529,7 +549,7 @@
     left: calc(33.3% - 24px);
     right: calc(33.3% - 24px);
     height: 2px;
-    background: linear-gradient(90deg, #FF6B6B, #14B8A6);
+    background: linear-gradient(90deg, #ae2f34, #14B8A6);
     border-radius: 2px;
     z-index: 0;
   }
@@ -539,7 +559,7 @@
   }
 
   .cta-banner {
-    background: #111827;
+    background: linear-gradient(to bottom right, #ae2f34, #FF6B6B);
     border-radius: 28px;
     padding: 48px 40px;
     display: flex;
@@ -592,7 +612,7 @@
 
     .cta-banner {
       padding: 32px 24px;
-      border-radius: 20px;
+      border-radius: 24px;
     }
   }
 
@@ -623,11 +643,7 @@
       padding: 24px 20px;
       flex-direction: column;
       text-align: center;
-    }
-
-    .cta-banner .btn-coral {
-      width: 100%;
-      justify-content: center;
+      border-radius: 20px;
     }
   }
 </style>

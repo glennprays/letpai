@@ -1,5 +1,50 @@
 import type { PageServerLoad } from './$types';
-import { getDashboardStats, getSessions } from '$lib/services/dashboard';
+import { getDashboardStats } from '$lib/services/dashboard';
+import { getSessions } from '$lib/services/sessions';
+import type { Session } from '$lib/types/api';
+
+type Pagination = { page?: number; limit?: number; total?: number } | null;
+
+// Narrow the various server response shapes into a flat { sessions, pagination }.
+function narrowSessions(result: unknown): { sessions: Session[]; pagination: Pagination } {
+	if (Array.isArray(result)) {
+		return { sessions: result as Session[], pagination: null };
+	}
+	if (!result || typeof result !== 'object') {
+		return { sessions: [], pagination: null };
+	}
+	const r = result as Record<string, unknown>;
+
+	// { data: { sessions: [], page, limit, total } }
+	if (r.data && typeof r.data === 'object' && !Array.isArray(r.data)) {
+		const d = r.data as Record<string, unknown>;
+		if (Array.isArray(d.sessions)) {
+			return {
+				sessions: d.sessions as Session[],
+				pagination: {
+					page: typeof d.page === 'number' ? d.page : undefined,
+					limit: typeof d.limit === 'number' ? d.limit : undefined,
+					total: typeof d.total === 'number' ? d.total : undefined
+				}
+			};
+		}
+	}
+
+	// { data: [...], pagination: {...} } or { success, data: [...] }
+	if (Array.isArray(r.data)) {
+		return {
+			sessions: r.data as Session[],
+			pagination: (r.pagination as Pagination) ?? null
+		};
+	}
+
+	// { sessions: [...] }
+	if (Array.isArray(r.sessions)) {
+		return { sessions: r.sessions as Session[], pagination: null };
+	}
+
+	return { sessions: [], pagination: null };
+}
 
 export const load: PageServerLoad = async ({ fetch, cookies }) => {
 	const token = cookies.get('token');
@@ -7,8 +52,8 @@ export const load: PageServerLoad = async ({ fetch, cookies }) => {
 	if (!token) {
 		return {
 			stats: null,
-			sessions: [],
-			pagination: null,
+			sessions: [] as Session[],
+			pagination: null as Pagination,
 			error: 'Not authenticated'
 		};
 	}
@@ -19,42 +64,19 @@ export const load: PageServerLoad = async ({ fetch, cookies }) => {
 			getSessions(1, 12, fetch, token)
 		]);
 
-		// Handle sessions response - it might be wrapped in different ways
-		let sessionsArray: unknown[] = [];
-		let pagination = null;
-
-		if (Array.isArray(sessionsResult)) {
-			// Direct array response
-			sessionsArray = sessionsResult;
-		} else if (sessionsResult && typeof sessionsResult === 'object') {
-			if ('data' in sessionsResult && typeof sessionsResult.data === 'object' && 'sessions' in sessionsResult.data && Array.isArray(sessionsResult.data.sessions)) {
-				// Wrapped in { data: { sessions: [], total, page, limit } }
-				sessionsArray = sessionsResult.data.sessions;
-				pagination = { page: sessionsResult.data.page, limit: sessionsResult.data.limit, total: sessionsResult.data.total };
-			} else if ('data' in sessionsResult && Array.isArray(sessionsResult.data)) {
-				// Wrapped in { data: [], pagination: {} }
-				sessionsArray = sessionsResult.data;
-				pagination = sessionsResult.pagination || null;
-			} else if ('success' in sessionsResult && 'data' in sessionsResult && Array.isArray(sessionsResult.data)) {
-				// Wrapped in { success: true, data: [] }
-				sessionsArray = sessionsResult.data;
-			} else if ('sessions' in sessionsResult && Array.isArray(sessionsResult.sessions)) {
-				// Wrapped in { sessions: [] }
-				sessionsArray = sessionsResult.sessions;
-			}
-		}
+		const { sessions, pagination } = narrowSessions(sessionsResult);
 
 		return {
 			stats: statsResult,
-			sessions: sessionsArray,
+			sessions,
 			pagination
 		};
 	} catch (error) {
 		console.error('Dashboard load error:', error);
 		return {
 			stats: null,
-			sessions: [],
-			pagination: null,
+			sessions: [] as Session[],
+			pagination: null as Pagination,
 			error: error instanceof Error ? error.message : 'Failed to load dashboard data'
 		};
 	}

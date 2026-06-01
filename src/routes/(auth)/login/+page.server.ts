@@ -1,4 +1,5 @@
 import { fail, redirect } from '@sveltejs/kit';
+import { post } from '$lib/services/api';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => {
@@ -15,60 +16,34 @@ export const actions: Actions = {
       return fail(400, { message: 'Please fill in all fields' });
     }
 
+    let data: { success?: boolean; token?: string; user?: unknown; error?: { message?: string } };
     try {
-      // Call backend API from server-side
-      const API_BASE = 'http://localhost:3000/api/v1';
-      const response = await fetch(`${API_BASE}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ whatsapp_number, password })
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        // Set token cookie for SSR
-        cookies.set('token', data.token, {
-          path: '/',
-          httpOnly: false,
-          secure: false, // Set to true in production with HTTPS
-          sameSite: 'lax',
-          maxAge: 60 * 60 * 24 * 30 // 30 days
-        });
-
-        // Store user data in cookie for client-side access
-        // Handle case where backend might not return full_name
-        const userData = data.user || {
-          user_id: data.user_id,
-          whatsapp_number: data.whatsapp_number,
-          full_name: data.full_name
-        };
-
-        cookies.set('user', JSON.stringify(userData), {
-          path: '/',
-          httpOnly: false,
-          secure: false,
-          sameSite: 'lax',
-          maxAge: 60 * 60 * 24 * 30 // 30 days
-        });
-
-        // Get return URL from form data
-        const returnURL = formData.get('return') as string || '/dashboard';
-        throw redirect(303, returnURL);
-      } else {
-        return fail(401, {
-          message: data.error?.message || 'Invalid credentials'
-        });
-      }
-    } catch (error) {
-      if (error && typeof error === 'object' && 'location' in error) {
-        // This is a redirect, re-throw it
-        throw error;
-      }
-      console.error('Login error:', error);
-      return fail(500, {
-        message: 'An error occurred during login'
-      });
+      data = await post('/auth/login', { whatsapp_number, password }, fetch);
+    } catch (err) {
+      console.error('Login error:', err);
+      return fail(500, { message: 'An error occurred during login' });
     }
+
+    if (!data.success || !data.token) {
+      return fail(401, { message: data.error?.message || 'Invalid credentials' });
+    }
+
+    // 30-day session cookies. Token is non-httpOnly so the SPA can attach it
+    // as a bearer header on client-side fetches; user blob is non-httpOnly so
+    // the client can hydrate without an extra /me roundtrip.
+    const cookieOpts = {
+      path: '/',
+      httpOnly: false,
+      secure: false, // Set to true in production with HTTPS
+      sameSite: 'lax' as const,
+      maxAge: 60 * 60 * 24 * 30
+    };
+    cookies.set('token', data.token, cookieOpts);
+    if (data.user) {
+      cookies.set('user', JSON.stringify(data.user), cookieOpts);
+    }
+
+    const returnURL = (formData.get('return') as string) || '/dashboard';
+    throw redirect(303, returnURL);
   }
 };

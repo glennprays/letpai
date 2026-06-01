@@ -15,7 +15,7 @@
 </script>
 
 <div class="progress-stepper">
-  {#each steps as step, index (stepId)}
+  {#each steps as step, index (step.id)}
     <div class="stepper-item" class:completed={index + 1 < currentStep} class:active={index + 1 === currentStep}>
       <div class="step-indicator">
         {#if index + 1 < currentStep}

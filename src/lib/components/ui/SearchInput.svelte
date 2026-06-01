@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { cn } from '$lib/utils/cn';
-  import { Search, X } from 'lucide-svelte';
-  import Input from './Input.svelte';
+  import { cn } from "$lib/utils/cn";
+  import { Search, X } from "lucide-svelte";
+  import Input from "./Input.svelte";
 
   interface Props {
     placeholder?: string;
@@ -13,8 +13,8 @@
   }
 
   let {
-    placeholder = 'Search...',
-    value = $bindable(''),
+    placeholder = "Search...",
+    value = $bindable(""),
     disabled = false,
     class: className,
     oninput,
@@ -23,8 +23,8 @@
   }: Props = $props();
 
   function handleClear() {
-    value = '';
-    if (oninput) oninput('');
+    value = "";
+    if (oninput) oninput("");
     if (onclear) onclear();
   }
 
@@ -33,25 +33,28 @@
   }
 </script>
 
-<div class={cn('relative', className)}>
-  <Search class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={18} />
+<div class={cn("relative", className)}>
+  <Search
+    class="absolute left-4 top-1/2 -translate-y-1/2 text-[#584140]/50 pointer-events-none"
+    size={18}
+  />
 
   <Input
     bind:value
     {placeholder}
     {disabled}
-    {oninput}
-    class="pl-11 pr-10"
+    oninput={handleInput}
+    class="!pl-11 !pr-10"
     {...props}
   />
 
   {#if value}
     <button
       onclick={handleClear}
-      class="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-gray-100 transition-colors"
+      class="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-[#fbe3e1] transition-colors"
       aria-label="Clear search"
     >
-      <X class="text-gray-400" size={16} />
+      <X class="text-[#584140]" size={16} />
     </button>
   {/if}
 </div>

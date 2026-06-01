@@ -1,8 +1,6 @@
 <script lang="ts">
-  import { User } from 'lucide-svelte';
-  import { user, auth } from '$lib/stores/auth';
-  import { goto } from '$app/navigation';
-  import { page } from '$app/stores';
+  import Sidebar from '$lib/components/layout/Sidebar.svelte';
+  import BottomTabBar from '$lib/components/layout/BottomTabBar.svelte';
 
   interface Props {
     children: import('svelte').Snippet;
@@ -10,20 +8,18 @@
 
   let { children }: Props = $props();
 
-  // Redirect to profile if user doesn't have a full name
-  $effect(() => {
-    if ($auth.isAuthenticated && $auth.user && !$auth.user.full_name) {
-      const currentPath = $page.url.pathname;
-      // Don't create redirect loops
-      if (currentPath !== '/profile' && currentPath !== '/login' && currentPath !== '/register') {
-        goto('/profile', { replaceState: true });
-      }
-    }
-  });
+  // Auth + profile-completion gating happens server-side in +layout.server.ts.
 </script>
 
-<div class="min-h-screen flex flex-col">
-  <main class="flex-1">
+<div class="min-h-screen bg-[#fff8f7]">
+  <!-- Desktop sidebar -->
+  <Sidebar />
+
+  <!-- Main content area: offset by sidebar on desktop -->
+  <main class="md:ml-60 pb-20 md:pb-0">
     {@render children()}
   </main>
+
+  <!-- Mobile bottom tabs -->
+  <BottomTabBar />
 </div>

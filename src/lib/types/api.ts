@@ -56,40 +56,101 @@ export interface CreateContactRequest {
 export interface Session {
   session_id: string;
   host_id: string;
-  session_name: string;
-  session_description?: string;
+  title: string;
+  description?: string;
   total_amount: number;
   currency: string;
-  status: 'active' | 'completed' | 'cancelled';
+  status: 'active' | 'draft' | 'pending' | 'in_progress' | 'completed' | 'cancelled';
   participant_count: number;
   paid_count: number;
   created_at: string;
 }
 
 export interface CreateSessionRequest {
-  session_name: string;
-  session_description?: string;
+  title: string;
+  description?: string;
   currency?: string;
+  bank_name?: string;
+  bank_account_number?: string;
+  bank_account_holder?: string;
 }
 
 export interface BillItem {
   bill_item_id: string;
-  name: string;
-  description?: string;
+  session_id?: string;
+  description: string;
   amount: number;
-  currency: string;
-  created_at: string;
+  category?: string;
+  created_at?: string;
+  updated_at?: string;
+  // Per-bill participant assignment. Empty array means "applies to
+  // everyone in the session" (legacy default).
+  participant_ids?: string[];
+  // Fee flags: whether service charge and tax apply to this item.
+  // Defaults to true for both. Used when session has fee_config.
+  includes_service_charge?: boolean;
+  includes_tax?: boolean;
+}
+
+// Bill image attachment for session receipts/bills
+export interface BillImage {
+  bill_image_id: string;
+  session_id: string;
+  image_url: string;           // S3 URL (not publicly accessible without auth)
+  thumbnail_url?: string;       // Thumbnail version
+  file_name: string;
+  file_format: 'jpg' | 'jpeg' | 'png' | 'webp';
+  file_size: number;           // bytes
+  uploaded_at: string;
+  ordinal: number;              // display order
 }
 
 export interface Participant {
   participant_id: string;
+  contact_id?: string;
   name: string;
   whatsapp_number: string;
+  avatar_url?: string;
   share_amount: number;
   payment_status: 'pending' | 'submitted' | 'paid' | 'rejected';
+  payment_proof_url?: string;
+  rejection_reason?: string;
   contact_avatar_url?: string;
-  notification_count: number;
+  notification_count?: number;
   last_notification_at?: string;
+  // True when the host manually marked this participant as paid (no
+  // proof upload). Drives the "Marked by you" badge + disables the
+  // participant-facing upload affordance.
+  paid_manually?: boolean;
+  // Latest notification dispatch for this participant. friendly_status
+  // is a UI-stable label mapped at the use-case boundary; raw status
+  // ("queued"/"sent"/"failed") and error_message are also exposed for
+  // a future details disclosure.
+  last_notification?: {
+    log_id: string;
+    type: string;
+    status: 'queued' | 'sent' | 'failed' | string;
+    sent_at: string;
+    error_message?: string | null;
+    friendly_status: string;
+  } | null;
+  // Fee breakdown for this participant (computed when session has fee_config)
+  fee_breakdown?: ParticipantFeeBreakdown;
+}
+
+// Fee configuration for a session
+export interface FeeConfig {
+  service_charge_percentage?: number;   // e.g., 10 for 10%
+  tax_percentage?: number;              // e.g., 8 for 8% GST
+}
+
+// Participant's fee breakdown (computed proportionally)
+export interface ParticipantFeeBreakdown {
+  participant_id: string;
+  items_total: number;           // Sum of assigned bill items
+  service_charge_share: number;  // This participant's share of service charge
+  tax_share: number;             // This participant's share of tax
+  total: number;                 // items_total + service_charge_share + tax_share
 }
 
 export interface DashboardStats {
@@ -100,13 +161,32 @@ export interface DashboardStats {
   total_pending: number;
 }
 
+// Backend may wrap the list as `{ data: Session[] }` (top-level pagination),
+// `{ data: { sessions, page, limit, total } }`, or `{ sessions: [] }`.
+// Keep the type permissive so the server load can narrow at runtime.
 export interface SessionsResponse {
-  data: Session[];
-  pagination: {
+  success?: boolean;
+  data?: Session[] | {
+    sessions: Session[];
+    page?: number;
+    limit?: number;
+    total?: number;
+  };
+  sessions?: Session[];
+  pagination?: {
     page: number;
     limit: number;
     total: number;
   };
+}
+
+// Response wrapper for AddParticipants
+export interface ParticipantsResponse {
+  success: boolean;
+  data: {
+    participants: Participant[];
+  };
+  message?: string;
 }
 
 export interface ApiResponse<T> {
@@ -127,16 +207,32 @@ export interface ApiError {
 export interface SessionDetail {
   session_id: string;
   host_id: string;
-  session_name: string;
-  session_description?: string;
+  title: string;
+  description?: string;
   total_amount: number;
   currency: string;
   status: 'draft' | 'pending' | 'in_progress' | 'completed' | 'cancelled';
   participant_count: number;
   paid_count: number;
   created_at: string;
+  bank_name?: string | null;
+  bank_account_number?: string | null;
+  bank_account_holder?: string | null;
+  bank_accounts?: Array<{
+    account_id: string;
+    ordinal: number;
+    bank_name?: string | null;
+    account_number?: string | null;
+    account_holder?: string | null;
+  }>;
+  last_notified_at?: string | null;
+  is_dirty?: boolean;
   participants: Participant[];
-  bill_items: BillItem[];
+  bills: BillItem[];
+  // Bill images attached to this session (receipts, invoices, etc.)
+  bill_images?: BillImage[];
+  // Fee configuration for this session (optional)
+  fee_config?: FeeConfig | null;
 }
 
 export interface SessionResponse {
@@ -151,39 +247,61 @@ export interface SessionDetailResponse {
 }
 
 export interface UpdateSessionRequest {
-  session_name?: string;
-  session_description?: string;
+  title?: string;
+  description?: string;
   currency?: string;
   status?: string;
+  bank_name?: string | null;
+  bank_account_number?: string | null;
+  bank_account_holder?: string | null;
 }
 
 // Participant Types
+// Backend AddParticipantRequest uses `custom_name`/`custom_whatsapp` for new
+// custom participants, or `contact_id` to add a previously-saved contact.
 export interface AddParticipantsRequest {
   participants: Array<{
     contact_id?: string;
-    name: string;
-    whatsapp_number: string;
+    custom_name?: string;
+    custom_whatsapp?: string;
   }>;
 }
 
+// Edit a participant's custom name/whatsapp. Payment status transitions
+// (submit/approve/reject) go through the /payments/* endpoints.
 export interface UpdateParticipantRequest {
-  payment_status: 'paid' | 'rejected';
-  rejection_reason?: string;
+  custom_name?: string;
+  custom_whatsapp?: string;
 }
 
 // Bill Item Types
+// Backend stores a single `description` field as the primary label.
+// `amount` is in the session's base currency unit (e.g. IDR rupiah), NOT cents.
+// `participant_ids` is optional — omit or pass an empty array to split the
+// bill across every participant in the session (legacy behaviour). A
+// non-empty array restricts the bill to those participants.
 export interface CreateBillItemRequest {
-  name: string;
-  description?: string;
+  description: string;
   amount: number;
   category?: string;
+  participant_ids?: string[];
+  // Fee flags: whether service charge and tax apply to this item.
+  // Omit or pass true for default behavior (fees apply).
+  includes_service_charge?: boolean;
+  includes_tax?: boolean;
 }
 
+// For UpdateBillItem the backend treats a missing `participant_ids` key as
+// "leave assignments untouched", an explicit empty array as "reset to
+// everyone", and a populated array as "replace assignments".
+// Same logic applies to fee flags: omit to leave unchanged.
 export interface UpdateBillItemRequest {
-  name?: string;
   description?: string;
   amount?: number;
   category?: string;
+  participant_ids?: string[];
+  includes_service_charge?: boolean;
+  includes_tax?: boolean;
 }
 
 export interface BillItemResponse {
@@ -198,10 +316,46 @@ export interface UpdateBillItemResponse {
   message: string;
 }
 
-// Contacts Types
-export interface ContactsResponse {
+// Bill Image Types
+export interface BillImageResponse {
   success: boolean;
-  data: Contact[];
+  data: BillImage;
+  message?: string;
+}
+
+export interface BillImagesResponse {
+  success: boolean;
+  data: BillImage[];
+  message?: string;
+}
+
+export interface BillImageSignedUrlResponse {
+  success: boolean;
+  data: {
+    url: string;
+    expires_at: string;
+  };
+}
+
+// Fee Configuration Types
+export interface FeeConfigResponse {
+  success: boolean;
+  data: FeeConfig;
+  message?: string;
+}
+
+export interface UpdateFeeConfigRequest {
+  service_charge_percentage?: number;
+  tax_percentage?: number;
+}
+
+// Contacts Types
+// Backend may return `{ data: Contact[] }`, `{ data: { contacts: [] } }`,
+// or `{ contacts: [] }`. Keep permissive so server loads can narrow.
+export interface ContactsResponse {
+  success?: boolean;
+  data?: Contact[] | { contacts: Contact[] };
+  contacts?: Contact[];
   pagination?: {
     page: number;
     limit: number;
@@ -257,13 +411,21 @@ export interface GroupResponse {
   message?: string;
 }
 
+// Permissive shape: matches `{ data: [] }`, `{ data: { groups: [] } }`, or `{ groups: [] }`.
 export interface GroupsResponse {
-  success: boolean;
-  data: ContactGroup[];
+  success?: boolean;
+  data?: ContactGroup[] | { groups: ContactGroup[] };
+  groups?: ContactGroup[];
 }
 
 // Bulk Operations
-export type BulkOperationType = 'delete' | 'update';
+//
+// Backend supports two operations: 'add_to_group' (with group_id) and
+// 'delete'. The earlier BulkOperationType / BulkUpdateRequest pair
+// described a non-existent 'update' shape and was the source of
+// "Operation: failed oneof" 400s in production. See bulkAssignGroup
+// in services/contacts.ts for the canonical group-reassign call.
+export type BulkOperationType = 'add_to_group' | 'delete';
 
 export interface BulkImportRequest {
   contacts: Array<{
@@ -275,23 +437,6 @@ export interface BulkImportRequest {
 
 export interface BulkDeleteRequest {
   contact_ids: string[];
-}
-
-export interface BulkUpdateRequest {
-  contact_ids: string[];
-  updates: {
-    group_id?: string;
-    is_favorite?: boolean;
-  };
-}
-
-export interface BulkOperationRequest {
-  operation: BulkOperationType;
-  contact_ids: string[];
-  updates?: {
-    group_id?: string;
-    is_favorite?: boolean;
-  };
 }
 
 export interface BulkOperationResponse {

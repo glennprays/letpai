@@ -87,9 +87,9 @@
       <!-- Form -->
       <form onsubmit={handleSubmit}>
         <div class="form-group animate-in" style="animation-delay: 0.24s;">
-          <label style="font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 6px; display: block;">
+          <span class="form-label" style="font-size: 13px; font-weight: 600; color: #251818; margin-bottom: 6px; display: block;">
             WhatsApp Number
-          </label>
+          </span>
           <div class="phone-input-group">
             <select class="country-selector" bind:value={formData.country_code}>
               {#each countryCodes as country}
@@ -102,10 +102,10 @@
               class="phone-input"
               placeholder="8123456789"
               required
-              style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; font-weight: 500; color: #374151; background: white;"
+              style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; font-weight: 500; color: #251818; background: transparent;"
             />
           </div>
-          <p style="font-size: 12px; color: #9CA3AF; margin-top: 6px; line-height: 1.5;">
+          <p style="font-size: 12px; color: #584140; margin-top: 6px; line-height: 1.5;">
             We'll send reset link to your WhatsApp
           </p>
         </div>
@@ -170,13 +170,13 @@
         Resend Reset Link
       </button>
 
-      <Button variant="primary" size="default" onbuttonclick={() => goto('/login')} class="submit-button" rightIcon={ArrowRight}>
+      <Button variant="primary" size="default" onclick={() => goto('/login')} class="submit-button" rightIcon={ArrowRight}>
         Back to Login
       </Button>
 
       <!-- Help section -->
       <div class="help-section">
-        <p style="font-size: 14px; color: #6B7280; margin: 0 0 12px; text-align: center;">
+        <p style="font-size: 14px; color: #584140; margin: 0 0 12px; text-align: center;">
           Didn't receive the link?
         </p>
         <div class="help-links">
@@ -188,12 +188,12 @@
               gap: 8px;
               font-size: 14px;
               font-weight: 600;
-              color: #FF6B6B;
+              color: #ae2f34;
               text-decoration: none;
               transition: color 0.15s;
             "
             onmouseenter={(e) => (e.currentTarget.style.color = '#FF5252')}
-            onmouseleave={(e) => (e.currentTarget.style.color = '#FF6B6B')}
+            onmouseleave={(e) => (e.currentTarget.style.color = '#ae2f34')}
           >
             <Mail size={16} />
             Contact Support
@@ -255,14 +255,14 @@
   .header h1 {
     font-size: 26px;
     font-weight: 800;
-    color: #111827;
+    color: #251818;
     margin: 0 0 12px;
     letter-spacing: -0.02em;
   }
 
   .header p {
     font-size: 15px;
-    color: #6B7280;
+    color: #584140;
     margin: 0 0 16px;
     line-height: 1.6;
   }
@@ -272,11 +272,11 @@
     align-items: center;
     gap: 8px;
     padding: 12px 20px;
-    background: #FAFAFA;
-    border-radius: 12px;
+    background: #f5dddb;
+    border-radius: 16px;
     font-size: 16px;
     font-weight: 700;
-    color: #111827;
+    color: #251818;
   }
 
   .form-group {
@@ -288,52 +288,44 @@
     display: flex;
     align-items: stretch;
     gap: 0;
+    background: #f5dddb;
+    border-radius: 16px;
+    overflow: hidden;
   }
 
   .country-selector {
     width: auto;
     min-width: 90px;
     padding: 12px 8px;
-    border: 2px solid #D1D5DB;
-    border-right: none;
-    border-radius: 8px 0 0 8px;
-    background: #F9FAFB;
+    border: none;
+    border-right: 1px solid #fbe3e1;
+    background: transparent;
     font: 14px 'Plus Jakarta Sans', sans-serif;
-    color: #374151;
+    color: #251818;
     cursor: pointer;
-    transition: border-color 0.15s;
+    transition: all 0.15s;
   }
 
   .phone-input {
     flex: 1;
     padding: 12px 16px;
-    border: 2px solid #D1D5DB;
-    border-left: none;
-    border-radius: 0 8px 8px 0;
+    border: none;
     font: 14px 'Plus Jakarta Sans', sans-serif;
-    color: #374151;
-    background: white;
-    transition: border-color 0.15s;
+    color: #251818;
+    background: transparent;
+    transition: all 0.15s;
   }
 
   .country-selector:focus,
   .phone-input:focus {
     outline: none;
-    border-color: #FF6B6B;
-  }
-
-  .country-selector:focus + .phone-input {
-    border-color: #FF6B6B;
+    box-shadow: inset 0 -2px 0 #ae2f34;
   }
 
   .button-group {
     display: flex;
     gap: 12px;
     margin-top: 8px;
-  }
-
-  .button-group button {
-    flex: 1;
   }
 
   .tips-section {
@@ -362,40 +354,32 @@
     font-size: 14px;
     font-weight: 600;
     padding: 12px 20px;
-    border-radius: 12px;
+    border-radius: 16px;
   }
 
   .timer-info {
-    color: #6B7280;
-    background: #FAFAFA;
+    color: #584140;
+    background: #f5dddb;
     width: 100%;
   }
 
   .resend-button {
-    color: #FF6B6B;
-    background: #FFF5F5;
-    border: 1.5px solid #FFE5E5;
+    color: #ae2f34;
+    background: #f5dddb;
+    border: none;
     cursor: pointer;
     transition: all 0.15s;
     width: 100%;
   }
 
   .resend-button:hover {
-    background: #FFE5E5;
+    background: #fbe3e1;
     transform: translateY(-1px);
-  }
-
-  .submit-button {
-    width: 100%;
-    height: 44px;
-    font-size: 16px;
-    margin-top: 8px;
   }
 
   .help-section {
     margin-top: 16px;
     padding-top: 16px;
-    border-top: 1px solid #F0F0F0;
   }
 
   .help-links {

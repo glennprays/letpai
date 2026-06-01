@@ -33,7 +33,7 @@
 </svelte:head>
 
 <div
-  class="min-h-screen bg-white flex flex-col"
+  class="min-h-screen bg-[#fff8f7] flex flex-col"
   style="font-family:'Plus Jakarta Sans',sans-serif;"
 >
   <main class="flex-1">
@@ -54,7 +54,7 @@
             <Button
               variant="primary"
               size="lg"
-              onbuttonclick={handleGetStarted}
+              onclick={handleGetStarted}
               rightIcon={ArrowRight}
             >
               Get Started Free
@@ -105,37 +105,37 @@
               icon: AlertCircle,
               title: "Awkward Conversations",
               description: "Asking friends to pay back money creates tension and uncomfortable moments",
-              color: "#FF6B6B"
+              color: "#ae2f34"
             },
             {
               icon: MessageCircle,
               title: "Payment Chasing",
               description: "Constant reminders needed, messages get lost in group chats",
-              color: "#FF6B6B"
+              color: "#ae2f34"
             },
             {
               icon: Receipt,
               title: "Lost Receipts",
               description: "No proof of payment means disputes and uncertainty",
-              color: "#FF6B6B"
+              color: "#ae2f34"
             },
             {
               icon: Calculator,
               title: "Math Errors",
               description: "Manual calculations lead to mistakes and unfair splits",
-              color: "#FF6B6B"
+              color: "#ae2f34"
             },
             {
               icon: Users,
               title: "Group Chat Chaos",
               description: "Payment details buried in endless WhatsApp threads",
-              color: "#FF6B6B"
+              color: "#ae2f34"
             },
             {
               icon: X,
               title: "No Tracking",
               description: "Forget who paid and who still owes you money",
-              color: "#FF6B6B"
+              color: "#ae2f34"
             }
           ] as problem}
             <div class="problem-card">
@@ -167,28 +167,28 @@
             {
               step: "01",
               icon: Users,
-              bg: "#FF6B6B",
+              bg: "#ae2f34",
               title: "Create Session",
               description: "Add participants from your contacts or phone book"
             },
             {
               step: "02",
               icon: Receipt,
-              bg: "#14B8A6",
+              bg: "#ae2f34",
               title: "Add Bills",
               description: "Split equally or assign specific amounts to each person"
             },
             {
               step: "03",
               icon: MessageCircle,
-              bg: "#14B8A6",
+              bg: "#ae2f34",
               title: "Send Notifications",
               description: "WhatsApp messages with personal payment links"
             },
             {
               step: "04",
               icon: CheckCircle,
-              bg: "#FF6B6B",
+              bg: "#ae2f34",
               title: "Track Payments",
               description: "Participants upload proof, you approve — done!"
             }
@@ -218,8 +218,8 @@
         <div class="bento-grid">
           <!-- Large card: WhatsApp Integration -->
           <div class="feature-card large">
-            <div class="feature-icon" style="background:#FF6B6B;">
-              <MessageCircle size={28} color="#fff" />
+            <div class="feature-icon" style="background:#fff0ef;">
+              <MessageCircle size={28} color="#ae2f34" />
             </div>
             <div class="feature-content">
               <h3 class="feature-title">WhatsApp Integration</h3>
@@ -237,8 +237,8 @@
 
           <!-- Medium cards -->
           <div class="feature-card">
-            <div class="feature-icon" style="background:#14B8A6;">
-              <Users size={24} color="#fff" />
+            <div class="feature-icon" style="background:#fff0ef;">
+              <Users size={24} color="#ae2f34" />
             </div>
             <h3 class="feature-title">Contact Management</h3>
             <p class="feature-description">
@@ -247,8 +247,8 @@
           </div>
 
           <div class="feature-card">
-            <div class="feature-icon" style="background:#14B8A6;">
-              <Calculator size={24} color="#fff" />
+            <div class="feature-icon" style="background:#fff0ef;">
+              <Calculator size={24} color="#ae2f34" />
             </div>
             <h3 class="feature-title">Flexible Splitting</h3>
             <p class="feature-description">
@@ -257,8 +257,8 @@
           </div>
 
           <div class="feature-card">
-            <div class="feature-icon" style="background:#FF6B6B;">
-              <Shield size={24} color="#fff" />
+            <div class="feature-icon" style="background:#fff0ef;">
+              <Shield size={24} color="#ae2f34" />
             </div>
             <h3 class="feature-title">Payment Verification</h3>
             <p class="feature-description">
@@ -267,8 +267,8 @@
           </div>
 
           <div class="feature-card">
-            <div class="feature-icon" style="background:#FF6B6B;">
-              <Globe size={24} color="#fff" />
+            <div class="feature-icon" style="background:#fff0ef;">
+              <Globe size={24} color="#ae2f34" />
             </div>
             <h3 class="feature-title">Multi-Currency</h3>
             <p class="feature-description">
@@ -277,8 +277,8 @@
           </div>
 
           <div class="feature-card">
-            <div class="feature-icon" style="background:#14B8A6;">
-              <Clock size={24} color="#fff" />
+            <div class="feature-icon" style="background:#fff0ef;">
+              <Clock size={24} color="#ae2f34" />
             </div>
             <h3 class="feature-title">Smart Reminders</h3>
             <p class="feature-description">
@@ -288,8 +288,8 @@
 
           <!-- Extra features -->
           <div class="feature-card">
-            <div class="feature-icon" style="background:#14B8A6;">
-              <CreditCard size={24} color="#fff" />
+            <div class="feature-icon" style="background:#fff0ef;">
+              <CreditCard size={24} color="#ae2f34" />
             </div>
             <h3 class="feature-title">Payment Links</h3>
             <p class="feature-description">
@@ -298,8 +298,8 @@
           </div>
 
           <div class="feature-card">
-            <div class="feature-icon" style="background:#FF6B6B;">
-              <Sparkles size={24} color="#fff" />
+            <div class="feature-icon" style="background:#fff0ef;">
+              <Sparkles size={24} color="#ae2f34" />
             </div>
             <h3 class="feature-title">Real-time Updates</h3>
             <p class="feature-description">
@@ -325,7 +325,7 @@
           <Button
             variant="primary"
             size="lg"
-            onbuttonclick={handleGetStarted}
+            onclick={handleGetStarted}
             rightIcon={ArrowRight}
           >
             Get Started Free
@@ -343,7 +343,7 @@
 
   :global(body) {
     font-family: "Plus Jakarta Sans", sans-serif;
-    background: #ffffff;
+    background: #fff8f7;
     margin: 0;
   }
 
@@ -377,8 +377,8 @@
     font-weight: 700;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: #FF6B6B;
-    background: #FFF5F5;
+    color: #ae2f34;
+    background: #fff0ef;
     padding: 6px 14px;
     border-radius: 100px;
     margin-bottom: 20px;
@@ -389,17 +389,17 @@
     font-weight: 800;
     line-height: 1.1;
     letter-spacing: -0.03em;
-    color: #111827;
+    color: #251818;
     margin: 0 0 24px;
   }
 
   .hero-title .highlight {
-    color: #FF6B6B;
+    color: #ae2f34;
   }
 
   .hero-description {
     font-size: 17px;
-    color: #6B7280;
+    color: #584140;
     line-height: 1.7;
     margin: 0 0 36px;
     max-width: 450px;
@@ -414,7 +414,7 @@
 
   .hero-subtitle {
     font-size: 13px;
-    color: #9CA3AF;
+    color: #584140;
     font-weight: 500;
   }
 
@@ -426,7 +426,7 @@
   .visual-blob {
     position: absolute;
     inset: 0;
-    background: linear-gradient(135deg, #FF6B6B18, #14B8A618);
+    background: linear-gradient(135deg, #ae2f3418, #FF6B6B18);
     border-radius: 32px;
     transform: rotate(2deg);
   }
@@ -436,28 +436,27 @@
     background: #fff;
     border-radius: 24px;
     padding: 24px;
-    border: 1.5px solid #F0F0F0;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 1px 3px rgba(37,24,24,0.04);
   }
 
   .chat-bubble {
-    background: #F9FAFB;
+    background: #fff0ef;
     border-radius: 16px;
     padding: 12px 16px;
     margin-bottom: 12px;
     font-size: 14px;
     line-height: 1.5;
-    color: #374151;
+    color: #584140;
     max-width: 85%;
   }
 
   .chat-bubble.left {
-    background: #F3F4F6;
+    background: #fff0ef;
     border-bottom-left-radius: 4px;
   }
 
   .chat-bubble.right {
-    background: #FFF5F5;
+    background: #fff0ef;
     border-bottom-right-radius: 4px;
     margin-left: auto;
   }
@@ -466,11 +465,11 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    color: #EF4444;
+    color: #ae2f34;
     font-size: 13px;
     font-weight: 600;
     padding: 8px 12px;
-    background: #FEF2F2;
+    background: #fff0ef;
     border-radius: 8px;
     margin-top: 16px;
     width: fit-content;
@@ -493,21 +492,21 @@
     font-weight: 700;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: #9CA3AF;
+    color: #584140;
     margin: 0 0 12px;
   }
 
   .section-title {
     font-size: clamp(26px, 3vw, 38px);
     font-weight: 800;
-    color: #111827;
+    color: #251818;
     margin: 0 0 16px;
     letter-spacing: -0.02em;
   }
 
   .section-description {
     font-size: 17px;
-    color: #6B7280;
+    color: #584140;
     margin: 0;
     max-width: 500px;
     margin-left: auto;
@@ -523,14 +522,13 @@
 
   .problem-card {
     background: #fff;
-    border: 1.5px solid #F0F0F0;
-    border-radius: 20px;
+    border-radius: 24px;
     padding: 28px;
+    box-shadow: 0 1px 3px rgba(37,24,24,0.04);
     transition: all 0.2s ease;
   }
 
   .problem-card:hover {
-    border-color: #FF6B6B;
     box-shadow: 0 8px 32px rgba(255, 107, 107, 0.1);
     transform: translateY(-2px);
   }
@@ -548,14 +546,14 @@
   .problem-title {
     font-size: 17px;
     font-weight: 800;
-    color: #111827;
+    color: #251818;
     margin: 0 0 10px;
     letter-spacing: -0.01em;
   }
 
   .problem-description {
     font-size: 14px;
-    color: #6B7280;
+    color: #584140;
     margin: 0;
     line-height: 1.6;
   }
@@ -574,7 +572,7 @@
     left: 12.5%;
     right: 12.5%;
     height: 2px;
-    background: linear-gradient(90deg, #FF6B6B, #14B8A6);
+    background: linear-gradient(90deg, #ae2f34, #FF6B6B);
     border-radius: 2px;
     z-index: 0;
   }
@@ -582,15 +580,14 @@
   .step-card {
     position: relative;
     z-index: 1;
-    background: #fff;
-    border: 1.5px solid #F0F0F0;
-    border-radius: 20px;
+    background: #fff0ef;
+    border-radius: 24px;
     padding: 32px 24px;
+    box-shadow: 0 1px 3px rgba(37,24,24,0.04);
     transition: all 0.2s ease;
   }
 
   .step-card:hover {
-    border-color: #14B8A6;
     box-shadow: 0 8px 32px rgba(20, 184, 166, 0.1);
     transform: translateY(-2px);
   }
@@ -610,7 +607,7 @@
     font-weight: 700;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: #9CA3AF;
+    color: #ae2f34;
     margin-bottom: 16px;
     display: block;
   }
@@ -618,14 +615,14 @@
   .step-title {
     font-size: 17px;
     font-weight: 800;
-    color: #111827;
+    color: #251818;
     margin: 0 0 10px;
     letter-spacing: -0.01em;
   }
 
   .step-description {
     font-size: 14px;
-    color: #6B7280;
+    color: #584140;
     margin: 0;
     line-height: 1.65;
   }
@@ -639,9 +636,9 @@
 
   .feature-card {
     background: #fff;
-    border: 1.5px solid #F0F0F0;
-    border-radius: 20px;
+    border-radius: 24px;
     padding: 28px;
+    box-shadow: 0 1px 3px rgba(37,24,24,0.04);
     transition: all 0.2s ease;
     display: flex;
     flex-direction: column;
@@ -656,7 +653,6 @@
   }
 
   .feature-card:hover {
-    border-color: #FF6B6B;
     box-shadow: 0 8px 32px rgba(255, 107, 107, 0.1);
     transform: translateY(-2px);
   }
@@ -674,14 +670,14 @@
   .feature-title {
     font-size: 20px;
     font-weight: 800;
-    color: #111827;
+    color: #251818;
     margin: 0 0 10px;
     letter-spacing: -0.02em;
   }
 
   .feature-description {
     font-size: 15px;
-    color: #6B7280;
+    color: #584140;
     margin: 0 0 20px;
     line-height: 1.65;
   }
@@ -697,9 +693,8 @@
     font-weight: 600;
     padding: 5px 12px;
     border-radius: 100px;
-    background: #fff;
-    border: 1.5px solid #F0F0F0;
-    color: #6B7280;
+    background: #fff0ef;
+    color: #584140;
   }
 
   /* ── CTA SECTION ── */
@@ -708,7 +703,7 @@
   }
 
   .cta-banner {
-    background: #111827;
+    background: linear-gradient(to bottom right, #ae2f34, #FF6B6B);
     border-radius: 28px;
     padding: 48px 40px;
     display: flex;
@@ -736,7 +731,7 @@
     top: -48px;
     width: 240px;
     height: 240px;
-    background: rgba(255, 107, 107, 0.12);
+    background: rgba(255, 255, 255, 0.12);
   }
 
   .circle-2 {
@@ -744,7 +739,7 @@
     bottom: -64px;
     width: 180px;
     height: 180px;
-    background: rgba(20, 184, 166, 0.1);
+    background: rgba(255, 255, 255, 0.08);
   }
 
   .cta-content {
@@ -763,7 +758,7 @@
 
   .cta-description {
     font-size: 15px;
-    color: #9CA3AF;
+    color: rgba(255,255,255,0.85);
     margin: 0;
   }
 

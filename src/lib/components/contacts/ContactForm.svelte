@@ -1,7 +1,10 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import { cn } from '$lib/utils/cn';
   import Input from '../ui/Input.svelte';
+  import PhoneInput from '../ui/PhoneInput.svelte';
   import Button from '../ui/Button.svelte';
+  import { validateWhatsappNumber } from '$lib/utils/phone';
   import type { Contact, ContactGroup, CreateContactRequest, UpdateContactRequest } from '$lib/types/api';
 
   interface Props {
@@ -25,11 +28,14 @@
     ...props
   }: Props = $props();
 
-  let name = $state(contact?.name || '');
-  let phone = $state(contact?.whatsapp_number || '');
-  let groupId = $state(contact?.group_id || '');
-  let selectedGroupIds = $state<string[]>(contact?.group_id ? [contact.group_id] : []);
-  let notes = $state(contact?.notes || '');
+  // Form fields are initialised from the `contact` prop at mount only;
+  // wrap in untrack() to make that explicit (otherwise Svelte warns that
+  // changes to the prop won't update these fields — which is by design).
+  let name = $state(untrack(() => contact?.name || ''));
+  let phone = $state(untrack(() => contact?.whatsapp_number || ''));
+  let groupId = $state(untrack(() => contact?.group_id || ''));
+  let selectedGroupIds = $state<string[]>(untrack(() => (contact?.group_id ? [contact.group_id] : [])));
+  let notes = $state(untrack(() => contact?.notes || ''));
   let errors = $state<{ name?: string; phone?: string }>({});
 
   function validate(): boolean {
@@ -41,41 +47,18 @@
       errors.name = 'Name must be at least 2 characters';
     }
 
-    if (!phone.trim()) {
-      errors.phone = 'Phone number is required';
-    } else {
-      // Validate Indonesian phone format (with or without 62 prefix)
-      const cleanedPhone = normalizePhoneNumber(phone);
-      if (cleanedPhone.length < 10 || cleanedPhone.length > 14) {
-        errors.phone = 'Please enter a valid phone number';
-      }
+    const phoneErr = validateWhatsappNumber(phone);
+    if (phoneErr) {
+      errors.phone = phoneErr;
     }
 
     return Object.keys(errors).length === 0;
   }
 
-  // Normalize phone number to match backend format (always starts with 62)
-  function normalizePhoneNumber(value: string): string {
-    let cleaned = value.replace(/\D/g, '');
-
-    // Remove leading 0 and add 62
-    if (cleaned.startsWith('0')) {
-      cleaned = '62' + cleaned.slice(1);
-    }
-
-    // Ensure it starts with 62
-    if (!cleaned.startsWith('62')) {
-      cleaned = '62' + cleaned;
-    }
-
-    return cleaned;
-  }
-
   function handleSubmit() {
     if (!validate()) return;
 
-    // Normalize phone number for API (backend expects: 6289876543240)
-    const normalizedPhone = normalizePhoneNumber(phone);
+    const normalizedPhone = phone;
 
     // Use first selected group (TODO: backend support for multiple groups coming soon)
     const primaryGroupId = selectedGroupIds.length > 0 ? selectedGroupIds[0] : undefined;
@@ -101,30 +84,6 @@
 
   function handleCancel() {
     if (oncancel) oncancel();
-  }
-
-  function formatPhone(value: string): string {
-    // Remove all non-digits for processing
-    let cleaned = value.replace(/\D/g, '');
-
-    // Remove leading 0 and add 62 for display
-    if (cleaned.startsWith('0')) {
-      cleaned = '62' + cleaned.slice(1);
-    }
-
-    // Ensure it starts with 62
-    if (!cleaned.startsWith('62')) {
-      cleaned = '62' + cleaned;
-    }
-
-    // Format as 62-8XX-XXXX-XXXX for display (without + for cleaner display)
-    if (cleaned.length > 6) {
-      return cleaned.replace(/(\d{2})(\d{3})(\d{4})(\d+)/, '$1-$2-$3-$4');
-    } else if (cleaned.length > 2) {
-      return cleaned.replace(/(\d{2})(\d+)/, '$1-$2');
-    }
-
-    return cleaned;
   }
 </script>
 
@@ -153,34 +112,25 @@
 
   <!-- Phone Number -->
   <div>
-    <div class="relative">
-      <span class="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-gray-500 pointer-events-none z-10">
-        +62
-      </span>
-      <Input
-        id="contact-phone"
-        type="tel"
-        label="WhatsApp Number"
-        placeholder="e.g., 812-3456-7890"
-        bind:value={phone}
-        oninput={(val) => phone = formatPhone(val)}
-        error={!!errors.phone}
-        errorText={errors.phone}
-        disabled={loading}
-        class="pl-14"
-      />
-    </div>
+    <PhoneInput
+      id="contact-phone"
+      label="WhatsApp Number"
+      placeholder="8123456789"
+      bind:value={phone}
+      error={errors.phone}
+      disabled={loading}
+    />
   </div>
 
   <!-- Groups (Multiple Selection) -->
   {#if groups && groups.length > 0}
     <div>
-      <label class="block text-sm font-semibold text-gray-700 mb-2">
+      <p id="contact-groups-label" class="block text-sm font-semibold text-[#584140] mb-2">
         Groups {selectedGroupIds.length > 0 ? `(${selectedGroupIds.length})` : ''}
-      </label>
+      </p>
 
       <!-- Group Chips Grid -->
-      <div class="flex flex-wrap gap-2">
+      <div class="flex flex-wrap gap-2" role="group" aria-labelledby="contact-groups-label">
         {#each groups as group (group.group_id)}
           {@const isSelected = selectedGroupIds.includes(group.group_id)}
           <button
@@ -193,15 +143,15 @@
               }
             }}
             class={cn(
-              'inline-flex items-center gap-2 px-3 py-2 rounded-full text-sm font-medium border-2 transition-all duration-150',
+              'inline-flex items-center gap-2 px-3 py-2 rounded-2xl text-sm font-medium bg-[#f5dddb] transition-all duration-150',
               'hover:scale-105 active:scale-95',
               isSelected
                 ? 'bg-opacity-100'
-                : 'bg-white hover:bg-gray-50'
+                : 'bg-[#fff0ef] hover:bg-[#f5dddb]'
             )}
             style={isSelected
-              ? `background-color: ${group.color}; border-color: ${group.color}; color: white;`
-              : `border-color: ${group.color}30%; color: ${group.color};`}
+              ? `background-color: ${group.color}; color: white;`
+              : `background-color: ${group.color}15; color: ${group.color};`}
           >
             {#if isSelected}
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -214,11 +164,11 @@
       </div>
 
       {#if selectedGroupIds.length === 0}
-        <p class="text-xs text-gray-400 mt-1">
+        <p class="text-xs text-[#584140]/60 mt-1">
           Select groups to organize this contact
         </p>
       {:else}
-        <p class="text-xs text-gray-500 mt-1">
+        <p class="text-xs text-[#584140] mt-1">
           {selectedGroupIds.length} group{selectedGroupIds.length === 1 ? '' : 's'} selected
         </p>
       {/if}
@@ -229,7 +179,7 @@
   <div>
     <label
       for="contact-notes"
-      class="block text-sm font-semibold text-gray-700 mb-2"
+      class="block text-sm font-semibold text-[#584140] mb-2"
     >
       Notes (Optional)
     </label>
@@ -240,10 +190,10 @@
       placeholder="Add notes about this contact..."
       rows="3"
       maxlength={500}
-      class="w-full px-4 py-3 border-[1.5px] border-gray-300 rounded-[12px] font-medium text-[15px] focus:border-[#FF6B6B] focus:shadow-[0_0_0_3px_rgba(255,107,107,0.12)] transition-all duration-150 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed resize-none placeholder:text-gray-400"
+      class="w-full px-4 py-3 bg-[#f5dddb] rounded-2xl font-medium text-[15px] text-[#251818] focus:ring-2 focus:ring-[#ae2f34]/30 transition-all duration-150 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed resize-none placeholder:text-[#584140]/50"
     ></textarea>
     {#if notes}
-      <div class="text-right text-xs text-gray-400 mt-1">
+      <div class="text-right text-xs text-[#584140]/60 mt-1">
         {notes.length}/500
       </div>
     {/if}
@@ -255,7 +205,7 @@
       <Button
         type="button"
         variant="secondary"
-        onbuttonclick={handleCancel}
+        onclick={handleCancel}
         disabled={loading}
         class="flex-1"
       >

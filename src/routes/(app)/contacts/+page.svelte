@@ -23,7 +23,7 @@
     deleteContactGroup,
     bulkImportContacts,
     bulkDeleteContacts,
-    bulkUpdateContacts
+    bulkAssignGroup
   } from '$lib/services/contacts';
   import type { Contact, ContactGroup, CreateContactRequest, UpdateContactRequest } from '$lib/types/api';
 
@@ -68,10 +68,54 @@
 
   let isBulkMode = $state(false);
 
+  // Single-open kebab invariant: the page owns the currently-open
+  // contact menu id. ContactCard reads `openMenuId === contact.contact_id`
+  // to decide visibility, and any setOpen swaps id (or nulls it).
+  // A page-level outside-click listener closes whichever menu is open
+  // without each row needing its own document listener.
+  let openMenuId = $state<string | null>(null);
+
+  function handleSetOpenMenu(id: string | null) {
+    openMenuId = id;
+  }
+
+  $effect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (openMenuId === null) return;
+      const target = e.target as HTMLElement | null;
+      if (target && target.closest(`[data-contact-menu="${openMenuId}"]`)) return;
+      openMenuId = null;
+    }
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  });
+
   // Initial filter application
   $effect(() => {
     applyFilters();
   });
+
+  function pickContacts(response: unknown): Contact[] | null {
+    if (!response || typeof response !== 'object') return null;
+    const r = response as Record<string, unknown>;
+    if (Array.isArray(r.contacts)) return r.contacts as Contact[];
+    if (Array.isArray(r.data)) return r.data as Contact[];
+    if (r.data && typeof r.data === 'object' && Array.isArray((r.data as Record<string, unknown>).contacts)) {
+      return (r.data as { contacts: Contact[] }).contacts;
+    }
+    return null;
+  }
+
+  function pickGroups(response: unknown): ContactGroup[] | null {
+    if (!response || typeof response !== 'object') return null;
+    const r = response as Record<string, unknown>;
+    if (Array.isArray(r.groups)) return r.groups as ContactGroup[];
+    if (Array.isArray(r.data)) return r.data as ContactGroup[];
+    if (r.data && typeof r.data === 'object' && Array.isArray((r.data as Record<string, unknown>).groups)) {
+      return (r.data as { groups: ContactGroup[] }).groups;
+    }
+    return null;
+  }
 
   // Refresh data (for after mutations)
   async function refreshData() {
@@ -81,12 +125,10 @@
         getContacts(),
         getContactGroups()
       ]);
-      if (contactsResponse.success) {
-        contacts = contactsResponse.data;
-      }
-      if (groupsResponse.success) {
-        groups = groupsResponse.data;
-      }
+      const nextContacts = pickContacts(contactsResponse);
+      const nextGroups = pickGroups(groupsResponse);
+      if (nextContacts) contacts = nextContacts;
+      if (nextGroups) groups = nextGroups;
       applyFilters();
     } catch (error) {
       console.error('Failed to refresh data:', error);
@@ -121,10 +163,12 @@
   });
 
   // Contact CRUD
-  async function handleCreateContact(data: CreateContactRequest) {
+  // Widen to the union ContactForm declares for onsubmit. The Add modal
+  // only ever passes new contacts, so name/whatsapp_number are present.
+  async function handleCreateContact(data: CreateContactRequest | UpdateContactRequest) {
     isSaving = true;
     try {
-      const response = await createContact(data);
+      const response = await createContact(data as CreateContactRequest);
       if (response.success) {
         contacts = [...contacts, response.data];
         showAddModal = false;
@@ -137,14 +181,15 @@
   }
 
   async function handleUpdateContact(data: UpdateContactRequest) {
-    if (!editingContact) return;
+    const editing = editingContact;
+    if (!editing) return;
 
     isSaving = true;
     try {
-      const response = await updateContact(editingContact.contact_id, data);
+      const response = await updateContact(editing.contact_id, data);
       if (response.success) {
         contacts = contacts.map(c =>
-          c.contact_id === editingContact.contact_id ? response.data : c
+          c.contact_id === editing.contact_id ? response.data : c
         );
         showEditModal = false;
         editingContact = null;
@@ -157,12 +202,13 @@
   }
 
   async function handleDeleteContact() {
-    if (!deletingContact) return;
+    const deleting = deletingContact;
+    if (!deleting) return;
 
     isSaving = true;
     try {
-      await deleteContact(deletingContact.contact_id);
-      contacts = contacts.filter(c => c.contact_id !== deletingContact.contact_id);
+      await deleteContact(deleting.contact_id);
+      contacts = contacts.filter(c => c.contact_id !== deleting.contact_id);
       showDeleteDialog = false;
       deletingContact = null;
     } catch (error) {
@@ -237,10 +283,13 @@
 
     isSaving = true;
     try {
-      const response = await bulkUpdateContacts({
-        contact_ids: Array.from(selectedContacts),
-        updates: { group_id: groupId || undefined }
-      });
+      // Backend expects `null` to mean "remove from group". Pass the
+      // selected groupId straight through, or null when the bulk bar
+      // emitted an empty string (the "Remove from group" action).
+      const response = await bulkAssignGroup(
+        Array.from(selectedContacts),
+        groupId || null
+      );
       if (response.success) {
         await refreshData();
         selectedContacts = new Set();
@@ -253,18 +302,20 @@
   }
 
   async function handleBulkToggleFavorite(isFavorite: boolean) {
+    // The backend's bulk endpoint only supports add_to_group + delete.
+    // Bulk favorite-toggle is implemented client-side as N individual
+    // PUT /contacts/:id calls. Acceptable for small selections; a
+    // future backend bulk op would replace this loop.
     if (selectedContacts.size === 0) return;
 
     isSaving = true;
     try {
-      const response = await bulkUpdateContacts({
-        contact_ids: Array.from(selectedContacts),
-        updates: { is_favorite: isFavorite }
-      });
-      if (response.success) {
-        await refreshData();
-        selectedContacts = new Set();
-      }
+      const ids = Array.from(selectedContacts);
+      await Promise.all(
+        ids.map((id) => updateContact(id, { is_favorite: isFavorite }))
+      );
+      await refreshData();
+      selectedContacts = new Set();
     } catch (error) {
       console.error('Failed to toggle favorites:', error);
     } finally {
@@ -340,20 +391,20 @@
   }
 </script>
 
-<div class="min-h-screen bg-gray-50 pb-20 md:pb-0">
+<div class="h-screen flex flex-col bg-[#fff8f7]">
   <!-- Header -->
-  <header class="bg-white border-b border-gray-200 sticky top-0 z-30">
+  <header class="bg-[#fff0ef] flex-shrink-0 z-30">
     <div class="container mx-auto px-4 py-4">
       <div class="flex items-center justify-between gap-4">
         <!-- Back Button & Title -->
         <div class="flex items-center gap-3 flex-shrink-0">
           <button
             onclick={() => goto('/dashboard')}
-            class="p-2 rounded-full hover:bg-gray-100 transition-colors"
+            class="p-2 rounded-full hover:bg-[#fbe3e1] transition-colors"
           >
-            <ArrowLeft class="w-5 h-5 text-gray-600" />
+            <ArrowLeft class="w-5 h-5 text-[#584140]" />
           </button>
-          <h1 class="text-xl font-bold text-gray-900">Contacts</h1>
+          <h1 class="text-xl font-bold text-[#251818]">Contacts</h1>
         </div>
 
         <!-- Actions -->
@@ -403,9 +454,9 @@
   </header>
 
   <!-- Main Content -->
-  <main class="container mx-auto px-4 py-6">
+  <main class="container mx-auto px-4 py-6 flex-1 flex flex-col min-h-0">
     <!-- Search & Filters -->
-    <div class="mb-6">
+    <div class="mb-6 flex-shrink-0">
       <ContactSearch
         bind:searchQuery
         bind:activeFilter
@@ -414,10 +465,12 @@
     </div>
 
     <!-- Contact List -->
-    <div class="mb-4">
+    <div class="flex-1 min-h-0 mb-4">
       <ContactList
         contacts={filteredContacts}
         {selectedContacts}
+        {openMenuId}
+        onSetOpenMenu={handleSetOpenMenu}
         loading={isLoading}
         onSelect={handleSelectContact}
         onEdit={handleEditContact}
@@ -425,94 +478,97 @@
         onToggleFavorite={handleToggleFavorite}
         onCall={handleCall}
         onMessage={handleMessage}
-        showCheckbox={isBulkMode}
+        class="h-full"
       />
     </div>
 
     <!-- Bulk Actions Bar -->
-    <BulkActionsBar
-      selectedCount={selectedContacts.size}
-      {groups}
-      loading={isSaving}
-      onclear={handleClearSelection}
-      ondelete={() => showBulkDeleteDialog = true}
-      onassigngroup={handleBulkAssignGroup}
-      ontogglefavorite={handleBulkToggleFavorite}
-    />
+    <div class="flex-shrink-0">
+      <BulkActionsBar
+        selectedCount={selectedContacts.size}
+        {groups}
+        loading={isSaving}
+        onclear={handleClearSelection}
+        ondelete={() => showBulkDeleteDialog = true}
+        onassigngroup={handleBulkAssignGroup}
+        ontogglefavorite={handleBulkToggleFavorite}
+      />
+    </div>
   </main>
-
-  <!-- Add Contact Modal -->
-  <Modal open={showAddModal} title="Add Contact" onclose={() => showAddModal = false}>
-    <ContactForm
-      {groups}
-      loading={isSaving}
-      onsubmit={handleCreateContact}
-      oncancel={() => showAddModal = false}
-      submitText="Add Contact"
-    />
-  </Modal>
-
-  <!-- Edit Contact Modal -->
-  <Modal open={showEditModal} title="Edit Contact" onclose={() => showEditModal = false}>
-    <ContactForm
-      contact={editingContact}
-      {groups}
-      loading={isSaving}
-      onsubmit={handleUpdateContact}
-      oncancel={() => {
-        showEditModal = false;
-        editingContact = null;
-      }}
-      submitText="Save Changes"
-    />
-  </Modal>
-
-  <!-- Import Modal -->
-  <Modal open={showImportModal} title="Import Contacts" onclose={() => showImportModal = false}>
-    <ContactImport
-      existingContacts={existingContactsMap}
-      {groups}
-      loading={isSaving}
-      onimport={handleImportContacts}
-      oncancel={() => showImportModal = false}
-    />
-  </Modal>
-
-  <!-- Groups Modal -->
-  <Modal open={showGroupsModal} title="Manage Groups" onclose={() => showGroupsModal = false}>
-    <ContactGroups
-      {groups}
-      loading={isSaving}
-      oncreate={handleCreateGroup}
-      onupdate={handleUpdateGroup}
-      ondelete={handleDeleteGroup}
-    />
-  </Modal>
-
-  <!-- Delete Contact Confirmation -->
-  <ConfirmDialog
-    open={showDeleteDialog}
-    title="Delete Contact?"
-    message={`Are you sure you want to delete ${deletingContact?.name}? This action cannot be undone.`}
-    confirmText="Delete"
-    cancelText="Cancel"
-    variant="danger"
-    onconfirm={handleDeleteContact}
-    oncancel={() => {
-      showDeleteDialog = false;
-      deletingContact = null;
-    }}
-  />
-
-  <!-- Bulk Delete Confirmation -->
-  <ConfirmDialog
-    open={showBulkDeleteDialog}
-    title="Delete Contacts?"
-    message={`Are you sure you want to delete ${selectedContacts.size} contacts? This action cannot be undone.`}
-    confirmText="Delete"
-    cancelText="Cancel"
-    variant="danger"
-    onconfirm={handleBulkDelete}
-    oncancel={() => showBulkDeleteDialog = false}
-  />
 </div>
+
+<!-- Modals - Rendered outside main container to avoid overflow constraints -->
+<!-- Add Contact Modal -->
+<Modal bind:open={showAddModal} title="Add Contact">
+  <ContactForm
+    {groups}
+    loading={isSaving}
+    onsubmit={handleCreateContact}
+    oncancel={() => showAddModal = false}
+    submitText="Add Contact"
+  />
+</Modal>
+
+<!-- Edit Contact Modal -->
+<Modal bind:open={showEditModal} title="Edit Contact" onclose={() => { editingContact = null; }}>
+  <ContactForm
+    contact={editingContact}
+    {groups}
+    loading={isSaving}
+    onsubmit={handleUpdateContact}
+    oncancel={() => {
+      showEditModal = false;
+      editingContact = null;
+    }}
+    submitText="Save Changes"
+  />
+</Modal>
+
+<!-- Import Modal -->
+<Modal bind:open={showImportModal} title="Import Contacts">
+  <ContactImport
+    existingContacts={existingContactsMap}
+    {groups}
+    loading={isSaving}
+    onimport={handleImportContacts}
+    oncancel={() => showImportModal = false}
+  />
+</Modal>
+
+<!-- Groups Modal -->
+<Modal bind:open={showGroupsModal} title="Manage Groups">
+  <ContactGroups
+    {groups}
+    loading={isSaving}
+    oncreate={handleCreateGroup}
+    onupdate={handleUpdateGroup}
+    ondelete={handleDeleteGroup}
+  />
+</Modal>
+
+<!-- Delete Contact Confirmation -->
+<ConfirmDialog
+  open={showDeleteDialog}
+  title="Delete Contact?"
+  message={`Are you sure you want to delete ${deletingContact?.name}? This action cannot be undone.`}
+  confirmText="Delete"
+  cancelText="Cancel"
+  variant="danger"
+  onconfirm={handleDeleteContact}
+  oncancel={() => {
+    showDeleteDialog = false;
+    deletingContact = null;
+  }}
+/>
+
+<!-- Bulk Delete Confirmation -->
+<ConfirmDialog
+  open={showBulkDeleteDialog}
+  title="Delete Contacts?"
+  message={`Are you sure you want to delete ${selectedContacts.size} contacts? This action cannot be undone.`}
+  confirmText="Delete"
+  cancelText="Cancel"
+  variant="danger"
+  onconfirm={handleBulkDelete}
+  oncancel={() => showBulkDeleteDialog = false}
+/>

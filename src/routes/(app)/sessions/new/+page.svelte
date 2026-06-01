@@ -16,6 +16,25 @@
 	let touched = $state<Record<string, boolean>>({});
 	let isSubmitting = $state(false);
 
+	// Repeatable bank-account rows. Capped at 5 to match the backend.
+	// Empty rows are dropped server-side; the FE just hides the
+	// "+ Add" button when the cap is hit.
+	type BankRow = { bank_name: string; account_number: string; account_holder: string };
+	let bankRows = $state<BankRow[]>([
+		{ bank_name: '', account_number: '', account_holder: '' }
+	]);
+	const MAX_BANK_ACCOUNTS = 5;
+	function addBankRow() {
+		if (bankRows.length >= MAX_BANK_ACCOUNTS) return;
+		bankRows = [...bankRows, { bank_name: '', account_number: '', account_holder: '' }];
+	}
+	function removeBankRow(index: number) {
+		bankRows = bankRows.filter((_, i) => i !== index);
+		if (bankRows.length === 0) {
+			bankRows = [{ bank_name: '', account_number: '', account_holder: '' }];
+		}
+	}
+
 	const currencies = [
 		{ code: 'IDR', symbol: 'Rp', name: 'Indonesian Rupiah' },
 		{ code: 'USD', symbol: '$', name: 'US Dollar' },
@@ -58,80 +77,82 @@
 	});
 </script>
 
-<div class="min-h-screen bg-gray-50/50">
+<div class="min-h-screen">
 	<div class="max-w-lg mx-auto px-4 py-8 sm:py-12">
 		<!-- Header -->
 		<header class="mb-8">
 			<button
 				onclick={handleCancel}
-				class="inline-flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors mb-4 text-sm"
+				class="inline-flex items-center gap-2 text-[#584140] hover:text-[#251818] transition-colors mb-4 text-sm"
 			>
 				<X class="w-4 h-4" />
 				<span>Cancel</span>
 			</button>
-			<h1 class="text-2xl font-semibold text-gray-900 tracking-tight">Create New Session</h1>
-			<p class="text-sm text-gray-500 mt-1"
+			<h1 class="text-2xl font-semibold text-[#251818] tracking-tight">Create New Session</h1>
+			<p class="text-sm text-[#584140] mt-1"
 				>Start a new bill splitting session. You can add contacts and bills after creating.</p
 			>
 		</header>
 
 		<!-- Server Error -->
 		{#if form?.error}
-			<div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-				<p class="text-sm text-red-700">{form.error}</p>
+			<div class="mb-6 p-4 bg-[#EF4444]/15 rounded-2xl">
+				<p class="text-sm text-[#991B1B]">{form.error}</p>
 			</div>
 		{/if}
 
 		<!-- Form -->
-		<form method="POST" class="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
+		<form method="POST" class="bg-white rounded-3xl shadow-[0_1px_3px_rgba(37,24,24,0.04)] p-6 space-y-6">
 			<!-- Session Name -->
 			<div>
-				<label for="session_name" class="block text-sm font-medium text-gray-700 mb-2">
-					Session Name <span class="text-red-500">*</span>
+				<label for="title" class="block text-sm font-medium text-[#251818] mb-2">
+					Session Name <span class="text-[#ae2f34]">*</span>
 				</label>
 				<input
 					type="text"
-					id="session_name"
-					name="session_name"
+					id="title"
+					name="title"
 					bind:value={sessionName}
 					onblur={() => handleBlur('sessionName', sessionName)}
 					oninput={() => handleInput('sessionName', sessionName)}
 					placeholder="e.g., Lunch at Warung"
 					required
-					class="w-full px-4 py-3 border border-gray-200 rounded-lg text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent transition-all disabled:bg-gray-50 disabled:cursor-not-allowed"
+					maxlength={200}
+					class="w-full px-4 py-3 bg-[#fff0ef]/50 rounded-xl text-[#251818] placeholder:text-[#584140]/50 focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent transition-all disabled:bg-[#fff0ef] disabled:cursor-not-allowed"
 					disabled={isSubmitting}
 				/>
 				{#if errors.sessionName && touched.sessionName}
-					<p class="mt-2 text-sm text-red-600">{errors.sessionName}</p>
+					<p class="mt-2 text-sm text-[#991B1B]">{errors.sessionName}</p>
 				{/if}
 			</div>
 
 			<!-- Session Description -->
 			<div>
-				<label for="session_description" class="block text-sm font-medium text-gray-700 mb-2">
-					Description <span class="text-gray-400 font-normal">(optional)</span>
+				<label for="description" class="block text-sm font-medium text-[#251818] mb-2">
+					Description <span class="text-[#584140]/50 font-normal">(optional)</span>
 				</label>
 				<textarea
-					id="session_description"
-					name="session_description"
+					id="description"
+					name="description"
 					bind:value={sessionDescription}
 					placeholder="Add a description to help everyone remember what this session is for..."
 					rows="3"
-					class="w-full px-4 py-3 border border-gray-200 rounded-lg text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent transition-all resize-none disabled:bg-gray-50 disabled:cursor-not-allowed"
+					maxlength={1000}
+					class="w-full px-4 py-3 bg-[#fff0ef]/50 rounded-xl text-[#251818] placeholder:text-[#584140]/50 focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent transition-all resize-none disabled:bg-[#fff0ef] disabled:cursor-not-allowed"
 					disabled={isSubmitting}
 				></textarea>
 			</div>
 
 			<!-- Currency -->
 			<div>
-				<label for="currency" class="block text-sm font-medium text-gray-700 mb-2">
+				<label for="currency" class="block text-sm font-medium text-[#251818] mb-2">
 					Currency
 				</label>
 				<select
 					id="currency"
 					name="currency"
 					bind:value={currency}
-					class="w-full px-4 py-3 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent transition-all disabled:bg-gray-50 disabled:cursor-not-allowed appearance-none bg-white"
+					class="w-full px-4 py-3 bg-[#fff0ef]/50 rounded-xl text-[#251818] focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent transition-all disabled:bg-[#fff0ef] disabled:cursor-not-allowed appearance-none bg-white"
 					disabled={isSubmitting}
 				>
 					{#each currencies as curr}
@@ -140,19 +161,85 @@
 				</select>
 			</div>
 
+			<!-- Bank info (shown to participants on their payment page) -->
+			<div class="border-t border-[#fbe3e1] pt-6">
+				<div class="flex items-start justify-between gap-3 mb-1">
+					<p class="text-sm font-medium text-[#251818]">Transfer details <span class="text-[#584140]/60 font-normal">(optional)</span></p>
+				</div>
+				<p class="text-xs text-[#584140] mb-4">Add one or more transfer destinations — participants see all of them on their payment page and can pick the easiest.</p>
+
+				<div class="space-y-4">
+					{#each bankRows as row, i (i)}
+						<div class="bg-[#fff0ef]/30 rounded-2xl p-4 border border-[#fbe3e1]">
+							<div class="flex items-center justify-between mb-3">
+								<p class="text-xs font-semibold text-[#584140] uppercase tracking-wide">Account #{i + 1}</p>
+								{#if bankRows.length > 1}
+									<button type="button" onclick={() => removeBankRow(i)} class="text-xs text-[#991B1B] underline hover:opacity-80" disabled={isSubmitting}>
+										Remove
+									</button>
+								{/if}
+							</div>
+							<div class="space-y-3">
+								<input
+									name="bank_name[]"
+									type="text"
+									bind:value={row.bank_name}
+									placeholder="Bank or e-wallet (e.g. BCA, GoPay)"
+									maxlength="80"
+									class="w-full px-4 py-2.5 bg-white rounded-xl text-sm text-[#251818] placeholder:text-[#584140]/50 focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] disabled:bg-[#fff0ef]"
+									disabled={isSubmitting}
+								/>
+								<input
+									name="account_number[]"
+									type="text"
+									bind:value={row.account_number}
+									placeholder="Account number"
+									maxlength="40"
+									class="w-full px-4 py-2.5 bg-white rounded-xl text-sm text-[#251818] placeholder:text-[#584140]/50 focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] disabled:bg-[#fff0ef] font-mono"
+									disabled={isSubmitting}
+								/>
+								<input
+									name="account_holder[]"
+									type="text"
+									bind:value={row.account_holder}
+									placeholder="Account holder name"
+									maxlength="80"
+									class="w-full px-4 py-2.5 bg-white rounded-xl text-sm text-[#251818] placeholder:text-[#584140]/50 focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] disabled:bg-[#fff0ef]"
+									disabled={isSubmitting}
+								/>
+							</div>
+						</div>
+					{/each}
+
+					{#if bankRows.length < MAX_BANK_ACCOUNTS}
+						<button
+							type="button"
+							onclick={addBankRow}
+							class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-[#251818] bg-white hover:bg-[#fff0ef] border-2 border-dashed border-[#fbe3e1] rounded-xl transition-colors disabled:opacity-50"
+							disabled={isSubmitting}
+						>
+							<Plus class="w-4 h-4" />
+							Add another transfer destination
+						</button>
+					{:else}
+						<p class="text-xs text-[#584140] text-center">Maximum {MAX_BANK_ACCOUNTS} accounts.</p>
+					{/if}
+				</div>
+			</div>
+
 			<!-- Actions -->
-			<div class="flex gap-3 pt-4 border-t border-gray-100">
+			<div class="flex gap-3 pt-4">
 				<button
 					type="button"
 					onclick={handleCancel}
-					class="flex-1 px-6 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+					class="flex-1 px-6 py-3 text-sm font-medium text-[#251818] bg-white rounded-xl hover:bg-[#fff0ef] transition-colors focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
 					disabled={isSubmitting}
 				>
 					Cancel
 				</button>
 				<button
 					type="submit"
-					class="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-medium text-white bg-[#FF6B6B] rounded-lg hover:bg-[#FF5252] transition-colors focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+					class="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-medium text-white bg-gradient-to-br from-[#ae2f34] to-[#FF6B6B] rounded-xl hover:from-[#9a282c] hover:to-[#FF5252] transition-colors focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
 					disabled={isSubmitting || !isFormValid()}
 				>
 					{#if isSubmitting}
@@ -167,7 +254,7 @@
 		</form>
 
 		<!-- Help Text -->
-		<p class="text-center text-xs text-gray-400 mt-6">
+		<p class="text-center text-xs text-[#584140] mt-6">
 			After creating, you can add contacts and split bills equally or assign specific amounts.
 		</p>
 	</div>

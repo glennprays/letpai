@@ -72,10 +72,10 @@
     <button
       onclick={toggleFilters}
       class={cn(
-        'absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg transition-colors',
+        'absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-[10px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6]',
         showFilters || activeFilter !== 'all'
-          ? 'bg-[#FF6B6B] text-white'
-          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+          ? 'bg-[#ae2f34] text-white'
+          : 'bg-[#fff0ef] text-[#584140] hover:bg-[#fbe3e1]'
       )}
       aria-label="Toggle filters"
     >
@@ -95,12 +95,12 @@
 
       {#if activeGroup}
         <div class="mt-2 flex items-center justify-between">
-          <span class="text-sm text-gray-500">
+          <span class="text-sm text-[#584140]">
             Filtering by <strong>{activeGroup.name}</strong>
           </span>
           <button
             onclick={() => handleFilterChange('all')}
-            class="text-sm text-[#FF6B6B] hover:underline"
+            class="text-sm text-[#ae2f34] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6] rounded"
           >
             Clear
           </button>

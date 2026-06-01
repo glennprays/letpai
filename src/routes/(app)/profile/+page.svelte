@@ -7,27 +7,21 @@
   import Input from '$lib/components/ui/Input.svelte';
   import Button from '$lib/components/ui/Button.svelte';
 
-  // Loading state to prevent avatar color glitch
   let isReady = $state(false);
+  let initialized = $state(false);
 
-  // Get initial value from auth store
-  const getInitialName = () => $auth.user?.full_name || '';
-
-  // Form state
-  let fullName = $state(getInitialName());
-  let originalFullName = $state(getInitialName());
+  let fullName = $state('');
+  let originalFullName = $state('');
   let isSaving = $state(false);
   let error = $state('');
 
-  // Ensure auth data is loaded before rendering
   $effect(() => {
-    if ($auth.user && $auth.user.user_id) {
-      isReady = true;
+    if (!initialized && $auth.user?.user_id) {
       const newName = $auth.user.full_name || '';
-      if (newName !== fullName && newName === originalFullName) {
-        fullName = newName;
-        originalFullName = newName;
-      }
+      fullName = newName;
+      originalFullName = newName;
+      isReady = true;
+      initialized = true;
     }
   });
 
@@ -54,9 +48,14 @@
     isSaving = true;
     error = '';
 
+    const wasFirstCompletion = originalFullName === '';
     try {
       await updateProfile({ full_name: fullName.trim() });
       originalFullName = fullName;
+      if (wasFirstCompletion) {
+        await goto('/dashboard');
+        return;
+      }
     } catch (err) {
       error = err instanceof Error ? err.message : 'Failed to update profile';
     } finally {
@@ -143,9 +142,10 @@
         <div class="button-group">
           <Button
             type="button"
-            variant="secondary"
+            variant="ghost"
             onclick={handleCancel}
             disabled={isSaving || !hasChanges()}
+            class="!bg-[#f5dddb] !text-[#584140] hover:!bg-[#efd0ce]"
           >
             Cancel
           </Button>
@@ -173,7 +173,7 @@
 <style>
   .profile-container {
     min-height: 100vh;
-    background: #F9FAFB;
+    background: #fff8f7;
     padding: 24px;
     display: flex;
     flex-direction: column;
@@ -187,7 +187,7 @@
     gap: 8px;
     background: none;
     border: none;
-    color: #374151;
+    color: #584140;
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
@@ -198,29 +198,28 @@
   }
 
   .back-button:hover {
-    background: #F3F4F6;
+    background: #f5dddb;
   }
 
   .profile-card {
     width: 100%;
     max-width: 480px;
     background: white;
-    border-radius: 16px;
+    border-radius: 24px;
     padding: 32px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 1px 3px rgba(37, 24, 24, 0.04);
   }
 
   .profile-title {
     font-size: 24px;
     font-weight: 600;
-    color: #111827;
+    color: #251818;
     text-align: center;
     margin-bottom: 24px;
   }
 
   .profile-warning {
     background: #FEF3C7;
-    border: 1px solid #FCD34D;
     border-radius: 8px;
     padding: 12px 16px;
     margin-bottom: 24px;
@@ -245,12 +244,12 @@
     height: 100px;
     border-radius: 50%;
     object-fit: cover;
-    border: 3px solid #F9FAFB;
+    border: 3px solid #f5dddb;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   }
 
   .avatar-placeholder {
-    background: #F3F4F6;
+    background: #f5dddb;
     animation: pulse 1.5s ease-in-out infinite;
   }
 
@@ -271,17 +270,16 @@
     display: block;
     font-size: 14px;
     font-weight: 600;
-    color: #374151;
+    color: #584140;
     margin-bottom: 8px;
   }
 
   .phone-display {
     width: 100%;
     padding: 12px 16px;
-    border: 1.5px solid #E5E7EB;
     border-radius: 12px;
-    background: #F9FAFB;
-    color: #6B7280;
+    background: #f5dddb;
+    color: #584140;
     font-size: 15px;
     font-family: inherit;
     cursor: not-allowed;
@@ -289,7 +287,7 @@
 
   .field-helper {
     font-size: 13px;
-    color: #9CA3AF;
+    color: #584140;
     margin-top: 6px;
     margin-bottom: 0;
   }
@@ -312,7 +310,7 @@
 
   .placeholder-field {
     height: 48px;
-    background: #F3F4F6;
+    background: #f5dddb;
     border-radius: 12px;
     animation: pulse 1.5s ease-in-out infinite;
   }
