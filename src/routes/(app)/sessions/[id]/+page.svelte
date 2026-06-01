@@ -1368,13 +1368,6 @@
 									<p class="text-sm font-medium text-[#251818]">
 										{formatIDR(participant.share_amount)}
 									</p>
-									{#if participant.fee_breakdown && (participant.fee_breakdown.service_charge_share > 0 || participant.fee_breakdown.tax_share > 0)}
-										<div class="mt-1 text-right space-y-0.5">
-											<span class="block text-[10px] text-[#584140]">+ SC: {formatIDR(participant.fee_breakdown.service_charge_share)}</span>
-											<span class="block text-[10px] text-[#584140]">+ Tax: {formatIDR(participant.fee_breakdown.tax_share)}</span>
-											<span class="block text-[11px] font-semibold text-[#ae2f34]">= {formatIDR(participant.fee_breakdown.total)}</span>
-										</div>
-									{/if}
 									<span class="inline-block px-2 py-0.5 rounded-full text-[11px] font-medium {paymentStatusBadgeClass(participant.payment_status)}">
 										{paymentStatusLabel(participant)}
 									</span>
@@ -1562,32 +1555,56 @@
 			{:else}
 				<div class="space-y-3">
 					{#each data.session.bills as item}
+						{@const hasSc = data.session.fee_config && item.includes_service_charge !== false && (data.session.fee_config.service_charge_percentage ?? 0) > 0}
+						{@const hasTax = data.session.fee_config && item.includes_tax !== false && (data.session.fee_config.tax_percentage ?? 0) > 0}
+						{@const sc = hasSc ? Math.round(item.amount * (data.session.fee_config!.service_charge_percentage!) / 100) : 0}
+						{@const tax = hasTax ? Math.round(item.amount * (data.session.fee_config!.tax_percentage!) / 100) : 0}
+						{@const lineTotal = item.amount + sc + tax}
 						<div class="p-4 rounded-2xl bg-[#fff0ef]/50">
-							<div class="flex items-start justify-between gap-4">
-								<div class="flex-1 min-w-0">
-									<div class="flex items-center gap-2">
-										<Receipt class="w-4 h-4 text-[#584140] flex-shrink-0" />
-										<p class="text-sm font-medium text-[#251818] truncate">{item.description}</p>
-										{#if item.participant_ids && item.participant_ids.length > 0}
-											<span class="inline-flex items-center text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full bg-[#FF6B6B]/15 text-[#ae2f34] flex-shrink-0">
-												Split with {item.participant_ids.length}
-											</span>
-										{/if}
-									</div>
-									{#if item.category}
-										<p class="text-xs text-[#584140] mt-1 ml-6 capitalize">{item.category}</p>
+							<!-- Header row: name + badges + delete -->
+							<div class="flex items-center justify-between gap-3">
+								<div class="flex items-center gap-2 min-w-0">
+									<Receipt class="w-4 h-4 text-[#584140] flex-shrink-0" />
+									<p class="text-sm font-medium text-[#251818] truncate">{item.description}</p>
+									{#if item.participant_ids && item.participant_ids.length > 0}
+										<span class="inline-flex items-center text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full bg-[#FF6B6B]/15 text-[#ae2f34] flex-shrink-0">
+											{item.participant_ids.length} people
+										</span>
 									{/if}
 								</div>
-								<div class="flex items-center gap-3 flex-shrink-0">
-									<p class="text-sm font-semibold text-[#251818]">{formatIDR(item.amount)}</p>
-									<button
-										onclick={() => handleDeleteBill(item.bill_item_id)}
-										class="p-2.5 text-[#584140] hover:text-[#991B1B] hover:bg-[#EF4444]/10 rounded-2xl transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6]"
-										title="Delete bill"
-									>
-										<Trash2 class="w-5 h-5" />
-									</button>
+								<button
+									onclick={() => handleDeleteBill(item.bill_item_id)}
+									class="p-2 text-[#584140] hover:text-[#991B1B] hover:bg-[#EF4444]/10 rounded-2xl transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6]"
+									title="Delete bill"
+								>
+									<Trash2 class="w-4 h-4" />
+								</button>
+							</div>
+							<!-- Breakdown -->
+							<div class="mt-2 ml-6 space-y-1">
+								<div class="flex items-center justify-between text-xs">
+									<span class="text-[#584140]">Price</span>
+									<span class="text-[#251818]">{formatIDR(item.amount)}</span>
 								</div>
+								{#if hasSc}
+									<div class="flex items-center justify-between text-xs">
+										<span class="text-[#584140]">Service charge ({data.session.fee_config!.service_charge_percentage}%)</span>
+										<span class="text-[#251818]">{formatIDR(sc)}</span>
+									</div>
+								{/if}
+								{#if hasTax}
+									<div class="flex items-center justify-between text-xs">
+										<span class="text-[#584140]">Tax ({data.session.fee_config!.tax_percentage}%)</span>
+										<span class="text-[#251818]">{formatIDR(tax)}</span>
+									</div>
+								{/if}
+								{#if hasSc || hasTax}
+									<div class="h-px bg-[#fbe3e1]"></div>
+									<div class="flex items-center justify-between text-xs font-semibold">
+										<span class="text-[#251818]">Total</span>
+										<span class="text-[#ae2f34]">{formatIDR(lineTotal)}</span>
+									</div>
+								{/if}
 							</div>
 						</div>
 					{/each}
@@ -1596,13 +1613,37 @@
 
 			<!-- Total Summary -->
 			{#if data.session.bills && data.session.bills.length > 0}
-				<div class="mt-4 pt-4">
-					<div class="flex items-center justify-between">
-						<span class="text-sm font-medium text-[#584140]">Total Bills</span>
-						<span class="text-lg font-semibold text-[#251818]">
-							{formatIDR(data.session.total_amount)}
-						</span>
+				{@const totalItems = data.session.bills.reduce((sum, i) => sum + i.amount, 0)}
+				{@const totalSc = data.session.fee_config ? data.session.bills.reduce((sum, i) => sum + (i.includes_service_charge !== false ? Math.round(i.amount * (data.session.fee_config!.service_charge_percentage ?? 0) / 100) : 0), 0) : 0}
+				{@const totalTax = data.session.fee_config ? data.session.bills.reduce((sum, i) => sum + (i.includes_tax !== false ? Math.round(i.amount * (data.session.fee_config!.tax_percentage ?? 0) / 100) : 0), 0) : 0}
+				{@const grandTotal = totalItems + totalSc + totalTax}
+				<div class="mt-4 pt-4 border-t border-[#fbe3e1]">
+					<p class="text-xs font-semibold text-[#584140] uppercase tracking-wide mb-2">Summary</p>
+					<div class="space-y-1">
+						<div class="flex items-center justify-between text-sm">
+							<span class="text-[#584140]">Total items</span>
+							<span class="text-[#251818]">{formatIDR(totalItems)}</span>
+						</div>
+						{#if totalSc > 0}
+							<div class="flex items-center justify-between text-sm">
+								<span class="text-[#584140]">Total service charge</span>
+								<span class="text-[#251818]">{formatIDR(totalSc)}</span>
+							</div>
+						{/if}
+						{#if totalTax > 0}
+							<div class="flex items-center justify-between text-sm">
+								<span class="text-[#584140]">Total tax</span>
+								<span class="text-[#251818]">{formatIDR(totalTax)}</span>
+							</div>
+						{/if}
 					</div>
+					{#if totalSc > 0 || totalTax > 0}
+						<div class="h-px bg-[#fbe3e1] my-2"></div>
+						<div class="flex items-center justify-between text-sm font-semibold">
+							<span class="text-[#251818]">Grand total</span>
+							<span class="text-[#ae2f34]">{formatIDR(grandTotal)}</span>
+						</div>
+					{/if}
 				</div>
 			{/if}
 		</section>
@@ -2169,9 +2210,9 @@
 				{@const sharePer = splitCount > 0 ? amount / splitCount : 0}
 				{@const feeSC = sessionHasFees ? (data.session.fee_config?.service_charge_percentage ?? 0) : (newBillFeeSC || 0)}
 				{@const feeTax = sessionHasFees ? (data.session.fee_config?.tax_percentage ?? 0) : (newBillFeeTax || 0)}
-				{@const scPerPerson = splitCount > 0 ? sharePer * feeSC / 100 : 0}
+				{@const scPerPerson = newBillIncludesServiceCharge && splitCount > 0 ? sharePer * feeSC / 100 : 0}
 				{@const taxableBase = sharePer + scPerPerson}
-				{@const taxPerPerson = splitCount > 0 ? taxableBase * feeTax / 100 : 0}
+				{@const taxPerPerson = newBillIncludesTax && splitCount > 0 ? taxableBase * feeTax / 100 : 0}
 				{@const totalPerPerson = sharePer + scPerPerson + taxPerPerson}
 				<div class="p-3 bg-[#fff0ef] rounded-2xl space-y-1">
 					<p class="text-xs text-[#584140] font-medium">Preview</p>
@@ -2186,13 +2227,13 @@
 							<span class="text-[#584140]">Items share</span>
 							<span class="text-[#251818]">{formatIDR(sharePer)}</span>
 						</div>
-						{#if feeSC > 0}
+						{#if feeSC > 0 && newBillIncludesServiceCharge}
 							<div class="flex items-center justify-between text-xs">
 								<span class="text-[#584140]">Service charge ({feeSC}%)</span>
 								<span class="text-[#251818]">+ {formatIDR(scPerPerson)}</span>
 							</div>
 						{/if}
-						{#if feeTax > 0}
+						{#if feeTax > 0 && newBillIncludesTax}
 							<div class="flex items-center justify-between text-xs">
 								<span class="text-[#584140]">Tax ({feeTax}%)</span>
 								<span class="text-[#251818]">+ {formatIDR(taxPerPerson)}</span>

@@ -20,6 +20,8 @@ export interface PaymentPageData {
 		your_share: number;
 		shared_with: number;
 		category?: string | null;
+		includes_service_charge: boolean;
+		includes_tax: boolean;
 	}>;
 	payment_status: 'pending' | 'submitted' | 'paid' | 'rejected';
 	payment_proof_url?: string | null;
@@ -47,6 +49,11 @@ export interface PaymentPageData {
 		service_charge_share: number;
 		tax_share: number;
 		total: number;
+	};
+	// Fee configuration (session-level percentages for per-item calculation)
+	fee_config?: {
+		service_charge_percentage: number;
+		tax_percentage: number;
 	};
 }
 
