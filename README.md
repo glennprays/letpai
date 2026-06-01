@@ -1,42 +1,80 @@
-# sv
+# Letpai
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+> Split bills with friends via WhatsApp
 
-## Creating a project
+Letpai is a bill splitting app that integrates with WhatsApp for seamless payment notifications and reminders. Create a session, add bill items, assign participants, and let everyone know what they owe — all through WhatsApp.
 
-If you're seeing this, you've probably already done this step. Congrats!
+## Features
 
-```sh
-# create a new project
-npx sv create my-app
+- **Auth** — WhatsApp number + OTP login, JWT sessions
+- **Sessions** — Create bill-splitting sessions with multiple bill items
+- **Smart Splits** — Per-item service charge & tax breakdown, fee-aware calculations
+- **Contacts** — Manage contacts, create groups, bulk import
+- **WhatsApp Notifications** — Payment reminders, session invites, per-participant messages
+- **Public Payment Page** — Shareable payment links with bank details & proof upload
+- **Admin Panel** — Team management, WhatsApp gateway control, template testing
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Framework | SvelteKit 2 |
+| UI | Svelte 5 (runes mode) |
+| Styling | Tailwind CSS v4 |
+| State | TanStack Query (Svelte) |
+| Language | TypeScript |
+| Package Manager | pnpm |
+| Deployment | Docker (adapter-node) |
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 22+
+- pnpm 10+
+
+### Setup
+
+```bash
+# Clone
+git clone https://github.com/glennprays/letpai.git
+cd letpai
+
+# Install
+pnpm install
+
+# Configure
+cp .env.example .env.local
+# Edit .env.local with your backend API URL
+
+# Run
+pnpm dev
 ```
 
-To recreate this project with the same configuration:
+### Docker
 
-```sh
-# recreate this project
-pnpm dlx sv@0.12.8 create --template minimal --types ts --install pnpm letpai
+```bash
+docker build -t letpai-frontend .
+docker run -p 4001:3000 letpai-frontend
 ```
 
-## Developing
+## Project Structure
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```sh
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
+```
+src/
+├── routes/           # SvelteKit file-based routing
+│   ├── (app)/       # Authenticated pages
+│   ├── (auth)/      # Login, Register, OTP
+│   ├── (admin)/     # Admin panel
+│   └── payment/     # Public payment page
+├── lib/
+│   ├── components/  # Reusable UI components
+│   ├── services/    # API clients
+│   ├── stores/      # Svelte stores
+│   ├── types/       # TypeScript types
+│   └── utils/       # Helpers (format, validation)
 ```
 
-## Building
+## License
 
-To create a production version of your app:
-
-```sh
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+Private — © 2025 Glenn Pray
