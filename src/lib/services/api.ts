@@ -1,6 +1,9 @@
 import { browser } from '$app/environment';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
+const API_BASE =
+	(typeof window !== 'undefined' && (window as any).__env__?.VITE_API_URL) ||
+	import.meta.env.VITE_API_URL ||
+	'http://localhost:3000/api/v1';
 
 // Two parallel cookie namespaces exist:
 //   - `token` for end-user sessions (read by /(app) layout gates)
