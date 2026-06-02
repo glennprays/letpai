@@ -28,9 +28,15 @@ COPY --from=builder /app/build ./build
 COPY --from=builder /app/package.json ./
 COPY --from=builder /app/node_modules ./node_modules
 
+# Copy entrypoint script for runtime env injection
+COPY entrypoint.sh /app/entrypoint.sh
+
 # SvelteKit adapter-node listens on PORT env var
 ENV PORT=3000
 ENV HOST=0.0.0.0
+# Default API URL — override at runtime with -e VITE_API_URL=...
+ENV VITE_API_URL=http://localhost:3000/api/v1
 EXPOSE 3000
 
+ENTRYPOINT ["/app/entrypoint.sh"]
 CMD ["node", "build"]
