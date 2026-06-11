@@ -123,13 +123,15 @@ export interface Participant {
   // participant-facing upload affordance.
   paid_manually?: boolean;
   // Latest notification dispatch for this participant. friendly_status
-  // is a UI-stable label mapped at the use-case boundary; raw status
-  // ("queued"/"sent"/"failed") and error_message are also exposed for
-  // a future details disclosure.
+  // is a UI-stable label mapped at the use-case boundary; the raw status
+  // and error_message are also exposed for a future details disclosure.
+  // Status values come from the delivery outbox: pending/sending while in
+  // flight, sent on success, failed while auto-retrying, dead when retries
+  // are exhausted. (`queued` is the legacy synchronous-path value.)
   last_notification?: {
     log_id: string;
     type: string;
-    status: 'queued' | 'sent' | 'failed' | string;
+    status: 'queued' | 'pending' | 'sending' | 'sent' | 'failed' | 'dead' | string;
     sent_at: string;
     error_message?: string | null;
     friendly_status: string;
@@ -257,14 +259,16 @@ export interface UpdateSessionRequest {
 }
 
 // Participant Types
-// Backend AddParticipantRequest uses `custom_name`/`custom_whatsapp` for new
-// custom participants, or `contact_id` to add a previously-saved contact.
+// Backend AddParticipantRequest is a oneof: either a saved contact
+// (`contact_id`) OR a new custom participant (`custom_name` + `custom_whatsapp`).
+// Modelled as a discriminated union so an invalid mixed/empty shape can't
+// typecheck — the same class of bug that previously caused production 400s.
+export type AddParticipantItem =
+  | { contact_id: string; custom_name?: never; custom_whatsapp?: never }
+  | { contact_id?: never; custom_name: string; custom_whatsapp: string };
+
 export interface AddParticipantsRequest {
-  participants: Array<{
-    contact_id?: string;
-    custom_name?: string;
-    custom_whatsapp?: string;
-  }>;
+  participants: AddParticipantItem[];
 }
 
 // Edit a participant's custom name/whatsapp. Payment status transitions
