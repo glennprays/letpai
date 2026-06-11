@@ -53,7 +53,7 @@
 		sendBulkReminder,
 		retryParticipantNotification
 	} from '$lib/services/notifications';
-	import { ApiError } from '$lib/services/api';
+	import { ApiError, toUserMessage } from '$lib/services/api';
 	import {
 		approvePayment,
 		rejectPayment,
@@ -745,6 +745,21 @@
 		goto('/dashboard');
 	}
 
+	// Format a server-provided cooldown (from a 429 ApiError) into a short
+	// "try again in N" so the host sees the authoritative wait, not a generic
+	// error. Falls back to toUserMessage when there's no cooldown info.
+	function reminderErrorMessage(error: unknown): string {
+		if (error instanceof ApiError && error.status === 429) {
+			const secs = error.retryAfterSeconds;
+			if (typeof secs === 'number' && secs > 0) {
+				const mins = Math.ceil(secs / 60);
+				return mins > 1 ? `Already reminded recently — try again in ~${mins} min.` : 'Already reminded recently — try again in under a minute.';
+			}
+			return 'Already reminded recently — please wait before sending again.';
+		}
+		return toUserMessage(error, 'Failed to send reminder');
+	}
+
 	async function handleRemindParticipant(participantId: string) {
 		remindingParticipantId = participantId;
 		try {
@@ -752,8 +767,7 @@
 			toast.success(result.message || 'Reminder sent');
 		} catch (error) {
 			console.error('Send reminder error:', error);
-			const msg = error instanceof Error ? error.message : 'Failed to send reminder';
-			toast.error(msg);
+			toast.error(reminderErrorMessage(error));
 		} finally {
 			remindingParticipantId = null;
 		}
@@ -767,8 +781,7 @@
 			toast.success(result.message || 'Reminders sent to all unpaid participants');
 		} catch (error) {
 			console.error('Bulk reminder error:', error);
-			const msg = error instanceof Error ? error.message : 'Failed to send reminders';
-			toast.error(msg);
+			toast.error(reminderErrorMessage(error));
 		} finally {
 			isBulkReminding = false;
 		}
