@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { tick } from 'svelte';
 	import { goto, invalidateAll } from '$app/navigation';
 	import {
 		ArrowLeft,
@@ -52,7 +53,7 @@
 		sendBulkReminder,
 		retryParticipantNotification
 	} from '$lib/services/notifications';
-	import { ApiError } from '$lib/services/api';
+	import { ApiError, toUserMessage } from '$lib/services/api';
 	import {
 		approvePayment,
 		rejectPayment,
@@ -136,9 +137,12 @@
 			: []
 	);
 
-	// When the selected group changes, pre-select all its members that aren't
-	// already participants.
-	$effect(() => {
+	// When the user picks a group, pre-select all its members that aren't
+	// already participants. Driven by the <select>'s onchange rather than an
+	// $effect: groupSelectedIds is also user-editable (the checkboxes toggle
+	// it), and an effect would re-run on unrelated reactive changes and stomp
+	// those edits. This runs only on an actual group change.
+	function preselectGroupMembers() {
 		if (selectedGroupId) {
 			groupSelectedIds = groupMembers
 				.filter((c) => !linkedContactIds.has(c.contact_id))
@@ -146,7 +150,7 @@
 		} else {
 			groupSelectedIds = [];
 		}
-	});
+	}
 
 	function resetAddModal() {
 		addTab = 'contacts';
@@ -612,19 +616,31 @@
 	// returns, so a single invalidate (the way the page originally
 	// worked) frequently caught the row in `queued` and stuck the
 	// chip there.
+	// Statuses that mean "delivery is still in flight" and the chip should keep
+	// polling. Since the durable outbox worker landed, a queued send moves
+	// through pending → sending → sent (the legacy synchronous path used
+	// `queued`), so all three count as in-flight.
+	const IN_FLIGHT_NOTIFICATION_STATUSES = ['queued', 'pending', 'sending'];
 	let pollingNotifications = $state(false);
 	async function pollUntilSent(opts: { tries?: number; everyMs?: number } = {}) {
-		const tries = opts.tries ?? 5;
-		const everyMs = opts.everyMs ?? 1500;
+		// Tuned for the outbox worker (≈5s tick) rather than the old in-request
+		// goroutine: ~12s of polling catches most sends without hanging the UI.
+		const tries = opts.tries ?? 6;
+		const everyMs = opts.everyMs ?? 2000;
 		pollingNotifications = true;
 		try {
 			for (let i = 0; i < tries; i++) {
 				await new Promise((r) => setTimeout(r, everyMs));
 				await invalidateAll();
-				const anyQueued = (data.session.participants ?? []).some(
-					(p) => p.last_notification?.status === 'queued'
+				// Let the reactive `data` prop settle to the freshly-loaded value
+				// before reading it, so we don't evaluate against a stale snapshot.
+				await tick();
+				const anyInFlight = (data.session.participants ?? []).some(
+					(p) =>
+						p.last_notification != null &&
+						IN_FLIGHT_NOTIFICATION_STATUSES.includes(p.last_notification.status)
 				);
-				if (!anyQueued) return;
+				if (!anyInFlight) return;
 			}
 		} finally {
 			pollingNotifications = false;
@@ -729,6 +745,21 @@
 		goto('/dashboard');
 	}
 
+	// Format a server-provided cooldown (from a 429 ApiError) into a short
+	// "try again in N" so the host sees the authoritative wait, not a generic
+	// error. Falls back to toUserMessage when there's no cooldown info.
+	function reminderErrorMessage(error: unknown): string {
+		if (error instanceof ApiError && error.status === 429) {
+			const secs = error.retryAfterSeconds;
+			if (typeof secs === 'number' && secs > 0) {
+				const mins = Math.ceil(secs / 60);
+				return mins > 1 ? `Already reminded recently — try again in ~${mins} min.` : 'Already reminded recently — try again in under a minute.';
+			}
+			return 'Already reminded recently — please wait before sending again.';
+		}
+		return toUserMessage(error, 'Failed to send reminder');
+	}
+
 	async function handleRemindParticipant(participantId: string) {
 		remindingParticipantId = participantId;
 		try {
@@ -736,8 +767,7 @@
 			toast.success(result.message || 'Reminder sent');
 		} catch (error) {
 			console.error('Send reminder error:', error);
-			const msg = error instanceof Error ? error.message : 'Failed to send reminder';
-			toast.error(msg);
+			toast.error(reminderErrorMessage(error));
 		} finally {
 			remindingParticipantId = null;
 		}
@@ -751,8 +781,7 @@
 			toast.success(result.message || 'Reminders sent to all unpaid participants');
 		} catch (error) {
 			console.error('Bulk reminder error:', error);
-			const msg = error instanceof Error ? error.message : 'Failed to send reminders';
-			toast.error(msg);
+			toast.error(reminderErrorMessage(error));
 		} finally {
 			isBulkReminding = false;
 		}
@@ -1373,7 +1402,7 @@
 									</span>
 									{#if participant.last_notification}
 										{@const ln = participant.last_notification}
-										{@const isSending = ln.status === 'queued' && !ln.friendly_status.includes('Stuck')}
+										{@const isSending = IN_FLIGHT_NOTIFICATION_STATUSES.includes(ln.status) && !ln.friendly_status.includes('Stuck')}
 										{@const canRetry = ln.friendly_status.includes('retry') || ln.friendly_status.includes('Failed') || ln.friendly_status.includes('Stuck')}
 										<div class="mt-1 flex items-center gap-1.5 justify-end">
 											<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium {chipTone(ln.friendly_status)}" class:animate-pulse={isSending}>
@@ -1745,6 +1774,7 @@
 					<select
 						id="group_select"
 						bind:value={selectedGroupId}
+						onchange={preselectGroupMembers}
 						class="w-full px-4 py-2.5 bg-[#fff0ef]/50 rounded-xl text-sm text-[#251818] focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]"
 					>
 						<option value="">Choose a group…</option>

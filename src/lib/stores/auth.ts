@@ -29,8 +29,12 @@ export function setToken(token: string, cookieSetter?: (name: string, value: str
   if (typeof window !== 'undefined') {
     localStorage.setItem('token', token);
 
-    // Only set cookie client-side if not already set by server
-    if (!document.cookie.includes('token=')) {
+    // Only set cookie client-side if not already set by server.
+    // NB: match the `token` cookie precisely — `document.cookie.includes('token=')`
+    // also matches `admin_token=`, which would wrongly suppress writing the user
+    // token cookie on a browser that already has an admin session.
+    const hasTokenCookie = /(?:^|;\s*)token=/.test(document.cookie);
+    if (!hasTokenCookie) {
       const isSecure = import.meta.env.PROD;
       const expires = new Date();
       expires.setDate(expires.getDate() + 30); // 30 days

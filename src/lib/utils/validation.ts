@@ -1,15 +1,17 @@
+import { digitsOnly, validateWhatsappNumber } from './phone';
+
+// Single source of truth for the phone rule is phone.ts:validateWhatsappNumber
+// (country-aware: 10–15 digits + the Indonesia 628 mobile guard). This wrapper
+// keeps the auth screens' { valid, error } contract and Indonesian copy while
+// delegating the actual rule, so the two validators can no longer diverge.
 export function validatePhone(phone: string): { valid: boolean; error?: string } {
-  const cleaned = phone.replace(/\D/g, '');
-  
-  if (!cleaned) {
+  if (validateWhatsappNumber(phone) === null) {
+    return { valid: true };
+  }
+  if (!digitsOnly(phone)) {
     return { valid: false, error: 'Nomor WhatsApp wajib diisi' };
   }
-  
-  if (cleaned.length < 10 || cleaned.length > 13) {
-    return { valid: false, error: 'Nomor WhatsApp tidak valid' };
-  }
-  
-  return { valid: true };
+  return { valid: false, error: 'Nomor WhatsApp tidak valid' };
 }
 
 export function validatePassword(password: string): { valid: boolean; error?: string } {

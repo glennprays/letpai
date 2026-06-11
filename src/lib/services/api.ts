@@ -116,9 +116,14 @@ async function buildApiError(response: Response, endpoint: string): Promise<ApiE
 		retryAfterSeconds = bodyObj.retry_after;
 	}
 
+	// next_available_at can live at the top level (rate-limit errors), nested
+	// under `error`, or under `data` (the success-shaped reminder response that
+	// some 200s carry). Check all three so the cooldown UI always finds it.
+	const dataObj = (typeof bodyObj.data === 'object' && bodyObj.data !== null ? (bodyObj.data as Record<string, unknown>) : null);
 	const nextAvailableAt =
 		(bodyObj.next_available_at as string | undefined) ||
-		(errObj?.next_available_at as string | undefined);
+		(errObj?.next_available_at as string | undefined) ||
+		(dataObj?.next_available_at as string | undefined);
 
 	return new ApiError({
 		status: response.status,
@@ -129,6 +134,12 @@ async function buildApiError(response: Response, endpoint: string): Promise<ApiE
 		body
 	});
 }
+
+// Default per-request deadline. A bare fetch() never times out, so a hung
+// backend or a flaky mobile connection would leave the UI spinner stuck
+// forever (the `finally` that clears `isLoading` never runs). 15s is generous
+// for this API while still failing fast enough to surface a retry.
+const REQUEST_TIMEOUT_MS = 15000;
 
 async function request(
 	method: 'GET' | 'POST' | 'PUT' | 'DELETE',
@@ -147,11 +158,36 @@ async function request(
 		headers['Authorization'] = `Bearer ${token}`;
 	}
 
-	const response = await fetchFn(`${API_BASE}${endpoint}`, {
-		method,
-		headers,
-		body: body !== undefined && method !== 'GET' && method !== 'DELETE' ? JSON.stringify(body) : undefined
-	});
+	const controller = new AbortController();
+	const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+	let response: Response;
+	try {
+		response = await fetchFn(`${API_BASE}${endpoint}`, {
+			method,
+			headers,
+			body: body !== undefined && method !== 'GET' && method !== 'DELETE' ? JSON.stringify(body) : undefined,
+			signal: controller.signal
+		});
+	} catch (err) {
+		// Distinguish our own timeout abort from a genuine network failure so
+		// the UI can show an appropriate message; both become an ApiError so
+		// every call site gets one consistent thrown type.
+		if (controller.signal.aborted) {
+			throw new ApiError({
+				status: 0,
+				code: 'TIMEOUT',
+				message: 'The request timed out. Please check your connection and try again.'
+			});
+		}
+		throw new ApiError({
+			status: 0,
+			code: 'NETWORK',
+			message: 'Network error. Please check your connection and try again.'
+		});
+	} finally {
+		clearTimeout(timeoutId);
+	}
 
 	if (!response.ok) {
 		if (response.status === 401) {
@@ -162,7 +198,27 @@ async function request(
 
 	// DELETE responses may be empty
 	if (response.status === 204) return null;
-	return response.json();
+
+	const data = await response.json();
+
+	// A 2xx with `{ success: false }` is a soft failure the backend returns
+	// without a non-2xx status. Throw it as an ApiError too, so call sites that
+	// only `try/catch` (and never inspect `.success`) don't silently ignore it.
+	if (data && typeof data === 'object' && (data as Record<string, unknown>).success === false) {
+		const errObj = (data as Record<string, unknown>).error;
+		const nested = (typeof errObj === 'object' && errObj !== null ? (errObj as Record<string, unknown>) : null);
+		throw new ApiError({
+			status: response.status,
+			message:
+				(nested?.message as string | undefined) ||
+				((data as Record<string, unknown>).message as string | undefined) ||
+				`Request to ${endpoint} failed`,
+			code: nested?.code as string | undefined,
+			body: data
+		});
+	}
+
+	return data;
 }
 
 export function get(endpoint: string, customFetch?: typeof fetch, serverToken?: string) {
@@ -179,4 +235,25 @@ export function put(endpoint: string, data: unknown, customFetch?: typeof fetch,
 
 export function del(endpoint: string, customFetch?: typeof fetch, serverToken?: string) {
 	return request('DELETE', endpoint, undefined, customFetch, serverToken);
+}
+
+// toUserMessage turns any thrown error into a single user-facing string. It
+// maps the codes that have no useful server message (timeout/network) to
+// friendly copy and otherwise trusts the backend's message. Use this in catch
+// blocks instead of hand-rolling `error instanceof Error ? error.message : '…'`
+// so error presentation is consistent and backend codes drive the copy.
+export function toUserMessage(error: unknown, fallback = 'Something went wrong. Please try again.'): string {
+	if (error instanceof ApiError) {
+		switch (error.code) {
+			case 'TIMEOUT':
+				return 'The request timed out. Please check your connection and try again.';
+			case 'NETWORK':
+				return 'Network error. Please check your connection and try again.';
+		}
+		return error.message || fallback;
+	}
+	if (error instanceof Error) {
+		return error.message || fallback;
+	}
+	return fallback;
 }
