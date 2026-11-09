@@ -1,6 +1,9 @@
 <script lang="ts">
 	import favicon from '$lib/assets/favicon.svg';
 	import '../app.css';
+	import { QueryClientProvider } from '@tanstack/svelte-query';
+	import { queryClient } from '$lib/queryClient';
+	import Toaster from '$lib/components/ui/Toaster.svelte';
 	import Navbar from '$lib/components/layout/Navbar.svelte';
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
@@ -76,4 +79,7 @@
 	<Navbar variant={navbarVariant} />
 {/if}
 
-{@render children()}
+<QueryClientProvider client={queryClient}>
+	{@render children()}
+</QueryClientProvider>
+<Toaster />
