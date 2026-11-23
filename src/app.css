@@ -1,73 +1,122 @@
 @import "tailwindcss";
 
+/* Tokens mirror src/lib/constants/design.ts (checked by tests/unit/tokens.test.ts). */
 @theme {
-  --font-family-sans: "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Bricolage Grotesque Variable", "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
 
-  /* Primary - Coral Red */
-  --color-primary: #FF6B6B;
-  --color-primary-hover: #FF5252;
-  --color-primary-deep: #ae2f34;
+  --color-fog: #eff0f4;
+  --color-card: #ffffff;
+  --color-mist: #e3e5ed;
+  --color-hairline: #d3d7e3;
 
-  /* Secondary - Teal Blue */
-  --color-secondary: #14B8A6;
-  --color-secondary-hover: #10A392;
-  --color-secondary-deep: #006b5f;
-  --color-secondary-light: #6df5e1;
+  --color-ink: #1d2442;
+  --color-ink-hover: #2b3560;
+  --color-ink-soft: #5d627e;
+  --color-steel: #3a5088;
 
-  /* Tertiary - Purple */
-  --color-tertiary: #842bd2;
+  --color-coral: #cf3a31;
+  --color-coral-hover: #b8322b;
+  --color-coral-ink: #b8322b;
+  --color-coral-tint: #fbe4e1;
 
-  /* WhatsApp */
-  --color-whatsapp: #25D366;
-  --color-whatsapp-hover: #1EBE59;
+  --color-lime: #d4f25c;
 
-  /* Status Colors */
-  --color-status-pending: #F59E0B;
-  --color-status-submitted: #3B82F6;
-  --color-status-paid: #10B981;
-  --color-status-rejected: #EF4444;
+  --color-pending: #8a5a00;
+  --color-pending-tint: #fbefd3;
+  --color-review: #24508f;
+  --color-review-tint: #e1eaf8;
+  --color-paid: #1f6b47;
+  --color-paid-tint: #dcefe4;
+  --color-rejected: #a3241c;
+  --color-rejected-tint: #f8e0dd;
 
-  /* Text Colors */
-  --color-text-primary: #251818;
-  --color-text-secondary: #584140;
-  --color-text-tertiary: #9CA3AF;
+  --color-chat-bg: #e7e1d6;
+  --color-chat-out: #d7f5c9;
+  --color-whatsapp: #1a7a49;
+  --color-whatsapp-hover: #156a3f;
 
-  /* Background Colors */
-  --color-bg-white: #FFFFFF;
-  --color-bg-light: #fff8f7;
-  --color-bg-dark: #111827;
+  --radius-field: 12px;
+  --radius-card: 16px;
+  --radius-sheet: 24px;
+  --radius-pill: 9999px;
 
-  /* Border Colors */
-  --color-border-light: #F0F0F0;
-  --color-border-dark: #1E293B;
+  --shadow-card: 0 1px 3px rgba(29, 36, 66, 0.06), 0 4px 11px rgba(29, 36, 66, 0.05);
+  --shadow-float: 0 9px 25px rgba(29, 36, 66, 0.12);
+  --shadow-pop: 0 24px 48px -8px rgba(29, 36, 66, 0.18);
 
-  /* Social Ledger Surface Colors */
-  --color-surface: #fff8f7;
-  --color-surface-low: #fff0ef;
-  --color-surface-lowest: #ffffff;
-  --color-surface-container: #ffe9e7;
-  --color-surface-high: #fbe3e1;
-  --color-surface-highest: #f5dddb;
-  --color-surface-dim: #ecd5d3;
-
-  /* Social Ledger On-Surface Colors */
-  --color-on-surface: #251818;
-  --color-on-surface-variant: #584140;
-  --color-outline-variant: #e0bfbd;
-
-  /* Border Radius */
-  --radius-sm: 4px;
-  --radius-md: 10px;
-  --radius-icon: 14px;
-  --radius-default: 18px;
-  --radius-card: 20px;
-  --radius-lg: 24px;
-  --radius-xl: 28px;
-  --radius-full: 100px;
+  /* Legacy names (pre-redesign), aliased to the new roles until Task 18. */
+  --color-primary: var(--color-coral);
+  --color-secondary: var(--color-steel);
+  --color-surface: var(--color-fog);
+  --color-on-surface: var(--color-ink);
+  --color-on-surface-variant: var(--color-ink-soft);
 }
 
-:root {
-  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+@layer base {
+  html {
+    background: var(--color-fog);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.5;
+  }
+  ::selection {
+    background: var(--color-lime);
+    color: var(--color-ink);
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-steel);
+    outline-offset: 2px;
+  }
+  button,
+  [role="button"] {
+    cursor: pointer;
+  }
+  button:disabled {
+    cursor: not-allowed;
+  }
+}
+
+/* Poster headline: Bricolage at a large optical size, tight tracking. */
+@utility text-poster {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-variation-settings: "opsz" 96;
+  letter-spacing: -0.055em;
+  line-height: 0.9;
+}
+
+/* Display heading for sections and cards. */
+@utility text-heading {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-variation-settings: "opsz" 48;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+/* Money. Tabular figures so columns of amounts line up. */
+@utility text-amount {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* Small uppercase label above a group. */
+@utility text-eyebrow {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-ink-soft);
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -7,7 +7,7 @@
 	import '@fontsource/plus-jakarta-sans/500.css';
 	import '@fontsource/plus-jakarta-sans/600.css';
 	import '@fontsource/plus-jakarta-sans/700.css';
-	import '@fontsource/plus-jakarta-sans/800.css';
+	import '@fontsource-variable/bricolage-grotesque/opsz.css';
 	import '../app.css';
 	import { QueryClientProvider } from '@tanstack/svelte-query';
 	import { queryClient } from '$lib/queryClient';
