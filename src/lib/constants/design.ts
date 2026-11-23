@@ -52,7 +52,7 @@ export const radius = {
 } as const;
 
 export const shadow = {
-	card: '0 1px 3px rgba(29, 36, 66, 0.06), 0 4px 11px rgba(29, 36, 66, 0.05)',
+	raised: '0 1px 3px rgba(29, 36, 66, 0.06), 0 4px 11px rgba(29, 36, 66, 0.05)',
 	float: '0 9px 25px rgba(29, 36, 66, 0.12)',
 	pop: '0 24px 48px -8px rgba(29, 36, 66, 0.18)'
 } as const;
@@ -66,4 +66,12 @@ export const font = {
 // as a hex string, so these are data values, not styling shortcuts.
 export const groupColors = ['#3a5088', '#cf3a31', '#1f6b47', '#8a5a00', '#6b3fa0', '#0f7c86', '#5d627e', '#b3416f'] as const;
 
-export type PaymentStatus = 'pending' | 'submitted' | 'paid' | 'rejected';
+// Initials avatars: text-on-tint pairs (all pass AA, see tokens.test.ts).
+// Chosen by a hash of the person's id so a face keeps its colour.
+export const avatarTones: ReadonlyArray<readonly [bg: string, fg: string]> = [
+	[color.mist, color.ink],
+	[color['coral-tint'], color['coral-ink']],
+	[color['review-tint'], color.review],
+	[color['paid-tint'], color.paid],
+	[color['pending-tint'], color.pending]
+];

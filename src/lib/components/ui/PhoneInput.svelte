@@ -6,7 +6,8 @@
 		digitsOnly,
 		splitWhatsappNumber
 	} from '$lib/utils/phone';
-	import { AlertCircle } from 'lucide-svelte';
+	import { cn } from '$lib/utils/cn';
+	import { CircleAlert, ChevronDown } from 'lucide-svelte';
 
 	interface Props {
 		/** E.164-style digits only, e.g. "6281234567890". Two-way bound. */
@@ -15,17 +16,27 @@
 		placeholder?: string;
 		disabled?: boolean;
 		error?: string;
+		helperText?: string;
 		id?: string;
+		name?: string;
+		autofocus?: boolean;
 	}
 
 	let {
 		value = $bindable(''),
 		label,
-		placeholder = '8123456789',
+		placeholder = '812 3456 7890',
 		disabled = false,
 		error,
-		id
+		helperText,
+		id,
+		name,
+		autofocus = false
 	}: Props = $props();
+
+	const uid = $props.id();
+	const inputId = $derived(id ?? `phone-${uid}`);
+	const msgId = `${uid}-msg`;
 
 	const initial = splitWhatsappNumber(value);
 	let countryCode = $state(initial.countryCode || DEFAULT_COUNTRY_CODE);
@@ -44,8 +55,7 @@
 	});
 
 	function handleLocalInput(e: Event) {
-		const raw = (e.target as HTMLInputElement).value;
-		local = digitsOnly(raw);
+		local = digitsOnly((e.target as HTMLInputElement).value);
 		value = composeWhatsappNumber(countryCode, local);
 	}
 
@@ -53,86 +63,61 @@
 		countryCode = (e.target as HTMLSelectElement).value;
 		value = composeWhatsappNumber(countryCode, local);
 	}
+
+	const message = $derived(error || helperText);
 </script>
 
-<div class="space-y-1.5">
+<div class="flex flex-col gap-1.5">
 	{#if label}
-		<label for={id} class="block text-[13px] font-semibold text-[#584140]">
-			{label}
-		</label>
+		<label for={inputId} class="text-sm font-semibold text-ink">{label}</label>
 	{/if}
 
 	<div
-		class="phone-input-group flex items-center bg-[#f5dddb] rounded-2xl overflow-hidden transition-all focus-within:ring-2 focus-within:ring-[#ae2f34]/30"
-		class:has-error={!!error}
-		class:opacity-50={disabled}
+		class={cn(
+			'flex h-11 items-stretch overflow-hidden rounded-field bg-card transition-shadow duration-150',
+			'shadow-[inset_0_0_0_1.5px_var(--color-hairline)] hover:shadow-[inset_0_0_0_1.5px_var(--color-ink-soft)]',
+			'focus-within:shadow-[inset_0_0_0_2px_var(--color-steel)] focus-within:hover:shadow-[inset_0_0_0_2px_var(--color-steel)]',
+			error && 'shadow-[inset_0_0_0_2px_var(--color-rejected)] hover:shadow-[inset_0_0_0_2px_var(--color-rejected)]',
+			disabled && 'opacity-60'
+		)}
 	>
-		<select
-			class="country-selector"
-			value={countryCode}
-			onchange={handleCountryChange}
-			{disabled}
-			aria-label="Country code"
-		>
-			{#each COUNTRY_CODES as country (country.code)}
-				<option value={country.code}>{country.short} (+{country.code})</option>
-			{/each}
-		</select>
-
+		<div class="relative flex items-center">
+			<select
+				class="h-full cursor-pointer appearance-none bg-transparent pr-8 pl-4 text-[15px] font-semibold text-ink focus:outline-none disabled:cursor-not-allowed"
+				value={countryCode}
+				onchange={handleCountryChange}
+				{disabled}
+				aria-label="Country code"
+			>
+				{#each COUNTRY_CODES as country (country.code)}
+					<option value={country.code}>{country.short} +{country.code}</option>
+				{/each}
+			</select>
+			<ChevronDown size={16} class="pointer-events-none absolute right-2.5 text-ink-soft" />
+		</div>
+		<span class="my-2.5 w-px bg-hairline" aria-hidden="true"></span>
+		<!-- svelte-ignore a11y_autofocus -->
 		<input
-			{id}
+			id={inputId}
+			{name}
 			type="tel"
 			inputmode="numeric"
 			autocomplete="tel-national"
-			class="phone-input"
+			class="min-w-0 flex-1 bg-transparent px-3 text-[15px] font-medium text-ink tabular-nums placeholder:text-ink-soft/70 focus:outline-none disabled:cursor-not-allowed"
 			value={local}
 			oninput={handleLocalInput}
 			{placeholder}
 			{disabled}
+			{autofocus}
+			aria-invalid={!!error || undefined}
+			aria-describedby={message ? msgId : undefined}
 		/>
 	</div>
 
-	{#if error}
-		<div class="flex items-center gap-1.5 text-xs text-[#EF4444]">
-			<AlertCircle size={14} />
-			<span>{error}</span>
-		</div>
+	{#if message}
+		<p id={msgId} class={cn('flex items-start gap-1.5 text-[13px]', error ? 'text-rejected' : 'text-ink-soft')} role={error ? 'alert' : undefined}>
+			{#if error}<CircleAlert size={15} class="mt-px flex-none" />{/if}
+			<span>{message}</span>
+		</p>
 	{/if}
 </div>
-
-<style>
-	.phone-input-group.has-error {
-		box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.3);
-		background: #fef2f2;
-	}
-
-	.country-selector {
-		min-width: 90px;
-		padding: 12px 8px;
-		border: none;
-		border-right: 1px solid #fbe3e1;
-		background: transparent;
-		font: 14px 'Plus Jakarta Sans', sans-serif;
-		color: #251818;
-		cursor: pointer;
-	}
-
-	.phone-input {
-		flex: 1;
-		padding: 12px 16px;
-		border: none;
-		font: 14px 'Plus Jakarta Sans', sans-serif;
-		color: #251818;
-		background: transparent;
-	}
-
-	.country-selector:focus,
-	.phone-input:focus {
-		outline: none;
-	}
-
-	.country-selector:disabled,
-	.phone-input:disabled {
-		cursor: not-allowed;
-	}
-</style>

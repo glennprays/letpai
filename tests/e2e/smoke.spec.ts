@@ -36,7 +36,8 @@ export const ROUTES: Array<{ name: string; path: string; who: Who }> = [
 	{ name: 'admin-admins', path: '/admin/admins', who: 'admin' },
 	{ name: 'admin-profile', path: '/admin/profile', who: 'admin' },
 	{ name: 'admin-templates', path: '/admin/templates', who: 'admin' },
-	{ name: 'admin-whatsapp', path: '/admin/whatsapp', who: 'admin' }
+	{ name: 'admin-whatsapp', path: '/admin/whatsapp', who: 'admin' },
+	{ name: 'styleguide', path: '/dev/styleguide', who: 'anon' }
 ];
 
 test.beforeEach(async () => {

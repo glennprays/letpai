@@ -35,7 +35,7 @@ export default defineConfig({
 			url: `http://localhost:${APP_PORT}`,
 			reuseExistingServer: !process.env.CI,
 			timeout: 240_000,
-			env: { PORT: String(APP_PORT), ORIGIN: `http://localhost:${APP_PORT}`, VITE_API_URL: 'http://localhost:3000/api/v1' }
+			env: { PORT: String(APP_PORT), ORIGIN: `http://localhost:${APP_PORT}`, VITE_API_URL: 'http://localhost:3000/api/v1', LETPAI_STYLEGUIDE: '1' }
 		}
 	]
 });
