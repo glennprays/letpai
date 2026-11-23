@@ -1,5 +1,6 @@
 <script lang="ts">
 	import favicon from '$lib/assets/favicon.svg';
+	import { color } from '$lib/constants/design';
 	// Fonts are imported from JS (not via @import in app.css) so Vite resolves
 	// and fingerprints the woff2 files; Tailwind's CSS pipeline left the
 	// relative url(./files/...) paths unresolved and they 404'd in production.
@@ -80,7 +81,10 @@
 </script>
 
 <svelte:head>
-	<link rel="icon" href={favicon} />
+	<link rel="icon" href={favicon} type="image/svg+xml" />
+	<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+	<link rel="manifest" href="/site.webmanifest" />
+	<meta name="theme-color" content={color.fog} />
 </svelte:head>
 
 {#if navbarVariant}

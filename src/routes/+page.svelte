@@ -3,6 +3,7 @@
   import { auth } from "$lib/stores/auth";
   import Button from "$lib/components/ui/Button.svelte";
   import SharedFooter from "$lib/components/layout/SharedFooter.svelte";
+  import Seo from "$lib/components/Seo.svelte";
   import {
     Smartphone,
     MessageCircle,
@@ -21,6 +22,8 @@
     goto(cta.href);
   }
 </script>
+
+<Seo image="landing" />
 
 <div
   class="min-h-screen bg-[#fff8f7] flex flex-col"

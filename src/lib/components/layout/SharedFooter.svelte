@@ -61,7 +61,7 @@
       <!-- Brand column -->
       <div style="position: relative; z-index: 1;">
         <div style="margin-bottom: 16px;">
-          <Logo size="sm" />
+          <Logo size="sm" tone="light" />
         </div>
         <p
           style="

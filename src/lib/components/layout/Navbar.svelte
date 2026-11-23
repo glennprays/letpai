@@ -53,7 +53,7 @@
       class="inline-flex no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fff8f7] rounded-2xl"
       onclick={(e) => { if ($page.url.pathname === '/') e.preventDefault(); }}
     >
-      <Logo size="md" />
+      <Logo size="md" href={null} />
     </a>
 
     {#if variant === 'full'}

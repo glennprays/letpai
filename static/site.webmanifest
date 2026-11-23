@@ -1,0 +1,14 @@
+{
+	"name": "Letpai",
+	"short_name": "Letpai",
+	"description": "You paid. They pay you back. Split bills and collect on WhatsApp.",
+	"start_url": "/dashboard",
+	"display": "standalone",
+	"background_color": "#eff0f4",
+	"theme_color": "#eff0f4",
+	"icons": [
+		{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+		{ "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" },
+		{ "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+	]
+}

@@ -49,7 +49,7 @@
       href="/dashboard"
       class="inline-flex rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fff8f7]"
     >
-      <Logo size="sm" />
+      <Logo size="sm" href={null} />
     </a>
   </div>
 

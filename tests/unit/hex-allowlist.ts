@@ -11,7 +11,6 @@ export const HEX_ALLOWLIST: string[] = [
 	'src/lib/components/contacts/ContactSearch.svelte',
 	'src/lib/components/contacts/GroupBadge.svelte',
 	'src/lib/components/layout/BottomTabBar.svelte',
-	'src/lib/components/layout/Logo.svelte',
 	'src/lib/components/layout/Navbar.svelte',
 	'src/lib/components/layout/SharedFooter.svelte',
 	'src/lib/components/layout/Sidebar.svelte',

@@ -4,6 +4,8 @@
 	import { formatIDR } from '$lib/utils/format';
 	import { submitPayment } from '$lib/services/payments';
 	import type { PageData } from './$types';
+	import Seo from '$lib/components/Seo.svelte';
+	import { PAYMENT_SEO } from '$lib/utils/seo';
 
 	interface Props {
 		data: PageData;
@@ -110,9 +112,8 @@
 	const StatusIcon = $derived(statusMeta.icon);
 </script>
 
-<svelte:head>
-	<title>Pay {formatIDR(data.page.fee_breakdown?.total ?? data.page.share_amount)} · Letpai</title>
-</svelte:head>
+<!-- Generic on purpose: WhatsApp previews this link in the chat. -->
+<Seo {...PAYMENT_SEO} />
 
 <main class="min-h-screen bg-[#fff8f7] py-10 px-4">
 	<div class="max-w-md mx-auto">
