@@ -41,7 +41,7 @@
   --radius-sheet: 24px;
   --radius-pill: 9999px;
 
-  --shadow-card: 0 1px 3px rgba(29, 36, 66, 0.06), 0 4px 11px rgba(29, 36, 66, 0.05);
+  --shadow-raised: 0 1px 3px rgba(29, 36, 66, 0.06), 0 4px 11px rgba(29, 36, 66, 0.05);
   --shadow-float: 0 9px 25px rgba(29, 36, 66, 0.12);
   --shadow-pop: 0 24px 48px -8px rgba(29, 36, 66, 0.18);
 
