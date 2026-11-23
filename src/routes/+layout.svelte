@@ -69,8 +69,7 @@
 
 	const navbarVariant = $derived.by(() => {
 		if (isAppPage || isAdminPage) return null;
-		const pathname = $page.url.pathname;
-		if (pathname.startsWith('/login') || pathname.startsWith('/register')) {
+		if ($page.route.id?.startsWith('/(auth)')) {
 			return 'auth';
 		} else if (data.isAuthenticated && data.token) {
 			return 'loggedIn';

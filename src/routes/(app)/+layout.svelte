@@ -1,25 +1,22 @@
 <script lang="ts">
-  import Sidebar from '$lib/components/layout/Sidebar.svelte';
-  import BottomTabBar from '$lib/components/layout/BottomTabBar.svelte';
+	import Sidebar from '$lib/components/layout/Sidebar.svelte';
+	import BottomTabBar from '$lib/components/layout/BottomTabBar.svelte';
+	import type { Snippet } from 'svelte';
 
-  interface Props {
-    children: import('svelte').Snippet;
-  }
+	let { children }: { children: Snippet } = $props();
 
-  let { children }: Props = $props();
-
-  // Auth + profile-completion gating happens server-side in +layout.server.ts.
+	// Auth + profile-completion gating happens server-side in +layout.server.ts.
 </script>
 
-<div class="min-h-screen bg-[#fff8f7]">
-  <!-- Desktop sidebar -->
-  <Sidebar />
+<a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-pill focus:bg-ink focus:px-4 focus:py-2 focus:text-card">
+	Skip to content
+</a>
 
-  <!-- Main content area: offset by sidebar on desktop -->
-  <main class="md:ml-60 pb-20 md:pb-0">
-    {@render children()}
-  </main>
-
-  <!-- Mobile bottom tabs -->
-  <BottomTabBar />
+<div class="min-h-dvh bg-fog">
+	<Sidebar />
+	<!-- Bottom padding clears the floating tab bar plus the safe area on phones. -->
+	<main id="main" class="pb-[calc(6.5rem+env(safe-area-inset-bottom))] md:ml-60 md:pb-0">
+		{@render children()}
+	</main>
+	<BottomTabBar />
 </div>

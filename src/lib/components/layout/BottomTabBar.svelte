@@ -1,57 +1,47 @@
 <script lang="ts">
-  import { page } from '$app/stores';
-  import {
-    LayoutDashboard,
-    Users,
-    Receipt,
-    User
-  } from 'lucide-svelte';
+	import { page } from '$app/state';
+	import { Plus } from 'lucide-svelte';
+	import { cn } from '$lib/utils/cn';
+	import { APP_NAV, isActive } from './nav';
 
-  interface Props {
-    class?: string;
-  }
+	let { class: className }: { class?: string } = $props();
 
-  let { class: className }: Props = $props();
-
-  const tabs = [
-    { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { href: '/contacts', icon: Users, label: 'Contacts' },
-    { href: '/sessions', icon: Receipt, label: 'Sessions' },
-    { href: '/profile', icon: User, label: 'Profile' },
-  ];
-
-  function isActive(href: string): boolean {
-    if (href === '/dashboard' && $page.url.pathname === '/dashboard') return true;
-    if (href === '/contacts' && $page.url.pathname.startsWith('/contacts')) return true;
-    if (href === '/sessions' && $page.url.pathname.startsWith('/sessions')) return true;
-    if (href === '/profile' && $page.url.pathname === '/profile') return true;
-    return false;
-  }
+	// Home, Sessions, [New], Contacts, Profile. The New button sits inside the
+	// bar (not floating above it) so it never covers list content.
+	const left = APP_NAV.slice(0, 2);
+	const right = APP_NAV.slice(2);
 </script>
 
+{#snippet tab(nav: (typeof APP_NAV)[number])}
+	{@const Icon = nav.icon}
+	{@const active = isActive(nav.href, page.url.pathname)}
+	<a
+		href={nav.href}
+		aria-current={active ? 'page' : undefined}
+		class={cn(
+			'flex min-h-12 flex-1 flex-col items-center justify-center gap-0.5 rounded-sheet text-[11px] font-semibold transition-colors',
+			active ? 'text-ink' : 'text-ink-soft hover:text-ink'
+		)}
+	>
+		<Icon size={21} strokeWidth={active ? 2.4 : 2} aria-hidden="true" />
+		{nav.label}
+	</a>
+{/snippet}
+
 <nav
-  aria-label="Primary"
-  class="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-white/80 backdrop-blur-xl shadow-[0_-8px_24px_-4px_rgba(37,24,24,0.06)] {className}"
+	aria-label="Main"
+	class={cn('fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 md:hidden', className)}
 >
-  <div class="flex items-center justify-around px-2 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
-    {#each tabs as tab}
-      {@const Icon = tab.icon}
-      {@const active = isActive(tab.href)}
-      <a
-        href={tab.href}
-        aria-current={active ? 'page' : undefined}
-        class={active
-          ? 'flex flex-col items-center justify-center gap-1 px-4 py-1.5 min-h-[44px] min-w-[44px] rounded-2xl text-[#ae2f34] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6]'
-          : 'flex flex-col items-center justify-center gap-1 px-4 py-1.5 min-h-[44px] min-w-[44px] rounded-2xl text-[#584140]/80 hover:text-[#584140] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6]'}
-      >
-        <div class="relative">
-          <Icon size={22} aria-hidden="true" />
-          {#if active}
-            <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#ae2f34]" aria-hidden="true"></div>
-          {/if}
-        </div>
-        <span class="text-[11px] font-medium">{tab.label}</span>
-      </a>
-    {/each}
-  </div>
+	<div class="flex items-center gap-1 rounded-sheet bg-card/95 p-1.5 shadow-float backdrop-blur">
+		{#each left as nav (nav.href)}{@render tab(nav)}{/each}
+		<a
+			href="/sessions/new"
+			aria-label="New session"
+			aria-current={page.url.pathname === '/sessions/new' ? 'page' : undefined}
+			class="mx-1 grid size-12 flex-none place-items-center rounded-full bg-coral text-card transition-colors hover:bg-coral-hover active:scale-95"
+		>
+			<Plus size={24} strokeWidth={2.4} aria-hidden="true" />
+		</a>
+		{#each right as nav (nav.href)}{@render tab(nav)}{/each}
+	</div>
 </nav>
