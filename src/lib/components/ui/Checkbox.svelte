@@ -27,8 +27,7 @@
 	const inputId = $derived(id ?? `cb-${uid}`);
 </script>
 
-<!-- A real <input type="checkbox"> (visually replaced) keeps native keyboard,
-     form and screen-reader behaviour; the whole row is a 44px hit target. -->
+<!-- The whole row is a 44px hit target. -->
 <label
 	for={inputId}
 	class={cn(
@@ -37,26 +36,30 @@
 		className
 	)}
 >
-	<input
-		id={inputId}
-		type="checkbox"
-		class="peer sr-only"
-		bind:checked
-		{disabled}
-		aria-label={label ? undefined : ariaLabel}
-		onchange={() => onchange?.(checked)}
-	/>
-	<span
-		aria-hidden="true"
-		class={cn(
-			'grid size-[22px] flex-none place-items-center rounded-[7px] transition-colors duration-150',
-			'peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-steel',
-			checked
-				? 'bg-ink text-card'
-				: 'bg-card shadow-[inset_0_0_0_1.5px_var(--color-hairline)] group-hover:shadow-[inset_0_0_0_1.5px_var(--color-ink-soft)]'
-		)}
-	>
-		{#if checked}<Check size={14} strokeWidth={3} />{/if}
+	<span class="relative grid size-[22px] flex-none place-items-center">
+		<!-- Transparent native input laid over the drawn box: real hit target,
+		     keyboard and screen-reader behaviour, no clipped 1px element. -->
+		<input
+			id={inputId}
+			type="checkbox"
+			class="peer absolute inset-0 m-0 size-full cursor-[inherit] appearance-none opacity-0"
+			bind:checked
+			{disabled}
+			aria-label={label ? undefined : ariaLabel}
+			onchange={() => onchange?.(checked)}
+		/>
+		<span
+			aria-hidden="true"
+			class={cn(
+				'pointer-events-none grid size-[22px] place-items-center rounded-[7px] transition-colors duration-150',
+				'peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-steel',
+				checked
+					? 'bg-ink text-card'
+					: 'bg-card shadow-[inset_0_0_0_1.5px_var(--color-hairline)] group-hover:shadow-[inset_0_0_0_1.5px_var(--color-ink-soft)]'
+			)}
+		>
+			{#if checked}<Check size={14} strokeWidth={3} />{/if}
+		</span>
 	</span>
 	{#if label}<span class="text-sm font-medium text-ink">{label}</span>{/if}
 </label>

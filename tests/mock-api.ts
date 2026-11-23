@@ -125,7 +125,8 @@ function detailSession(s: FxSession) {
 		bank_account_number: s.bank_accounts[0]?.account_number ?? null,
 		bank_account_holder: s.bank_accounts[0]?.account_holder ?? null,
 		bank_accounts: s.bank_accounts.map((a, i) => ({ account_id: `${s.session_id}-acct-${i}`, ordinal: i, ...a })),
-		last_notified_at: s.participants.length ? hoursAgo(26) : null,
+		// "Sent" once any participant has had a WhatsApp message.
+		last_notified_at: s.participants.some((p) => p.notification !== 'none') ? hoursAgo(26) : null,
 		is_dirty: false,
 		participants: s.participants.map((p) => detailParticipant(s, p)),
 		bills: s.bills.map((b) => ({ ...b, session_id: s.session_id, created_at: hoursAgo(s.created_hours_ago) })),

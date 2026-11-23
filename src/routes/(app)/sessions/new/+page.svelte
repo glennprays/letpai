@@ -1,276 +1,230 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
-	import { Plus, X, Loader2 } from 'lucide-svelte';
+	import { enhance } from '$app/forms';
+	import { tick } from 'svelte';
+	import Button from '$lib/components/ui/Button.svelte';
+	import Input from '$lib/components/ui/Input.svelte';
+	import ProgressStepper from '$lib/components/ui/ProgressStepper.svelte';
+	import Seo from '$lib/components/Seo.svelte';
+	import { Receipt } from '$lib/components/art';
+	import { cn } from '$lib/utils/cn';
+	import { ArrowLeft, ArrowRight, Plus, X, CircleAlert } from 'lucide-svelte';
 	import type { ActionData } from './$types';
 
-	interface Props {
-		form?: ActionData;
-	}
+	let { form }: { form?: ActionData } = $props();
 
-	let { form }: Props = $props();
-
-	let sessionName = $state('');
-	let sessionDescription = $state('');
+	// Two steps on this page (name, where to pay). The session is created on
+	// submit; people and items are added on the session page, which picks up
+	// with its own checklist. The server action is unchanged.
+	let step = $state<1 | 2>(1);
+	let title = $state('');
+	let description = $state('');
 	let currency = $state('IDR');
-	let errors = $state<Record<string, string>>({});
-	let touched = $state<Record<string, boolean>>({});
-	let isSubmitting = $state(false);
+	let titleError = $state('');
+	let submitting = $state(false);
 
-	// Repeatable bank-account rows. Capped at 5 to match the backend.
-	// Empty rows are dropped server-side; the FE just hides the
-	// "+ Add" button when the cap is hit.
-	type BankRow = { bank_name: string; account_number: string; account_holder: string };
-	let bankRows = $state<BankRow[]>([
-		{ bank_name: '', account_number: '', account_holder: '' }
-	]);
-	const MAX_BANK_ACCOUNTS = 5;
-	function addBankRow() {
-		if (bankRows.length >= MAX_BANK_ACCOUNTS) return;
-		bankRows = [...bankRows, { bank_name: '', account_number: '', account_holder: '' }];
-	}
-	function removeBankRow(index: number) {
-		bankRows = bankRows.filter((_, i) => i !== index);
-		if (bankRows.length === 0) {
-			bankRows = [{ bank_name: '', account_number: '', account_holder: '' }];
-		}
-	}
-
+	const suggestions = ['Dinner', 'Lunch', 'Trip', 'Groceries', 'Karaoke', 'Futsal', 'Birthday gift', 'Kos bills'];
 	const currencies = [
-		{ code: 'IDR', symbol: 'Rp', name: 'Indonesian Rupiah' },
-		{ code: 'USD', symbol: '$', name: 'US Dollar' },
-		{ code: 'EUR', symbol: '€', name: 'Euro' },
-		{ code: 'SGD', symbol: 'S$', name: 'Singapore Dollar' }
+		{ code: 'IDR', label: 'Rupiah (Rp)' },
+		{ code: 'SGD', label: 'Singapore dollar (S$)' },
+		{ code: 'USD', label: 'US dollar ($)' },
+		{ code: 'EUR', label: 'Euro (€)' }
 	];
 
-	function validateField(field: string, value: string) {
-		if (field === 'sessionName' && !value.trim()) {
-			errors.sessionName = 'Session name is required';
-		} else {
-			delete errors[field];
+	type BankRow = { bank_name: string; account_number: string; account_holder: string };
+	const MAX_BANK_ACCOUNTS = 5;
+	let bankRows = $state<BankRow[]>([{ bank_name: '', account_number: '', account_holder: '' }]);
+	const commonBanks = ['BCA', 'Mandiri', 'BRI', 'BNI', 'GoPay', 'OVO', 'DANA', 'ShopeePay'];
+
+	function addBankRow() {
+		if (bankRows.length < MAX_BANK_ACCOUNTS) bankRows = [...bankRows, { bank_name: '', account_number: '', account_holder: '' }];
+	}
+	function removeBankRow(i: number) {
+		bankRows = bankRows.filter((_, idx) => idx !== i);
+		if (bankRows.length === 0) bankRows = [{ bank_name: '', account_number: '', account_holder: '' }];
+	}
+
+	async function next() {
+		titleError = title.trim() ? '' : 'Give it a name your friends will recognise.';
+		if (titleError) {
+			document.getElementById('title')?.focus();
+			return;
 		}
+		step = 2;
+		await tick();
+		document.getElementById('step-2-h')?.focus();
 	}
 
-	function handleBlur(field: string, value: string) {
-		touched[field] = true;
-		validateField(field, value);
-	}
-
-	function handleInput(field: string, value: string) {
-		if (touched[field]) {
-			validateField(field, value);
-		}
-	}
-
-	function isFormValid() {
-		return sessionName.trim().length > 0 && Object.keys(errors).length === 0;
-	}
-
-	function handleCancel() {
-		goto('/dashboard');
-	}
-
-	// Handle server errors - reset submitting state on error
 	$effect(() => {
-		if (form?.error) {
-			isSubmitting = false;
-		}
+		if (form?.error) submitting = false;
 	});
 </script>
 
-<div class="min-h-screen">
-	<div class="max-w-lg mx-auto px-4 py-8 sm:py-12">
-		<!-- Header -->
-		<header class="mb-8">
-			<button
-				onclick={handleCancel}
-				class="inline-flex items-center gap-2 text-[#584140] hover:text-[#251818] transition-colors mb-4 text-sm"
-			>
-				<X class="w-4 h-4" />
-				<span>Cancel</span>
-			</button>
-			<h1 class="text-2xl font-semibold text-[#251818] tracking-tight">Create New Session</h1>
-			<p class="text-sm text-[#584140] mt-1"
-				>Start a new bill splitting session. You can add contacts and bills after creating.</p
-			>
-		</header>
+<Seo title="New session" noindex />
 
-		<!-- Server Error -->
+<div class="mx-auto grid max-w-5xl gap-10 px-4 pt-6 pb-12 sm:px-6 md:pt-10 lg:grid-cols-[minmax(0,1fr)_320px]">
+	<div class="min-w-0">
+		<a href="/dashboard" class="-ml-2 inline-flex h-9 items-center gap-1 rounded-pill pr-3 pl-1.5 text-sm font-semibold text-ink-soft hover:bg-mist hover:text-ink">
+			<ArrowLeft size={17} aria-hidden="true" /> Cancel
+		</a>
+		<h1 class="text-poster mt-4 text-[clamp(2.5rem,7vw,4rem)]">New session</h1>
+		<ProgressStepper
+			class="mt-6 max-w-lg"
+			currentStep={step}
+			steps={[
+				{ id: 1, label: 'Name' },
+				{ id: 2, label: 'Transfer to' },
+				{ id: 3, label: 'People & items' }
+			]}
+		/>
+
 		{#if form?.error}
-			<div class="mb-6 p-4 bg-[#EF4444]/15 rounded-2xl">
-				<p class="text-sm text-[#991B1B]">{form.error}</p>
-			</div>
+			<p class="mt-6 flex items-start gap-2 rounded-field bg-rejected-tint px-4 py-3 text-sm font-medium text-rejected" role="alert">
+				<CircleAlert size={18} class="mt-px flex-none" />{form.error}
+			</p>
 		{/if}
 
-		<!-- Form -->
-		<form method="POST" class="bg-white rounded-3xl shadow-[0_1px_3px_rgba(37,24,24,0.04)] p-6 space-y-6">
-			<!-- Session Name -->
-			<div>
-				<label for="title" class="block text-sm font-medium text-[#251818] mb-2">
-					Session Name <span class="text-[#ae2f34]">*</span>
-				</label>
-				<input
-					type="text"
-					id="title"
-					name="title"
-					bind:value={sessionName}
-					onblur={() => handleBlur('sessionName', sessionName)}
-					oninput={() => handleInput('sessionName', sessionName)}
-					placeholder="e.g., Lunch at Warung"
-					required
-					maxlength={200}
-					class="w-full px-4 py-3 bg-[#fff0ef]/50 rounded-xl text-[#251818] placeholder:text-[#584140]/50 focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent transition-all disabled:bg-[#fff0ef] disabled:cursor-not-allowed"
-					disabled={isSubmitting}
-				/>
-				{#if errors.sessionName && touched.sessionName}
-					<p class="mt-2 text-sm text-[#991B1B]">{errors.sessionName}</p>
-				{/if}
-			</div>
-
-			<!-- Session Description -->
-			<div>
-				<label for="description" class="block text-sm font-medium text-[#251818] mb-2">
-					Description <span class="text-[#584140]/50 font-normal">(optional)</span>
-				</label>
-				<textarea
-					id="description"
-					name="description"
-					bind:value={sessionDescription}
-					placeholder="Add a description to help everyone remember what this session is for..."
-					rows="3"
-					maxlength={1000}
-					class="w-full px-4 py-3 bg-[#fff0ef]/50 rounded-xl text-[#251818] placeholder:text-[#584140]/50 focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent transition-all resize-none disabled:bg-[#fff0ef] disabled:cursor-not-allowed"
-					disabled={isSubmitting}
-				></textarea>
-			</div>
-
-			<!-- Currency -->
-			<div>
-				<label for="currency" class="block text-sm font-medium text-[#251818] mb-2">
-					Currency
-				</label>
-				<select
-					id="currency"
-					name="currency"
-					bind:value={currency}
-					class="w-full px-4 py-3 bg-[#fff0ef]/50 rounded-xl text-[#251818] focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:border-transparent transition-all disabled:bg-[#fff0ef] disabled:cursor-not-allowed appearance-none bg-white"
-					disabled={isSubmitting}
-				>
-					{#each currencies as curr}
-						<option value={curr.code}>{curr.symbol} - {curr.name}</option>
-					{/each}
-				</select>
-			</div>
-
-			<!-- Bank info (shown to participants on their payment page) -->
-			<div class="border-t border-[#fbe3e1] pt-6">
-				<div class="flex items-start justify-between gap-3 mb-1">
-					<p class="text-sm font-medium text-[#251818]">Transfer details <span class="text-[#584140]/60 font-normal">(optional)</span></p>
+		<form
+			method="POST"
+			class="mt-8"
+			novalidate
+			use:enhance={({ cancel }) => {
+				if (!title.trim()) {
+					step = 1;
+					titleError = 'Give it a name your friends will recognise.';
+					cancel();
+					return;
+				}
+				submitting = true;
+				return async ({ update }) => {
+					await update();
+					submitting = false;
+				};
+			}}
+		>
+			<!-- Both steps stay in the DOM so every field is submitted. -->
+			<section class={cn('flex flex-col gap-6', step !== 1 && 'hidden')} aria-labelledby="step-1-h">
+				<h2 id="step-1-h" class="sr-only">Step 1: name</h2>
+				<div class="flex flex-col gap-3">
+					<Input
+						label="What's it for?"
+						id="title"
+						name="title"
+						bind:value={title}
+						placeholder="Friday dinner"
+						maxLength={200}
+						error={!!titleError}
+						errorText={titleError}
+						size="lg"
+						autofocus
+						onkeydown={(e: KeyboardEvent) => e.key === 'Enter' && (e.preventDefault(), next())}
+					/>
+					<div class="flex flex-wrap gap-2" role="group" aria-label="Suggestions">
+						{#each suggestions as s (s)}
+							<button
+								type="button"
+								onclick={() => ((title = s), (titleError = ''))}
+								class={cn(
+									'h-8 rounded-pill px-3 text-sm font-semibold transition-colors',
+									title === s ? 'bg-ink text-card' : 'bg-card text-ink-soft shadow-raised hover:text-ink'
+								)}
+							>
+								{s}
+							</button>
+						{/each}
+					</div>
 				</div>
-				<p class="text-xs text-[#584140] mb-4">Add one or more transfer destinations — participants see all of them on their payment page and can pick the easiest.</p>
 
-				<div class="space-y-4">
-					{#each bankRows as row, i (i)}
-						<div class="bg-[#fff0ef]/30 rounded-2xl p-4 border border-[#fbe3e1]">
-							<div class="flex items-center justify-between mb-3">
-								<p class="text-xs font-semibold text-[#584140] uppercase tracking-wide">Account #{i + 1}</p>
-								{#if bankRows.length > 1}
-									<button type="button" onclick={() => removeBankRow(i)} class="text-xs text-[#991B1B] underline hover:opacity-80" disabled={isSubmitting}>
-										Remove
-									</button>
-								{/if}
+				<div class="flex flex-col gap-1.5">
+					<label for="description" class="text-sm font-semibold">Note for everyone <span class="font-normal text-ink-soft">(optional)</span></label>
+					<textarea
+						id="description"
+						name="description"
+						bind:value={description}
+						rows="2"
+						maxlength={1000}
+						placeholder="Thanks for coming! Transfer by Sunday please."
+						class="resize-none rounded-field bg-card px-4 py-3 text-[15px] shadow-[inset_0_0_0_1.5px_var(--color-hairline)] placeholder:text-ink-soft/70 focus:shadow-[inset_0_0_0_2px_var(--color-steel)] focus:outline-none"
+					></textarea>
+					<p class="text-[13px] text-ink-soft">Shown in the WhatsApp message and on their payment page.</p>
+				</div>
+
+				<div class="flex flex-col gap-1.5 sm:max-w-xs">
+					<label for="currency" class="text-sm font-semibold">Currency</label>
+					<select
+						id="currency"
+						name="currency"
+						bind:value={currency}
+						class="h-11 rounded-field bg-card px-4 text-[15px] font-medium shadow-[inset_0_0_0_1.5px_var(--color-hairline)] focus:shadow-[inset_0_0_0_2px_var(--color-steel)] focus:outline-none"
+					>
+						{#each currencies as c (c.code)}<option value={c.code}>{c.label}</option>{/each}
+					</select>
+				</div>
+
+				<Button size="lg" rightIcon={ArrowRight} onclick={next} class="self-start">Next</Button>
+			</section>
+
+			<section class={cn('flex flex-col gap-5', step !== 2 && 'hidden')} aria-labelledby="step-2-h">
+				<div>
+					<h2 id="step-2-h" tabindex="-1" class="text-heading text-2xl outline-none">Where should they transfer?</h2>
+					<p class="mt-1 text-[15px] text-ink-soft">Friends copy this from their payment page. You can add or change it later.</p>
+				</div>
+
+				{#each bankRows as row, i (i)}
+					<fieldset class="rounded-card bg-card p-4 shadow-raised sm:p-5">
+						<div class="mb-3 flex items-center justify-between">
+							<legend class="text-eyebrow">Account {i + 1}</legend>
+							{#if bankRows.length > 1}
+								<button type="button" onclick={() => removeBankRow(i)} class="grid size-8 place-items-center rounded-full text-ink-soft hover:bg-mist hover:text-ink" aria-label="Remove account {i + 1}">
+									<X size={16} />
+								</button>
+							{/if}
+						</div>
+						<div class="grid gap-4 sm:grid-cols-2">
+							<div class="flex flex-col gap-2">
+								<Input label="Bank or e-wallet" name="bank_name[]" bind:value={row.bank_name} placeholder="BCA" maxLength={80} list="banks" />
+								<div class="flex flex-wrap gap-1.5">
+									{#each commonBanks.slice(0, 5) as b (b)}
+										<button type="button" onclick={() => (row.bank_name = b)} class={cn('h-7 rounded-pill px-2.5 text-xs font-semibold', row.bank_name === b ? 'bg-ink text-card' : 'bg-mist text-ink-soft hover:text-ink')}>{b}</button>
+									{/each}
+								</div>
 							</div>
-							<div class="space-y-3">
-								<input
-									name="bank_name[]"
-									type="text"
-									bind:value={row.bank_name}
-									placeholder="Bank or e-wallet (e.g. BCA, GoPay)"
-									maxlength="80"
-									class="w-full px-4 py-2.5 bg-white rounded-xl text-sm text-[#251818] placeholder:text-[#584140]/50 focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] disabled:bg-[#fff0ef]"
-									disabled={isSubmitting}
-								/>
-								<input
-									name="account_number[]"
-									type="text"
-									bind:value={row.account_number}
-									placeholder="Account number"
-									maxlength="40"
-									class="w-full px-4 py-2.5 bg-white rounded-xl text-sm text-[#251818] placeholder:text-[#584140]/50 focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] disabled:bg-[#fff0ef] font-mono"
-									disabled={isSubmitting}
-								/>
-								<input
-									name="account_holder[]"
-									type="text"
-									bind:value={row.account_holder}
-									placeholder="Account holder name"
-									maxlength="80"
-									class="w-full px-4 py-2.5 bg-white rounded-xl text-sm text-[#251818] placeholder:text-[#584140]/50 focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] disabled:bg-[#fff0ef]"
-									disabled={isSubmitting}
-								/>
+							<Input label="Account or phone number" name="account_number[]" bind:value={row.account_number} placeholder="5270 1234 88" maxLength={40} inputmode="numeric" />
+							<div class="sm:col-span-2">
+								<Input label="Name on the account" name="account_holder[]" bind:value={row.account_holder} placeholder="As the bank shows it" maxLength={80} />
 							</div>
 						</div>
-					{/each}
+					</fieldset>
+				{/each}
+				<datalist id="banks">{#each commonBanks as b (b)}<option value={b}></option>{/each}</datalist>
+				{#if bankRows.length < MAX_BANK_ACCOUNTS}
+					<Button variant="secondary" leftIcon={Plus} onclick={addBankRow} class="self-start">Add another account</Button>
+				{/if}
 
-					{#if bankRows.length < MAX_BANK_ACCOUNTS}
-						<button
-							type="button"
-							onclick={addBankRow}
-							class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-[#251818] bg-white hover:bg-[#fff0ef] border-2 border-dashed border-[#fbe3e1] rounded-xl transition-colors disabled:opacity-50"
-							disabled={isSubmitting}
-						>
-							<Plus class="w-4 h-4" />
-							Add another transfer destination
-						</button>
-					{:else}
-						<p class="text-xs text-[#584140] text-center">Maximum {MAX_BANK_ACCOUNTS} accounts.</p>
-					{/if}
+				<div class="mt-2 flex flex-wrap items-center gap-3">
+					<Button type="submit" size="lg" loading={submitting} rightIcon={ArrowRight}>Create and add people</Button>
+					<Button variant="ghost" onclick={() => (step = 1)} leftIcon={ArrowLeft} disabled={submitting}>Back</Button>
 				</div>
-			</div>
-
-			<!-- Actions -->
-			<div class="flex gap-3 pt-4">
-				<button
-					type="button"
-					onclick={handleCancel}
-					class="flex-1 px-6 py-3 text-sm font-medium text-[#251818] bg-white rounded-xl hover:bg-[#fff0ef] transition-colors focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-					disabled={isSubmitting}
-				>
-					Cancel
-				</button>
-				<button
-					type="submit"
-					class="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-medium text-white bg-gradient-to-br from-[#ae2f34] to-[#FF6B6B] rounded-xl hover:from-[#9a282c] hover:to-[#FF5252] transition-colors focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-					disabled={isSubmitting || !isFormValid()}
-				>
-					{#if isSubmitting}
-						<Loader2 class="w-4 h-4 animate-spin" />
-						Creating...
-					{:else}
-						<Plus class="w-4 h-4" />
-						Create Session
-					{/if}
-				</button>
-			</div>
+			</section>
 		</form>
-
-		<!-- Help Text -->
-		<p class="text-center text-xs text-[#584140] mt-6">
-			After creating, you can add contacts and split bills equally or assign specific amounts.
-		</p>
 	</div>
+
+	<!-- Live preview of what friends will see at the top of their bill. -->
+	<aside class="hidden lg:block" aria-label="Preview">
+		<p class="text-eyebrow mb-3 px-1">What friends will see</p>
+		<Receipt tilt={1} float paperClass="px-6 pt-6 pb-10">
+			<p class="text-eyebrow">Payment request</p>
+			<p class="text-heading mt-2 text-2xl [overflow-wrap:anywhere]">{title.trim() || 'Your session'}</p>
+			{#if description.trim()}<p class="mt-2 text-[15px] text-ink-soft [overflow-wrap:anywhere]">{description}</p>{/if}
+			<div class="my-4 border-t-[1.5px] border-dashed border-hairline"></div>
+			<p class="text-[13px] text-ink-soft">Your share</p>
+			<p class="text-amount text-3xl text-hairline">{currency === 'IDR' ? 'Rp' : currency} —</p>
+			{#each bankRows.filter((r) => r.bank_name || r.account_number) as r, i (i)}
+				<div class="mt-4 rounded-field bg-fog px-3 py-2">
+					<p class="text-[12px] text-ink-soft">{r.bank_name || 'Bank'}{r.account_holder ? ` · ${r.account_holder}` : ''}</p>
+					<p class="text-amount text-[17px]">{r.account_number || '—'}</p>
+				</div>
+			{/each}
+		</Receipt>
+		<p class="mt-4 px-1 text-[13px] text-ink-soft">Shares appear once you add people and items on the next screen.</p>
+	</aside>
 </div>
-
-<style>
-	/* Custom select arrow */
-	select {
-		background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236B7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
-		background-position: right 0.75rem center;
-		background-repeat: no-repeat;
-		background-size: 1.5em 1.5em;
-		padding-right: 2.5rem;
-	}
-
-	textarea::-webkit-resizer {
-		display: none;
-	}
-</style>
