@@ -1,0 +1,109 @@
+/* Preview-only tokens. Mirrors the direction in design/BRIEF.md; the shipped
+   tokens live in src/lib/constants/design.ts + src/app.css after the pick. */
+@font-face {
+	font-family: 'Bricolage';
+	src: url(../../node_modules/@fontsource-variable/bricolage-grotesque/files/bricolage-grotesque-latin-opsz-normal.woff2) format('woff2-variations');
+	font-weight: 200 800;
+	font-display: block;
+}
+@font-face {
+	font-family: 'Jakarta';
+	src: url(../../node_modules/@fontsource/plus-jakarta-sans/files/plus-jakarta-sans-latin-400-normal.woff2) format('woff2');
+	font-weight: 400;
+}
+@font-face {
+	font-family: 'Jakarta';
+	src: url(../../node_modules/@fontsource/plus-jakarta-sans/files/plus-jakarta-sans-latin-500-normal.woff2) format('woff2');
+	font-weight: 500;
+}
+@font-face {
+	font-family: 'Jakarta';
+	src: url(../../node_modules/@fontsource/plus-jakarta-sans/files/plus-jakarta-sans-latin-600-normal.woff2) format('woff2');
+	font-weight: 600;
+}
+@font-face {
+	font-family: 'Jakarta';
+	src: url(../../node_modules/@fontsource/plus-jakarta-sans/files/plus-jakarta-sans-latin-700-normal.woff2) format('woff2');
+	font-weight: 700;
+}
+
+:root {
+	--fog: #eff0f4;
+	--card: #ffffff;
+	--mist: #e3e5ed;
+	--hairline: #d3d7e3;
+	--ink: #1d2442;
+	--ink-soft: #5d627e;
+	--steel: #3a5088;
+	--coral: #cf3a31;
+	--coral-ink: #b8322b;
+	--coral-tint: #fbe4e1;
+	--lime: #d4f25c;
+	--pending: #8a5a00;
+	--pending-tint: #fbefd3;
+	--review: #24508f;
+	--review-tint: #e1eaf8;
+	--paid: #1f6b47;
+	--paid-tint: #dcefe4;
+	--rejected: #a3241c;
+	--rejected-tint: #f8e0dd;
+	--shadow-float: 0 9px 25px rgba(29, 36, 66, 0.12);
+	--shadow-card: 0 1px 3px rgba(29, 36, 66, 0.06), 0 4px 11px rgba(29, 36, 66, 0.05);
+	--display: 'Bricolage', ui-sans-serif, system-ui, sans-serif;
+	--ui: 'Jakarta', ui-sans-serif, system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+	background: var(--fog);
+	color: var(--ink);
+	font-family: var(--ui);
+	font-size: 16px;
+	line-height: 1.5;
+	-webkit-font-smoothing: antialiased;
+}
+a { color: inherit; }
+.amount { font-family: var(--display); font-variant-numeric: tabular-nums; font-weight: 700; letter-spacing: -0.02em; }
+.display { font-family: var(--display); font-weight: 700; font-variation-settings: 'opsz' 96; }
+.eyebrow { font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-soft); }
+.muted { color: var(--ink-soft); }
+
+.pill-btn {
+	display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 20px;
+	border-radius: 999px; border: 0; font: 600 15px/1 var(--ui); cursor: pointer;
+}
+.pill-btn.primary { background: var(--coral); color: #fff; }
+.pill-btn.ink { background: var(--ink); color: #fff; }
+.pill-btn.ghost { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--hairline); }
+.pill-btn.sm { height: 36px; padding: 0 14px; font-size: 14px; }
+
+.status { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.status.pending { background: var(--pending-tint); color: var(--pending); }
+.status.review { background: var(--review-tint); color: var(--review); }
+.status.paid { background: var(--paid-tint); color: var(--paid); }
+.status.rejected { background: var(--rejected-tint); color: var(--rejected); }
+.status::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+.card { background: var(--card); border-radius: 16px; box-shadow: var(--shadow-card); }
+
+/* Perforated receipt edge: a radial-gradient mask punches half-circles. */
+.receipt {
+	background: var(--card);
+	border-radius: 16px 16px 0 0;
+	-webkit-mask: radial-gradient(circle 7px at 50% 100%, #0000 98%, #000) 0 0 / 18px 100% repeat-x;
+	mask: radial-gradient(circle 7px at 50% 100%, #0000 98%, #000) 0 0 / 18px 100% repeat-x;
+	padding-bottom: 20px;
+}
+.dotted { border: 0; border-top: 1.5px dashed var(--hairline); margin: 12px 0; }
+
+.stamp {
+	display: inline-grid; place-items: center; padding: 6px 14px; border-radius: 10px;
+	background: var(--lime); color: var(--ink);
+	font: 800 15px/1 var(--display); letter-spacing: 0.08em; text-transform: uppercase;
+	transform: rotate(-8deg); box-shadow: inset 0 0 0 2px var(--ink);
+}
+
+.avatar { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 13px; background: var(--mist); color: var(--ink); flex: none; }
+
+.icon { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }

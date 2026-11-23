@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Landing A · Poster</title>
+<link rel="stylesheet" href="shared.css" />
+<style>
+	.nav { position: sticky; top: 16px; z-index: 5; margin: 16px auto 0; width: min(720px, calc(100% - 32px)); display: flex; align-items: center; justify-content: space-between; padding: 8px 8px 8px 20px; border-radius: 24px; background: rgba(255,255,255,.86); backdrop-filter: blur(12px); box-shadow: var(--shadow-float); }
+	.nav nav { display: flex; gap: 24px; font-weight: 600; font-size: 15px; }
+	.wordmark { font: 700 22px/1 var(--display); letter-spacing: -0.04em; }
+	.wordmark b { color: var(--coral); }
+	.hero { text-align: center; padding: 56px 24px 24px; max-width: 1200px; margin: 0 auto; }
+	.objects { position: relative; height: 210px; max-width: 640px; margin: 0 auto 8px; }
+	.objects i { position: absolute; }
+	h1 { font-size: clamp(54px, 10vw, 112px); line-height: .9; letter-spacing: -0.065em; margin: 0 auto; max-width: 11ch; }
+	h1 em { font-style: normal; color: var(--coral); }
+	.lede { max-width: 520px; margin: 24px auto 32px; font-size: 18px; color: var(--ink-soft); }
+	.proof-row { display: flex; gap: 16px; justify-content: center; margin-top: 18px; font-size: 14px; color: var(--ink-soft); }
+	.band { max-width: 1200px; margin: 48px auto; padding: 0 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
+	.band h2 { font-size: clamp(36px, 5vw, 60px); line-height: .92; letter-spacing: -0.045em; margin: 0 0 16px; }
+	.session { padding: 24px; }
+	.row { display: flex; align-items: center; gap: 12px; padding: 12px 0; }
+	.row + .row { border-top: 1px solid var(--mist); }
+	.row .name { flex: 1; font-weight: 600; }
+	.bar { display: flex; gap: 3px; height: 8px; margin: 16px 0 4px; }
+	.bar span { flex: 1; border-radius: 4px; background: var(--mist); }
+	.bar span.p { background: var(--ink); }
+	.bar span.r { background: var(--steel); opacity: .45; }
+	.steps { list-style: none; padding: 0; margin: 0; display: grid; gap: 16px; counter-reset: s; }
+	.steps li { display: grid; grid-template-columns: 40px 1fr; gap: 12px; font-size: 17px; }
+	.steps li::before { counter-increment: s; content: counter(s); font: 700 28px/1 var(--display); color: var(--coral); }
+	.cta { text-align: center; padding: 72px 24px 96px; }
+	.cta h2 { font-size: clamp(40px, 7vw, 80px); letter-spacing: -0.055em; line-height: .9; margin: 0 0 24px; }
+	@media (max-width: 760px) {
+		.nav nav { display: none; }
+		.objects { height: 150px; }
+		.band { grid-template-columns: 1fr; gap: 24px; }
+	}
+</style>
+</head>
+<body>
+<header class="nav">
+	<span class="wordmark">letpai<b>.</b></span>
+	<nav><a>How it works</a><a>About</a><a>Sign in</a></nav>
+	<button class="pill-btn ink sm">Start a split</button>
+</header>
+
+<section class="hero">
+	<div class="objects">
+		<i data-art="satay" style="left:4%; top:70px; width:150px; transform:rotate(-8deg)"></i>
+		<i data-art="receipt" style="left:34%; top:0; width:110px; transform:rotate(-6deg)"></i>
+		<i data-art="phone" style="left:55%; top:22px; width:96px; transform:rotate(9deg)"></i>
+		<i data-art="coin" style="right:6%; top:96px; width:76px"></i>
+	</div>
+	<h1 class="display">Paid for the table? <em>Get it back.</em></h1>
+	<p class="lede">Letpai sends each friend their exact share on WhatsApp. They pay, upload the transfer, and you tick them off. No app for them.</p>
+	<button class="pill-btn primary">Start a split, it's free</button>
+	<div class="proof-row"><span>Works with any bank or e-wallet</span><span>·</span><span>Friends just tap a link</span></div>
+</section>
+
+<section class="band">
+	<div class="card session">
+		<div class="eyebrow">Friday dinner · 12 people</div>
+		<div style="display:flex; align-items:baseline; justify-content:space-between; margin-top:8px">
+			<div class="amount" style="font-size:40px">Rp 450.450</div>
+			<div class="muted">of Rp 1.176.915</div>
+		</div>
+		<div class="bar"><span class="p"></span><span class="p"></span><span class="p"></span><span class="p"></span><span class="p"></span><span class="r"></span><span class="r"></span><span></span><span></span><span></span><span></span><span></span></div>
+		<div class="muted" style="font-size:14px; margin-bottom:8px">5 paid · 2 proofs to check · 5 waiting</div>
+		<div class="row"><span class="avatar">AK</span><span class="name">Alya Kusuma</span><span class="amount">Rp 177.870</span><span class="status paid">Paid</span></div>
+		<div class="row"><span class="avatar">BS</span><span class="name">Bima Santoso</span><span class="amount">Rp 177.870</span><span class="status review">Check proof</span></div>
+		<div class="row"><span class="avatar">CW</span><span class="name">Citra Wulandari</span><span class="amount">Rp 177.870</span><span class="status pending">Waiting</span></div>
+	</div>
+	<div>
+		<h2 class="display">See who paid without asking.</h2>
+		<ol class="steps">
+			<li><span>Add the people and what everyone ate. Letpai works out each share, with service and tax.</span></li>
+			<li><span>Everyone gets a WhatsApp message with their amount and your account number.</span></li>
+			<li><span>They upload a transfer screenshot. You approve it in one tap.</span></li>
+		</ol>
+	</div>
+</section>
+
+<section class="cta">
+	<h2 class="display">Next round's on them.</h2>
+	<button class="pill-btn primary">Start a split</button>
+</section>
+<script src="art.js"></script>
+</body>
+</html>

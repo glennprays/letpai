@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Session B · Queue + receipt</title>
+<link rel="stylesheet" href="shared.css" />
+<style>
+	.shell { display: grid; grid-template-columns: 232px 1fr; min-height: 100vh; }
+	.side { padding: 24px 16px; display: flex; flex-direction: column; gap: 4px; }
+	.side .wordmark { display: flex; align-items: center; gap: 8px; font: 700 21px/1 var(--display); letter-spacing: -0.04em; padding: 0 8px 24px; }
+	.side a { display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 12px; border-radius: 999px; font-weight: 600; font-size: 15px; color: var(--ink-soft); text-decoration: none; }
+	.side a.on { background: var(--card); color: var(--ink); box-shadow: var(--shadow-card); }
+	.side .new { margin-top: 12px; justify-content: center; }
+	main { padding: 28px 32px 64px; max-width: 1120px; }
+	.crumb { display: flex; align-items: center; gap: 8px; color: var(--ink-soft); font-weight: 600; font-size: 14px; }
+	.head { display: grid; grid-template-columns: 1fr auto; gap: 20px 24px; align-items: end; margin: 12px 0 28px; }
+	.head h1 { font-size: clamp(28px, 3.4vw, 40px); line-height: 1.02; letter-spacing: -0.035em; margin: 0; max-width: 24ch; }
+	.sum { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+	.sum .amount { font-size: clamp(44px, 6vw, 64px); line-height: .9; letter-spacing: -0.045em; }
+	.bar { display: flex; gap: 3px; height: 10px; margin: 14px 0 8px; }
+	.bar span { flex: 1; border-radius: 3px; background: var(--hairline); }
+	.bar .p { background: var(--ink); } .bar .s { background: var(--review); opacity: .55; } .bar .r { background: var(--rejected); opacity: .5; }
+	.legend { display: flex; gap: 16px; font-size: 13px; color: var(--ink-soft); flex-wrap: wrap; }
+	.legend b { color: var(--ink); }
+	.cols { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 24px; align-items: start; }
+	.group { margin-bottom: 24px; }
+	.group > header { display: flex; align-items: center; justify-content: space-between; margin: 0 4px 10px; }
+	.group h2 { font: 700 20px/1 var(--display); letter-spacing: -0.02em; margin: 0; display: flex; gap: 8px; align-items: center; }
+	.count { font: 600 12px/1 var(--ui); background: var(--ink); color: #fff; border-radius: 999px; padding: 4px 8px; }
+	.list { padding: 4px 0; }
+	.item { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; padding: 14px 18px; }
+	.item + .item { border-top: 1px solid var(--mist); }
+	.item .who { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+	.item .meta { grid-column: 2; font-size: 13px; color: var(--ink-soft); display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+	.item .amt { font-family: var(--display); font-variant-numeric: tabular-nums; font-weight: 600; text-align: right; }
+	.actions { grid-column: 2 / -1; display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+	.proof { display: grid; grid-template-columns: 36px minmax(0,1fr) 64px; gap: 4px 12px; padding: 16px 18px; align-items: start; }
+	.proof + .proof { border-top: 1px solid var(--mist); }
+	.thumb { width: 64px; height: 84px; border-radius: 10px; background: var(--fog); display: grid; place-items: center; color: var(--ink-soft); grid-row: span 2; }
+	.warn { color: var(--rejected); font-weight: 600; }
+	.paid-row { display: flex; align-items: center; gap: 10px; padding: 14px 18px; cursor: pointer; }
+	.faces { display: flex; } .faces .avatar { width: 28px; height: 28px; font-size: 11px; margin-left: -6px; box-shadow: 0 0 0 2px #fff; } .faces .avatar:first-child { margin-left: 0; }
+	aside .receipt { padding: 22px 22px 32px; filter: drop-shadow(0 1px 3px rgba(29,36,66,.08)); }
+	.line { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; padding: 4px 0; }
+	.line span:last-child { font-variant-numeric: tabular-nums; }
+	.accts { margin-top: 16px; padding: 18px; display: grid; gap: 12px; }
+	.acct { display: flex; justify-content: space-between; align-items: center; }
+	.acct .n { font-family: var(--display); font-size: 18px; font-weight: 600; letter-spacing: .01em; }
+	.icon-btn { width: 36px; height: 36px; border-radius: 50%; border: 0; background: var(--fog); color: var(--ink); display: grid; place-items: center; }
+	.photos { display: flex; gap: 8px; margin-top: 16px; }
+	.photos div { width: 72px; height: 92px; border-radius: 10px; background: var(--card); display: grid; place-items: center; color: var(--ink-soft); box-shadow: var(--shadow-card); }
+	.tabbar { display: none; }
+	@media (max-width: 1000px) { .cols { grid-template-columns: 1fr; } }
+	@media (max-width: 760px) {
+		.shell { grid-template-columns: 1fr; }
+		.side { display: none; }
+		main { padding: 16px 16px 120px; }
+		.head { grid-template-columns: 1fr; }
+		.head .pill-btn { display: none; }
+		.item, .proof { padding: 14px; }
+		.tabbar { display: flex; position: fixed; left: 12px; right: 12px; bottom: 12px; background: var(--card); border-radius: 24px; box-shadow: var(--shadow-float); padding: 8px; justify-content: space-around; align-items: center; }
+		.tabbar span { font-size: 11px; font-weight: 600; color: var(--ink-soft); display: grid; justify-items: center; gap: 2px; }
+		.tabbar .plus { width: 52px; height: 52px; border-radius: 50%; background: var(--coral); color: #fff; display: grid; place-items: center; margin-top: -26px; box-shadow: var(--shadow-float); }
+	}
+</style>
+</head>
+<body>
+<div class="shell">
+	<nav class="side">
+		<span class="wordmark"><i data-art="logo-b" style="width:26px"></i>letpai</span>
+		<a>Home</a><a class="on">Sessions</a><a>Contacts</a><a>Profile</a>
+		<button class="pill-btn primary sm new"><svg class="icon"><use href="#i-plus"/></svg>New session</button>
+	</nav>
+	<main>
+		<div class="crumb"><svg class="icon"><use href="#i-back"/></svg>Sessions</div>
+		<div class="head">
+			<h1 class="display">Friday dinner at Sate Khas Senayan with the design team and their plus-ones</h1>
+			<button class="pill-btn ghost sm"><svg class="icon"><use href="#i-more"/></svg>Edit</button>
+			<div>
+				<div class="sum"><span class="amount">Rp 726.465</span><span class="muted" style="font-size:17px">still out of Rp 1.176.915</span></div>
+				<div class="bar" aria-label="5 of 12 paid">
+					<span class="p"></span><span class="p"></span><span class="p"></span><span class="p"></span><span class="p"></span><span class="s"></span><span class="s"></span><span class="r"></span><span></span><span></span><span></span><span></span>
+				</div>
+				<div class="legend"><span><b>5</b> paid</span><span><b>2</b> to check</span><span><b>1</b> sent back</span><span><b>4</b> not paid yet</span></div>
+			</div>
+		</div>
+
+		<div class="cols">
+			<div>
+				<section class="group">
+					<header><h2>Check these proofs <span class="count">2</span></h2><button class="pill-btn ghost sm"><svg class="icon"><use href="#i-check"/></svg>Approve both</button></header>
+					<div class="card list">
+						<div class="proof">
+							<span class="avatar">BS</span>
+							<div><div class="who" style="font-weight:600">Bima Santoso</div><div class="meta" style="font-size:13px; color:var(--ink-soft)">Proof uploaded · <span class="amount" style="font-weight:600; color:var(--ink)">Rp 177.870</span></div></div>
+							<div class="thumb"><svg class="icon"><use href="#i-image"/></svg></div>
+							<div class="actions" style="grid-column:2"><button class="pill-btn ink sm"><svg class="icon"><use href="#i-check"/></svg>Approve</button><button class="pill-btn ghost sm">Send back</button></div>
+						</div>
+						<div class="proof">
+							<span class="avatar">GR</span>
+							<div><div style="font-weight:600">Gita Ramadhani</div><div style="font-size:13px; color:var(--ink-soft)">Proof uploaded · <span class="amount" style="font-weight:600; color:var(--ink)">Rp 68.145</span></div></div>
+							<div class="thumb"><svg class="icon"><use href="#i-image"/></svg></div>
+							<div class="actions" style="grid-column:2"><button class="pill-btn ink sm"><svg class="icon"><use href="#i-check"/></svg>Approve</button><button class="pill-btn ghost sm">Send back</button></div>
+						</div>
+					</div>
+				</section>
+
+				<section class="group">
+					<header><h2>Still owes <span class="count">5</span></h2><button class="pill-btn ghost sm"><svg class="icon"><use href="#i-bell"/></svg>Remind all</button></header>
+					<div class="card list">
+						<div class="item"><span class="avatar">CW</span><span class="who">Citra Wulandari Ningsih Kartika</span><span class="amt">Rp 177.870</span>
+							<span class="meta"><span class="status pending">Not paid</span>Reminded 1 day ago</span>
+							<div class="actions"><button class="pill-btn ghost sm"><svg class="icon"><use href="#i-bell"/></svg>Remind</button></div></div>
+						<div class="item"><span class="avatar">DA</span><span class="who">Dimas Arya</span><span class="amt">Rp 98.145</span>
+							<span class="meta"><span class="status rejected">Sent back</span>Waiting for a new screenshot</span></div>
+						<div class="item"><span class="avatar">IW</span><span class="who">Indra Wijaya</span><span class="amt">Rp 68.145</span>
+							<span class="meta warn"><svg class="icon" style="width:14px;height:14px"><use href="#i-alert"/></svg>WhatsApp message not delivered</span>
+							<div class="actions"><button class="pill-btn ink sm"><svg class="icon"><use href="#i-retry"/></svg>Send again</button><button class="pill-btn ghost sm">Edit number</button></div></div>
+						<div class="item"><span class="avatar">FN</span><span class="who">Fajar Nugroho</span><span class="amt">Rp 68.145</span>
+							<span class="meta"><span class="status pending">Not paid</span>Message retrying</span></div>
+						<div class="item"><span class="avatar">KD</span><span class="who">Kirana Dewi</span><span class="amt">Rp 68.145</span>
+							<span class="meta"><span class="status pending">Not paid</span>Can remind again in 6 h</span></div>
+					</div>
+				</section>
+
+				<section class="group">
+					<div class="card paid-row"><div class="faces"><span class="avatar">AK</span><span class="avatar">EP</span><span class="avatar">HL</span><span class="avatar">JS</span><span class="avatar">LH</span></div>
+						<span style="flex:1"><b>5 paid</b> <span class="muted">· Rp 450.450 collected</span></span><svg class="icon"><use href="#i-chev"/></svg></div>
+				</section>
+			</div>
+
+			<aside>
+				<div class="receipt">
+					<div class="eyebrow">The bill</div>
+					<div style="margin-top:10px">
+						<div class="line"><span>Sate kambing ×6</span><span>540.000</span></div>
+						<div class="line"><span>Es teh manis jumbo</span><span>168.000</span></div>
+						<div class="line"><span>Sop buntut <span class="muted">· 3 people</span></span><span>285.000</span></div>
+						<div class="line"><span>Parking <span class="muted">· Dimas</span></span><span>30.000</span></div>
+						<hr class="dotted" />
+						<div class="line muted"><span>Service 5%</span><span>49.650</span></div>
+						<div class="line muted"><span>Tax 10%</span><span>104.265</span></div>
+						<hr class="dotted" />
+						<div class="line" style="font-weight:700; font-size:16px"><span>Total</span><span class="amount">Rp 1.176.915</span></div>
+					</div>
+					<button class="pill-btn ghost sm" style="margin-top:14px"><svg class="icon"><use href="#i-plus"/></svg>Add item</button>
+				</div>
+				<div class="card accts">
+					<div class="eyebrow">Friends transfer to</div>
+					<div class="acct"><div><div class="muted" style="font-size:13px">BCA · Raka Pratama</div><div class="n">5270 1234 88</div></div><button class="icon-btn" aria-label="Copy"><svg class="icon"><use href="#i-copy"/></svg></button></div>
+					<div class="acct"><div><div class="muted" style="font-size:13px">GoPay · Raka Pratama</div><div class="n">0812 3456 7890</div></div><button class="icon-btn" aria-label="Copy"><svg class="icon"><use href="#i-copy"/></svg></button></div>
+				</div>
+				<div class="photos"><div><svg class="icon"><use href="#i-image"/></svg></div><div><svg class="icon"><use href="#i-image"/></svg></div></div>
+			</aside>
+		</div>
+	</main>
+</div>
+<div class="tabbar"><span>Home</span><span>Sessions</span><span class="plus"><svg class="icon"><use href="#i-plus"/></svg></span><span>Contacts</span><span>Profile</span></div>
+<script src="logos.js"></script>
+<script src="art.js"></script>
+</body>
+</html>

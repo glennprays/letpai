@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Landing B · Receipt</title>
+<link rel="stylesheet" href="shared.css" />
+<style>
+	.nav { position: sticky; top: 16px; z-index: 5; margin: 16px auto 0; width: min(1152px, calc(100% - 32px)); display: flex; align-items: center; justify-content: space-between; padding: 8px 8px 8px 20px; border-radius: 24px; background: rgba(255,255,255,.86); backdrop-filter: blur(12px); box-shadow: var(--shadow-float); }
+	.nav nav { display: flex; gap: 28px; font-weight: 600; font-size: 15px; }
+	.wordmark { display: inline-flex; align-items: center; gap: 8px; font: 700 22px/1 var(--display); letter-spacing: -0.04em; }
+	.hero { max-width: 1200px; margin: 0 auto; padding: 72px 24px 48px; display: grid; grid-template-columns: 1.15fr .85fr; gap: 56px; align-items: start; }
+	h1 { font-size: clamp(56px, 8.6vw, 116px); line-height: .9; letter-spacing: -0.055em; margin: 0; }
+	h1 .c { color: var(--coral); }
+	.lede { max-width: 30ch; font-size: 19px; color: var(--ink-soft); margin: 28px 0 32px; }
+	.hero-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+	.fine { font-size: 14px; color: var(--ink-soft); margin-top: 16px; }
+	.receipt-wrap { position: relative; padding-top: 8px; }
+	.receipt-wrap .receipt { box-shadow: none; filter: drop-shadow(0 9px 25px rgba(29,36,66,.12)); padding: 28px 28px 36px; transform: rotate(1.5deg); }
+	.rc-head { display: flex; justify-content: space-between; align-items: baseline; }
+	.line { display: flex; justify-content: space-between; gap: 12px; font-size: 15px; padding: 5px 0; }
+	.line .amount { font-weight: 600; letter-spacing: 0; }
+	.person { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 12px; padding: 10px 0; }
+	.person small { grid-column: 1; color: var(--ink-soft); font-size: 13px; }
+	.stamp-slot { position: absolute; right: -6px; top: 54%; }
+	.obj-satay { position: absolute; left: -150px; bottom: -70px; width: 170px; transform: rotate(-10deg); }
+	.obj-coin { position: absolute; right: -30px; top: -26px; width: 72px; }
+	section.how { max-width: 1200px; margin: 24px auto 0; padding: 48px 24px; display: grid; grid-template-columns: .9fr 1.1fr; gap: 56px; }
+	section.how h2 { font-size: clamp(36px, 5vw, 64px); line-height: .9; letter-spacing: -0.05em; margin: 0 0 16px; }
+	.thread { background: #e7e1d6; border-radius: 24px; padding: 24px; display: grid; gap: 10px; }
+	.msg { max-width: 82%; padding: 10px 14px 8px; border-radius: 14px; font-size: 15px; box-shadow: 0 1px 1px rgba(29,36,66,.08); }
+	.msg.in { background: #fff; border-top-left-radius: 4px; }
+	.msg.out { background: #d7f5c9; margin-left: auto; border-top-right-radius: 4px; }
+	.msg time { display: block; text-align: right; font-size: 11px; color: var(--ink-soft); margin-top: 2px; }
+	.msg .link { color: var(--review); font-weight: 600; }
+	.sys { justify-self: center; background: rgba(255,255,255,.7); font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 8px; color: var(--ink-soft); }
+	.closing { max-width: 1200px; margin: 0 auto; padding: 56px 24px 96px; display: flex; justify-content: space-between; align-items: end; gap: 24px; flex-wrap: wrap; }
+	.closing h2 { font-size: clamp(40px, 6vw, 84px); letter-spacing: -0.06em; line-height: .88; margin: 0; max-width: 12ch; }
+	@media (max-width: 860px) {
+		.nav nav { display: none; }
+		.hero { grid-template-columns: 1fr; padding-top: 40px; gap: 40px; }
+		.obj-satay { left: auto; right: -12px; bottom: -48px; width: 120px; }
+		section.how { grid-template-columns: 1fr; gap: 24px; }
+	}
+</style>
+</head>
+<body>
+<header class="nav">
+	<span class="wordmark"><i data-art="logo-b" style="width:28px"></i>letpai</span>
+	<nav><a>How it works</a><a>About</a><a>Sign in</a></nav>
+	<button class="pill-btn ink sm">Start a split</button>
+</header>
+
+<section class="hero">
+	<div>
+		<h1 class="display">You paid. <span class="c">They pay you back.</span></h1>
+		<p class="lede">Send every friend their exact share on WhatsApp, then watch the transfers come in. They don't need an app.</p>
+		<div class="hero-actions">
+			<button class="pill-btn primary">Start a split, it's free</button>
+			<button class="pill-btn ghost">See how it works</button>
+		</div>
+		<p class="fine">Any bank or e-wallet. Service charge and tax split for you.</p>
+	</div>
+	<div class="receipt-wrap">
+		<i class="obj-coin" data-art="coin"></i>
+		<div class="receipt">
+			<div class="rc-head"><span class="eyebrow">Sate Khas Senayan</span><span class="eyebrow">Fri 21:04</span></div>
+			<div class="display" style="font-size:28px; letter-spacing:-0.03em; margin:6px 0 14px">Friday dinner</div>
+			<div class="line"><span>Sate kambing ×6</span><span class="amount">540.000</span></div>
+			<div class="line"><span>Es teh manis jumbo ×12</span><span class="amount">168.000</span></div>
+			<div class="line"><span>Sop buntut ×3</span><span class="amount">285.000</span></div>
+			<div class="line muted"><span>Service 5% · Tax 10%</span><span class="amount">153.915</span></div>
+			<hr class="dotted" />
+			<div class="person"><b>Alya</b><span class="amount">Rp 177.870</span><small>Sate, teh, sop</small></div>
+			<div class="person"><b>Dimas</b><span class="amount">Rp 98.145</span><small>Sate, teh, parking</small></div>
+			<div class="person"><b>Gita</b><span class="amount">Rp 68.145</span><small>Sate, teh</small></div>
+			<hr class="dotted" />
+			<div class="line" style="font-weight:700"><span>12 people</span><span class="amount" style="font-size:20px">Rp 1.176.915</span></div>
+		</div>
+		<div class="stamp-slot"><span class="stamp">Paid</span></div>
+		<i class="obj-satay" data-art="satay"></i>
+	</div>
+</section>
+
+<section class="how" id="how">
+	<div>
+		<h2 class="display">This is the whole thing.</h2>
+		<p class="muted" style="font-size:18px; max-width:34ch">Your friends get one message with their amount and your account. When they transfer, they send the screenshot back through the same link.</p>
+	</div>
+	<div class="thread" aria-label="Example WhatsApp conversation">
+		<span class="sys">Today</span>
+		<div class="msg in">Hi Gita, your share for <b>Friday dinner</b> is <b>Rp 68.145</b>. Transfer to BCA 5270 1234 88 (Raka Pratama), then upload the proof: <span class="link">letpai.app/p/7KQ2</span><time>21:12</time></div>
+		<div class="msg out">done!! sent the screenshot<time>21:20</time></div>
+		<div class="msg in">Raka approved your payment for <b>Friday dinner</b>. You're all settled.<time>21:31</time></div>
+		<div class="msg out">thanks for booking the table<time>21:32</time></div>
+	</div>
+</section>
+
+<section class="closing">
+	<h2 class="display">Next round's on them.</h2>
+	<button class="pill-btn primary">Start a split</button>
+</section>
+<script src="logos.js"></script>
+<script src="art.js"></script>
+</body>
+</html>

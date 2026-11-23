@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Landing C · Chat</title>
+<link rel="stylesheet" href="shared.css" />
+<style>
+	.top { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; }
+	.wordmark { display: inline-flex; align-items: center; gap: 8px; font: 700 22px/1 var(--display); letter-spacing: -0.04em; }
+	.hero { max-width: 1200px; margin: 0 auto; padding: 32px 24px 64px; display: grid; grid-template-columns: 1fr 420px; gap: 64px; align-items: center; }
+	h1 { font-size: clamp(52px, 7.6vw, 104px); line-height: .9; letter-spacing: -0.065em; margin: 0; }
+	h1 q { quotes: '“' '”'; color: var(--coral); }
+	.lede { font-size: 19px; color: var(--ink-soft); max-width: 34ch; margin: 24px 0 32px; }
+	.phone { background: var(--ink); border-radius: 40px; padding: 12px; box-shadow: var(--shadow-float); }
+	.screen { background: #e7e1d6; border-radius: 30px; overflow: hidden; }
+	.chat-head { background: var(--card); display: flex; align-items: center; gap: 10px; padding: 14px 16px; }
+	.thread { padding: 16px; display: grid; gap: 10px; }
+	.msg { max-width: 86%; padding: 10px 12px 6px; border-radius: 14px; font-size: 14px; background: #fff; box-shadow: 0 1px 1px rgba(29,36,66,.08); }
+	.msg.out { background: #d7f5c9; margin-left: auto; }
+	.msg time { display: block; text-align: right; font-size: 11px; color: var(--ink-soft); }
+	.paycard { margin-top: 8px; background: var(--fog); border-radius: 10px; padding: 10px; display: flex; justify-content: space-between; align-items: center; }
+	.strip { max-width: 1200px; margin: 0 auto; padding: 0 24px 96px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+	.strip .card { padding: 24px; }
+	.strip h3 { font: 700 24px/1.05 var(--display); letter-spacing: -0.03em; margin: 12px 0 8px; }
+	.strip i { width: 84px; height: 84px; }
+	@media (max-width: 860px) { .hero { grid-template-columns: 1fr; gap: 32px; } .strip { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header class="top">
+	<span class="wordmark"><i data-art="logo-c" style="width:26px"></i>letpai</span>
+	<div style="display:flex; gap:8px"><button class="pill-btn ghost sm">Sign in</button><button class="pill-btn ink sm">Start a split</button></div>
+</header>
+<section class="hero">
+	<div>
+		<h1 class="display">Never ask <q>have you paid yet?</q> again.</h1>
+		<p class="lede">Letpai messages each friend their share on WhatsApp and collects the transfer screenshots for you.</p>
+		<button class="pill-btn primary">Start a split, it's free</button>
+	</div>
+	<div class="phone" aria-label="Example WhatsApp conversation">
+		<div class="screen">
+			<div class="chat-head"><span class="avatar" style="background:var(--coral); color:#fff">L</span><div><b>Letpai</b><div class="muted" style="font-size:12px">Payment request from Raka</div></div></div>
+			<div class="thread">
+				<div class="msg">Hi Gita, Raka covered <b>Friday dinner</b>. Your share:
+					<div class="paycard"><span class="amount" style="font-size:22px">Rp 68.145</span><span class="pill-btn primary sm" style="height:30px">Pay</span></div>
+					<time>21:12</time></div>
+				<div class="msg out">done, screenshot uploaded<time>21:20</time></div>
+				<div class="msg">Raka approved it. You're settled for Friday dinner.<time>21:31</time></div>
+			</div>
+		</div>
+	</div>
+</section>
+<section class="strip">
+	<div class="card"><i data-art="receipt"></i><h3>Split by what people ordered</h3><p class="muted">Equal split or per item, with service and tax shared fairly.</p></div>
+	<div class="card"><i data-art="phone"></i><h3>Friends pay from a link</h3><p class="muted">No app, no sign-up. Amount and your account are right there.</p></div>
+	<div class="card"><i data-art="coin"></i><h3>Approve in one tap</h3><p class="muted">Check the screenshot, approve, done. Reminders wait 24 hours.</p></div>
+</section>
+<script src="logos.js"></script>
+<script src="art.js"></script>
+</body>
+</html>
