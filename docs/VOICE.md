@@ -27,8 +27,8 @@ collecting. Short, warm, specific about money. English everywhere.
 | `submitted` | Check proof | Proof sent |
 | `paid` | Paid | Paid |
 | `rejected` | Sent back | Needs a new proof |
-| session `draft` / `pending` | Draft / Not sent yet | — |
-| session `in_progress` / `active` | Collecting | — |
+| session `draft` | Draft | — |
+| session `active` (legacy `pending`, `in_progress`) | Collecting | — |
 | session `completed` | Settled | — |
 | session `cancelled` | Cancelled | — |
 

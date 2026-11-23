@@ -23,7 +23,9 @@ export const paymentStatusGuest: Record<PaymentStatus, { label: string; tone: To
 
 export const sessionStatus: Record<SessionStatus, { label: string; tone: Tone }> = {
 	draft: { label: 'Draft', tone: 'neutral' },
-	pending: { label: 'Not sent yet', tone: 'neutral' },
+	// The backend only emits active/completed/cancelled today; the other
+	// values are legacy and read as an open session.
+	pending: { label: 'Collecting', tone: 'accent' },
 	in_progress: { label: 'Collecting', tone: 'accent' },
 	active: { label: 'Collecting', tone: 'accent' },
 	completed: { label: 'Settled', tone: 'paid' },
@@ -37,4 +39,12 @@ export function sessionStatusOf(status: string) {
 export function paymentStatusOf(status: string, view: 'host' | 'guest' = 'host') {
 	const map = view === 'host' ? paymentStatusHost : paymentStatusGuest;
 	return map[status as PaymentStatus] ?? { label: status, tone: 'neutral' as Tone };
+}
+
+export type SessionGroup = 'open' | 'settled' | 'cancelled';
+
+export function sessionGroup(status: string): SessionGroup {
+	if (status === 'completed') return 'settled';
+	if (status === 'cancelled') return 'cancelled';
+	return 'open';
 }

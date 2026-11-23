@@ -503,6 +503,10 @@ const server = createServer(async (req, res) => {
 		return send(res, 200, { ok: true });
 	}
 	if (url.pathname === '/__health') return send(res, 200, { ok: true });
+	// A signed-in user whose data endpoints fail, for error-state screens.
+	if ((req.headers.authorization ?? '').endsWith('tok-broken') && /\/(dashboard|sessions|contacts)/.test(url.pathname)) {
+		return send(res, 503, fail('UNAVAILABLE', 'The server is having a moment.'));
+	}
 	if (!url.pathname.startsWith(PREFIX)) return send(res, 404, fail('NOT_FOUND', 'Unknown path'));
 	const path = url.pathname.slice(PREFIX.length);
 	const body = await readBody(req);

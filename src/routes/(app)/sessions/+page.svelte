@@ -1,77 +1,78 @@
 <script lang="ts">
-  import { createQuery } from '@tanstack/svelte-query';
-  import Card from '$lib/components/ui/Card.svelte';
-  import Badge from '$lib/components/ui/Badge.svelte';
+	import { invalidateAll } from '$app/navigation';
+	import Button from '$lib/components/ui/Button.svelte';
+	import Card from '$lib/components/ui/Card.svelte';
+	import Tabs from '$lib/components/ui/Tabs.svelte';
+	import SearchInput from '$lib/components/ui/SearchInput.svelte';
+	import EmptyState from '$lib/components/ui/EmptyState.svelte';
+	import Seo from '$lib/components/Seo.svelte';
+	import SessionRow from '$lib/components/session/SessionRow.svelte';
+	import { ArtReceipt } from '$lib/components/art';
+	import { sessionGroup, type SessionGroup } from '$lib/utils/status';
+	import { Plus, CloudOff, RefreshCw, SearchX } from 'lucide-svelte';
+	import type { PageData } from './$types';
 
-  type SessionStatus = 'pending' | 'submitted' | 'paid' | 'rejected' | 'active' | 'completed' | 'cancelled';
-  import Button from '$lib/components/ui/Button.svelte';
-  import { goto } from '$app/navigation';
-  import { get } from '$lib/services/api';
-  import { API_ENDPOINTS } from '$lib/constants/api';
-  import { formatCurrency, formatRelativeTime } from '$lib/utils/format';
-  import type { SessionsResponse } from '$lib/types/api';
+	let { data }: { data: PageData } = $props();
 
-  type StatusFilter = 'active' | 'completed' | 'cancelled';
+	type Filter = 'all' | SessionGroup;
+	let filter = $state<Filter>('all');
+	let query = $state('');
 
-  let status = $state<StatusFilter>('active');
-
-  const sessionsQuery = createQuery(() => ({
-    queryKey: ['sessions', status],
-    queryFn: () => get(`${API_ENDPOINTS.SESSIONS}?status=${status}`) as Promise<SessionsResponse>,
-  }));
-
-  const tabs: StatusFilter[] = ['active', 'completed', 'cancelled'];
-
-  const sessions = $derived.by(() => {
-    const d = sessionsQuery.data?.data;
-    if (Array.isArray(d)) return d;
-    return d?.sessions ?? sessionsQuery.data?.sessions ?? [];
-  });
+	const counts = $derived({
+		all: data.sessions.length,
+		open: data.sessions.filter((s) => sessionGroup(s.status) === 'open').length,
+		settled: data.sessions.filter((s) => sessionGroup(s.status) === 'settled').length,
+		cancelled: data.sessions.filter((s) => sessionGroup(s.status) === 'cancelled').length
+	});
+	const shown = $derived(
+		data.sessions
+			.filter((s) => filter === 'all' || sessionGroup(s.status) === filter)
+			.filter((s) => !query.trim() || s.title.toLowerCase().includes(query.trim().toLowerCase()))
+			.sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at))
+	);
 </script>
 
-<div class="px-4 py-8">
-  <div class="flex items-center justify-between mb-6">
-    <h1 class="text-3xl font-bold text-gray-900">Sessions</h1>
-    <Button size="sm" onclick={() => goto('/sessions/new')}>Buat Session</Button>
-  </div>
+<Seo title="Sessions" noindex />
 
-  <!-- Filter Tabs -->
-  <div class="flex gap-2 mb-4">
-    {#each tabs as tab}
-      <button
-        class="px-4 py-2 rounded-sm text-sm font-medium transition-colors
-          {status === tab ? 'bg-[#FF6B6B] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}"
-        onclick={() => (status = tab)}
-      >
-        {tab.charAt(0).toUpperCase() + tab.slice(1)}
-      </button>
-    {/each}
-  </div>
+<div class="mx-auto max-w-4xl px-4 pt-6 pb-10 sm:px-6 md:pt-10">
+	<header class="flex items-end justify-between gap-4">
+		<h1 class="text-poster text-5xl sm:text-6xl">Sessions</h1>
+		<Button href="/sessions/new" leftIcon={Plus} size="sm" class="hidden md:inline-flex">New session</Button>
+	</header>
 
-  {#if sessionsQuery.isLoading}
-    <p class="text-gray-500">Memuat session…</p>
-  {:else if sessionsQuery.error}
-    <p class="text-red-500">Gagal memuat session: {sessionsQuery.error.message}</p>
-  {:else if sessions.length > 0}
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      {#each sessions as session (session.session_id)}
-        <Card onclick={() => goto(`/sessions/${session.session_id}`)}>
-          <div class="flex items-start justify-between mb-2">
-            <h3 class="text-lg font-semibold text-gray-900">{session.title}</h3>
-            <Badge variant={session.status as SessionStatus}>{session.status}</Badge>
-          </div>
-          {#if session.description}
-            <p class="text-sm text-gray-600 mb-2">{session.description}</p>
-          {/if}
-          <div class="flex items-center justify-between text-sm">
-            <span class="font-bold text-gray-900">{formatCurrency(session.total_amount)}</span>
-            <span class="text-gray-500">{session.paid_count}/{session.participant_count} bayar</span>
-          </div>
-          <p class="text-xs text-gray-400 mt-2">{formatRelativeTime(session.created_at)}</p>
-        </Card>
-      {/each}
-    </div>
-  {:else}
-    <p class="text-gray-500">Belum ada session dengan status ini.</p>
-  {/if}
+	{#if data.error}
+		<EmptyState
+			class="mt-8"
+			icon={CloudOff}
+			title="We couldn't load your sessions"
+			description="{data.error} Check your connection and try again."
+			action={{ label: 'Try again', onclick: () => invalidateAll(), icon: RefreshCw }}
+		/>
+	{:else if data.sessions.length === 0}
+		<EmptyState class="mt-8" title="No sessions yet" description="Start one after your next dinner, trip or groceries run." action={{ label: 'New session', href: '/sessions/new', icon: Plus }}>
+			{#snippet art()}<ArtReceipt />{/snippet}
+		</EmptyState>
+	{:else}
+		<div class="sticky top-0 z-10 -mx-4 mt-6 flex flex-col gap-3 bg-fog/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:flex-row sm:items-center sm:px-6">
+			<Tabs
+				bind:value={filter}
+				label="Filter sessions"
+				tabs={[
+					{ value: 'all', label: 'All', count: counts.all },
+					{ value: 'open', label: 'Collecting', count: counts.open },
+					{ value: 'settled', label: 'Settled', count: counts.settled },
+					{ value: 'cancelled', label: 'Cancelled', count: counts.cancelled }
+				]}
+			/>
+			<SearchInput bind:value={query} placeholder="Search by name" label="Search sessions" class="sm:ml-auto sm:w-64" />
+		</div>
+
+		{#if shown.length === 0}
+			<EmptyState class="mt-4" size="sm" icon={SearchX} title="No sessions match" description={query ? `Nothing called "${query}" here.` : 'None in this group yet.'} />
+		{:else}
+			<Card padding="none" class="mt-2 divide-y divide-mist overflow-hidden">
+				{#each shown as s (s.session_id)}<SessionRow session={s} />{/each}
+			</Card>
+		{/if}
+	{/if}
 </div>

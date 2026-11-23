@@ -7,13 +7,13 @@ export async function resetApi() {
 	await fetch(`${MOCK_API}/__reset`, { method: 'POST' });
 }
 
-export async function loginAs(context: BrowserContext, who: 'host' | 'empty' | 'admin') {
+export async function loginAs(context: BrowserContext, who: 'host' | 'empty' | 'admin' | 'broken') {
 	const base = { domain: 'localhost', path: '/', sameSite: 'Lax' as const };
 	if (who === 'admin') {
 		await context.addCookies([{ ...base, name: 'admin_token', value: ADMIN.token }]);
 		return;
 	}
-	const { token, ...user } = USERS[who];
+	const { token, ...user } = who === 'broken' ? { ...USERS.host, token: 'tok-broken' } : USERS[who];
 	await context.addCookies([
 		{ ...base, name: 'token', value: token },
 		{ ...base, name: 'user', value: encodeURIComponent(JSON.stringify(user)) }

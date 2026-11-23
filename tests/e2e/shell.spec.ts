@@ -11,6 +11,7 @@ test('app navigation marks the current page and reaches every section', async ({
 	await expect(nav.getByRole('link', { name: 'Home' })).toHaveAttribute('aria-current', 'page');
 
 	for (const [label, path] of [
+		['Sessions', '/sessions'],
 		['Contacts', '/contacts'],
 		['Profile', '/profile']
 	] as const) {
