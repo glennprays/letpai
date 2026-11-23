@@ -32,8 +32,7 @@
 <header class="pointer-events-none sticky top-0 z-50 px-3 pt-3 sm:px-4 sm:pt-4">
 	<div
 		class={cn(
-			'pointer-events-auto mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 rounded-sheet bg-card/90 pr-2 pl-5 shadow-float backdrop-blur-md',
-			variant === 'auth' && 'max-w-3xl'
+			'pointer-events-auto mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 rounded-sheet bg-card/90 pr-2 pl-5 shadow-float backdrop-blur-md'
 		)}
 	>
 		<Logo size="sm" href="/" />
