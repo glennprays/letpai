@@ -1,17 +1,6 @@
 <script lang="ts">
 	import { goto, invalidateAll } from '$app/navigation';
-	import {
-		ArrowLeft,
-		Bell,
-		CheckCircle2,
-		Clock,
-		ImageIcon,
-		Loader2,
-		ThumbsDown,
-		ThumbsUp,
-		Trash2,
-		XCircle
-	} from 'lucide-svelte';
+	import { Bell, Check, CircleCheck, Undo2, Trash2, ChevronLeft, ImageIcon } from 'lucide-svelte';
 	import { formatIDR } from '$lib/utils/format';
 	import {
 		approvePayment,
@@ -22,6 +11,14 @@
 	import { sendParticipantReminder } from '$lib/services/notifications';
 	import { ApiError } from '$lib/services/api';
 	import ConfirmDialog from '$lib/components/ui/ConfirmDialog.svelte';
+	import Button from '$lib/components/ui/Button.svelte';
+	import Card from '$lib/components/ui/Card.svelte';
+	import Avatar from '$lib/components/ui/Avatar.svelte';
+	import StatusPill from '$lib/components/ui/StatusPill.svelte';
+	import Seo from '$lib/components/Seo.svelte';
+	import ShareReceipt from '$lib/components/session/ShareReceipt.svelte';
+	import { PaidStamp } from '$lib/components/art';
+	import { paymentStatusOf } from '$lib/utils/status';
 	import RejectReasonModal from '$lib/components/ui/RejectReasonModal.svelte';
 	import { toast } from '$lib/stores/toast';
 	import type { PageData } from './$types';
@@ -78,24 +75,14 @@
 	);
 	const reminderDisabled = $derived(acting || remainingMs > 0 || isPaid);
 
-	const statusMeta = $derived.by(() => {
-		switch (status) {
-			case 'paid':
-				return { label: 'Paid', tone: 'text-[#047857] bg-[#10B981]/15', Icon: CheckCircle2 };
-			case 'submitted':
-				return { label: 'Proof submitted', tone: 'text-[#1E40AF] bg-[#3B82F6]/15', Icon: Clock };
-			case 'rejected':
-				return { label: 'Update requested', tone: 'text-[#92400E] bg-[#F59E0B]/15', Icon: XCircle };
-			default:
-				return { label: 'Pending', tone: 'text-[#584140] bg-[#fff0ef]', Icon: Clock };
-		}
-	});
+	const st = $derived(paymentStatusOf(status));
+	const share = $derived(data.page.fee_breakdown?.total ?? data.page.share_amount);
 
 	async function handleApprove() {
 		acting = true;
 		try {
 			await approvePayment(data.participantId);
-			toast.success('Approved');
+			toast.success('Payment approved.');
 			await invalidateAll();
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : 'Approve failed');
@@ -120,7 +107,7 @@
 		acting = true;
 		try {
 			await rejectPayment(data.participantId, reason);
-			toast.success('Update requested');
+			toast.success('Sent back. They can upload a new screenshot.');
 			showRejectModal = false;
 			await invalidateAll();
 		} catch (e) {
@@ -135,7 +122,7 @@
 		acting = true;
 		try {
 			await markPaidWithoutProof(data.participantId);
-			toast.success('Marked as paid');
+			toast.success('Marked as paid.');
 			await invalidateAll();
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : 'Mark as paid failed');
@@ -148,7 +135,7 @@
 		acting = true;
 		try {
 			const r = await sendParticipantReminder(data.participantId);
-			toast.success(r.message || 'Reminder queued');
+			toast.success(r.message || 'Reminder sent.');
 			// Optimistically push the cooldown out by 24h — the next page
 			// load will re-fetch the authoritative timestamp from the
 			// rate-limit service. Done this way so the button locks
@@ -162,7 +149,7 @@
 				} else if (typeof e.retryAfterSeconds === 'number') {
 					reminderUnavailableUntil = Date.now() + e.retryAfterSeconds * 1000;
 				}
-				toast.error(e.message || 'Too soon to remind again');
+				toast.error(e.message || 'You reminded them recently. Try again later.');
 			} else {
 				toast.error(e instanceof Error ? e.message : 'Reminder failed');
 			}
@@ -175,7 +162,7 @@
 		acting = true;
 		try {
 			await removeParticipant(data.sessionId, data.participantId);
-			toast.success('Participant removed');
+			toast.success(`${data.page.participant_name} left the session.`);
 			goto(`/sessions/${data.sessionId}`);
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : 'Remove failed');
@@ -186,189 +173,81 @@
 	}
 </script>
 
-<svelte:head>
-	<title>{data.page.participant_name} · {data.page.session_name}</title>
-</svelte:head>
+<Seo title="{data.page.participant_name} · {data.page.session_name}" noindex />
 
-<div class="min-h-screen">
-	<div class="max-w-2xl mx-auto px-4 py-8">
-		<header class="flex items-center gap-3 mb-6">
-			<button
-				type="button"
-				onclick={() => goto(`/sessions/${data.sessionId}`)}
-				class="inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded-xl bg-white hover:bg-[#fff0ef] transition-colors"
-				aria-label="Back to session"
-			>
-				<ArrowLeft class="w-5 h-5 text-[#584140]" />
-			</button>
-			<div class="flex-1 min-w-0">
-				<p class="text-xs uppercase tracking-wider text-[#584140] font-semibold">Participant in {data.page.session_name}</p>
-				<h1 class="text-2xl font-semibold text-[#251818] truncate">{data.page.participant_name}</h1>
-			</div>
-		</header>
+<div class="mx-auto max-w-5xl px-4 pt-5 pb-12 sm:px-6 md:pt-8">
+	<a href="/sessions/{data.sessionId}" class="-ml-2 inline-flex h-9 max-w-full items-center gap-1 rounded-pill pr-3 pl-1.5 text-sm font-semibold text-ink-soft hover:bg-mist hover:text-ink">
+		<ChevronLeft size={18} class="flex-none" aria-hidden="true" /><span class="truncate">{data.page.session_name}</span>
+	</a>
 
-		<section class="rounded-3xl p-4 mb-6 flex items-center gap-3 {statusMeta.tone}">
-			<statusMeta.Icon class="w-5 h-5 flex-shrink-0" />
-			<div class="flex-1">
-				<p class="text-sm font-semibold">{statusMeta.label}</p>
-				<p class="text-sm">Share: <strong>{formatIDR(data.page.fee_breakdown?.total ?? data.page.share_amount)}</strong></p>
-			</div>
-		</section>
+	<div class="mt-4 grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
+		<div class="flex min-w-0 flex-col gap-6">
+			<header class="flex items-center gap-4">
+				<Avatar size="xl" fullName={data.page.participant_name} identifier={data.participantId} />
+				<div class="min-w-0">
+					<h1 class="text-heading text-[clamp(1.75rem,4vw,2.5rem)] [overflow-wrap:anywhere]">{data.page.participant_name}</h1>
+					<div class="mt-1.5 flex flex-wrap items-center gap-2">
+						<StatusPill tone={st.tone}>{st.label}</StatusPill>
+						{#if data.page.is_expired}<StatusPill tone="neutral">Link expired</StatusPill>{/if}
+					</div>
+				</div>
+			</header>
 
-		<section class="bg-white rounded-3xl p-5 mb-6 shadow-[0_1px_3px_rgba(37,24,24,0.04)]">
-			<h2 class="text-sm font-semibold text-[#251818] mb-3">Bill breakdown</h2>
-			{#if data.page.bill_items.length === 0}
-				<p class="text-sm text-[#584140]">No bills assigned yet.</p>
-			{:else}
-				<ul class="space-y-3">
-					{#each data.page.bill_items as item}
-						{@const hasSc = data.page.fee_config && item.includes_service_charge && (data.page.fee_config.service_charge_percentage ?? 0) > 0}
-						{@const hasTax = data.page.fee_config && item.includes_tax && (data.page.fee_config.tax_percentage ?? 0) > 0}
-						{@const itemSc = hasSc ? Math.round(item.your_share * (data.page.fee_config!.service_charge_percentage!) / 100) : 0}
-						{@const itemTax = hasTax ? Math.round((item.your_share + itemSc) * (data.page.fee_config!.tax_percentage!) / 100) : 0}
-						{@const itemTotal = item.your_share + itemSc + itemTax}
-						<li class="text-sm">
-							<div class="flex items-start justify-between gap-3">
-								<span class="text-[#251818] truncate">{item.description}</span>
-								<span class="text-[#251818] font-semibold flex-shrink-0">{formatIDR(itemTotal)}</span>
-							</div>
-							<div class="flex items-center justify-between text-xs mt-0.5">
-								<span class="text-[#584140]">{formatIDR(item.amount)} ÷ {item.shared_with} {item.shared_with === 1 ? 'person' : 'people'}</span>
-								<span class="text-[#251818]">{formatIDR(item.your_share)}</span>
-							</div>
-							{#if hasSc || hasTax}
-								<div class="ml-0 mt-1 space-y-0.5">
-									{#if hasSc}
-										<div class="flex items-center justify-between text-xs">
-											<span class="text-[#584140]">+ Service charge ({data.page.fee_config!.service_charge_percentage}%)</span>
-											<span class="text-[#251818]">{formatIDR(itemSc)}</span>
-										</div>
-									{/if}
-									{#if hasTax}
-										<div class="flex items-center justify-between text-xs">
-											<span class="text-[#584140]">+ Tax ({data.page.fee_config!.tax_percentage}%)</span>
-											<span class="text-[#251818]">{formatIDR(itemTax)}</span>
-										</div>
-									{/if}
-								</div>
-							{/if}
-						</li>
-					{/each}
-				</ul>
-				{#if data.page.fee_breakdown}
-					<div class="mt-4 pt-3 border-t border-[#fbe3e1]">
-						<p class="text-xs font-semibold text-[#584140] uppercase tracking-wide mb-2">Summary</p>
-						<div class="space-y-1">
-							<div class="flex items-center justify-between text-sm">
-								<span class="text-[#584140]">Total items</span>
-								<span class="text-[#251818]">{formatIDR(data.page.fee_breakdown.items_total)}</span>
-							</div>
-							{#if data.page.fee_breakdown.service_charge_share > 0}
-								<div class="flex items-center justify-between text-sm">
-									<span class="text-[#584140]">Total service charge</span>
-									<span class="text-[#251818]">{formatIDR(data.page.fee_breakdown.service_charge_share)}</span>
-								</div>
-							{/if}
-							{#if data.page.fee_breakdown.tax_share > 0}
-								<div class="flex items-center justify-between text-sm">
-									<span class="text-[#584140]">Total tax</span>
-									<span class="text-[#251818]">{formatIDR(data.page.fee_breakdown.tax_share)}</span>
-								</div>
-							{/if}
-						</div>
-						<div class="h-px bg-[#fbe3e1] my-2"></div>
-						<div class="flex items-center justify-between text-sm font-semibold">
-							<span class="text-[#251818]">Total due</span>
-							<span class="text-[#ae2f34]">{formatIDR(data.page.fee_breakdown.total)}</span>
-						</div>
+			<section class="flex flex-wrap items-center gap-x-4 gap-y-2" aria-label="Their share">
+				<p class="text-amount text-[clamp(2.75rem,8vw,4rem)] leading-[0.9] tracking-[-0.045em]">{formatIDR(share)}</p>
+				{#if isPaid}<PaidStamp animate />{/if}
+			</section>
+
+			<!-- The one decision this screen exists for, first. -->
+			{#if status === 'submitted'}
+				<Card>
+					<h2 class="text-heading text-xl">Check the screenshot</h2>
+					<p class="mt-1 text-[15px] text-ink-soft">Does the transfer match {formatIDR(share)}?</p>
+					<div class="mt-4 flex flex-wrap gap-2">
+						<Button variant="ink" leftIcon={Check} loading={acting && !rejectSubmitting} disabled={acting} onclick={handleApprove}>Approve</Button>
+						<Button variant="secondary" leftIcon={Undo2} disabled={acting} onclick={openRequestUpdate}>Send back</Button>
+					</div>
+				</Card>
+			{:else if !isPaid}
+				<Card>
+					<h2 class="text-heading text-xl">{status === 'rejected' ? 'Waiting for a new screenshot' : 'Not paid yet'}</h2>
+					{#if data.page.rejection_reason}
+						<p class="mt-2 rounded-field bg-rejected-tint px-4 py-3 text-[15px] text-rejected">You said: "{data.page.rejection_reason}"</p>
+					{:else}
+						<p class="mt-1 text-[15px] text-ink-soft">They haven't uploaded a transfer screenshot.</p>
+					{/if}
+					<div class="mt-4 flex flex-wrap gap-2">
+						<Button variant="secondary" leftIcon={Bell} disabled={reminderDisabled} onclick={handleRemind}>
+							{remainingMs > 0 ? `Remind again in ${formatCooldown(remainingMs)}` : 'Remind on WhatsApp'}
+						</Button>
+						<Button variant="ghost" leftIcon={CircleCheck} disabled={acting} onclick={handleMarkPaid}>Mark as paid (no proof)</Button>
+					</div>
+				</Card>
+			{/if}
+
+			<section aria-labelledby="proof-h">
+				<h2 id="proof-h" class="text-heading mb-3 text-xl">{status === 'rejected' ? 'Last screenshot' : 'Transfer screenshot'}</h2>
+				{#if proofUrl}
+					<a href={proofUrl} target="_blank" rel="noopener noreferrer" class="block overflow-hidden rounded-card bg-card shadow-raised" aria-label="Open the screenshot full size">
+						<img src={proofUrl} alt="Transfer screenshot from {data.page.participant_name}" class="max-h-[440px] w-full bg-fog object-contain" />
+					</a>
+				{:else}
+					<div class="flex items-center gap-3 rounded-card border-2 border-dashed border-hairline px-5 py-6 text-[15px] text-ink-soft">
+						<ImageIcon size={22} aria-hidden="true" />{isPaid ? 'Marked as paid by you, no screenshot.' : 'Nothing uploaded yet.'}
 					</div>
 				{/if}
-			{/if}
-		</section>
-
-		{#if proofUrl}
-			<section class="bg-white rounded-3xl p-5 mb-6 shadow-[0_1px_3px_rgba(37,24,24,0.04)]">
-				<h2 class="text-sm font-semibold text-[#251818] mb-3">Payment proof</h2>
-				<a
-					href={proofUrl}
-					target="_blank"
-					rel="noopener noreferrer"
-					class="block rounded-2xl overflow-hidden bg-[#fff0ef] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6]"
-				>
-					<img src={proofUrl} alt="Payment proof from {data.page.participant_name}" class="w-full max-h-[320px] object-contain" />
-				</a>
 			</section>
-		{:else if status === 'pending' || status === 'rejected'}
-			<section class="bg-white rounded-3xl p-5 mb-6 shadow-[0_1px_3px_rgba(37,24,24,0.04)] flex items-center gap-3">
-				<ImageIcon class="w-6 h-6 text-[#584140]/40" />
-				<p class="text-sm text-[#584140]">No proof uploaded yet.</p>
-			</section>
-		{/if}
 
-		{#if data.page.rejection_reason}
-			<section class="bg-[#F59E0B]/15 rounded-3xl p-4 mb-6 text-sm text-[#92400E]">
-				<p class="font-semibold mb-1">Last update reason</p>
-				<p>{data.page.rejection_reason}</p>
-			</section>
-		{/if}
+		</div>
 
-		<section class="bg-white rounded-3xl p-5 shadow-[0_1px_3px_rgba(37,24,24,0.04)]">
-			<h2 class="text-sm font-semibold text-[#251818] mb-3">Actions</h2>
-			<div class="flex flex-wrap gap-2">
-				{#if status === 'submitted'}
-					<button
-						type="button"
-						onclick={handleApprove}
-						disabled={acting}
-						class="inline-flex items-center gap-2 px-4 py-2 rounded-2xl text-sm font-medium text-[#047857] bg-[#10B981]/15 hover:bg-[#10B981]/25 disabled:opacity-50 transition-colors"
-					>
-						{#if acting}<Loader2 class="w-4 h-4 animate-spin" />{:else}<ThumbsUp class="w-4 h-4" />{/if}
-						Approve
-					</button>
-					<button
-						type="button"
-						onclick={openRequestUpdate}
-						disabled={acting}
-						class="inline-flex items-center gap-2 px-4 py-2 rounded-2xl text-sm font-medium text-[#92400E] bg-[#F59E0B]/15 hover:bg-[#F59E0B]/25 disabled:opacity-50 transition-colors"
-					>
-						<ThumbsDown class="w-4 h-4" />
-						Request update
-					</button>
-				{/if}
-				{#if !isPaid}
-					<button
-						type="button"
-						onclick={handleMarkPaid}
-						disabled={acting}
-						class="inline-flex items-center gap-2 px-4 py-2 rounded-2xl text-sm font-medium text-[#047857] hover:bg-[#10B981]/10 disabled:opacity-50 transition-colors"
-					>
-						<CheckCircle2 class="w-4 h-4" /> Mark as paid
-					</button>
-					<button
-						type="button"
-						onclick={handleRemind}
-						disabled={reminderDisabled}
-						title={remainingMs > 0 ? `Next reminder available in ${formatCooldown(remainingMs)}` : 'Send WhatsApp reminder'}
-						class="inline-flex items-center gap-2 px-4 py-2 rounded-2xl text-sm font-medium text-[#251818] bg-[#fff0ef] hover:bg-[#fbe3e1] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-					>
-						<Bell class="w-4 h-4" />
-						{#if remainingMs > 0}
-							Wait {formatCooldown(remainingMs)}
-						{:else}
-							Remind
-						{/if}
-					</button>
-				{/if}
-				<button
-					type="button"
-					onclick={() => (showRemove = true)}
-					disabled={acting}
-					class="inline-flex items-center gap-2 px-4 py-2 rounded-2xl text-sm font-medium text-[#991B1B] hover:bg-[#EF4444]/10 disabled:opacity-50 transition-colors"
-				>
-					<Trash2 class="w-4 h-4" /> Remove
-				</button>
-			</div>
-		</section>
+		<aside class="lg:sticky lg:top-6" aria-label="Their bill">
+			<ShareReceipt page={data.page} title="Their share" />
+		</aside>
+
+		<!-- Destructive action last, after the receipt on phones. -->
+		<div class="border-t-[1.5px] border-dashed border-hairline pt-5 lg:col-start-1">
+			<Button variant="ghost" leftIcon={Trash2} disabled={acting} onclick={() => (showRemove = true)} class="-ml-3 text-rejected hover:bg-rejected-tint">Remove from session</Button>
+		</div>
 	</div>
 </div>
 
@@ -382,15 +261,16 @@
 
 <ConfirmDialog
 	open={showRemove}
-	title="Remove participant?"
+	title="Remove {data.page.participant_name}?"
 	message={isPaid
-		? `${data.page.participant_name} has already paid ${formatIDR(data.page.share_amount)}. Removing won't refund anything; remaining shares will rebalance.`
+		? `They already paid ${formatIDR(data.page.share_amount)}. Removing them won't refund it, and the other shares change.`
 		: status === 'submitted' || status === 'rejected'
-		? `${data.page.participant_name} has submitted a proof. Removing discards their upload.`
-		: `Remove ${data.page.participant_name} from this session?`}
-	confirmText={acting ? 'Removing…' : 'Remove'}
+			? 'Their uploaded screenshot will be discarded.'
+			: 'The other shares are recalculated without them.'}
+	confirmText="Remove"
 	cancelText="Keep"
 	variant="danger"
+	loading={acting}
 	onconfirm={handleRemove}
 	oncancel={() => (showRemove = false)}
 />

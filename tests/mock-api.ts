@@ -99,7 +99,7 @@ function detailParticipant(s: FxSession, p: FxSession['participants'][number]) {
 					status: p.notification,
 					sent_at: hoursAgo(p.notified_hours_ago ?? 26),
 					error_message: p.notification === 'sent' ? null : 'Recipient number is not on WhatsApp',
-					friendly_status: p.notification === 'sent' ? 'Delivered' : p.notification === 'failed' ? 'Retrying' : 'Not delivered'
+					friendly_status: p.notification === 'sent' ? 'Sent' : p.notification === 'failed' ? 'Retrying…' : 'Failed — tap to retry'
 				};
 	return {
 		participant_id: p.participant_id,

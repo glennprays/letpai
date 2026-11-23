@@ -12,8 +12,6 @@ export const HEX_ALLOWLIST: string[] = [
 	'src/lib/components/contacts/GroupBadge.svelte',
 	'src/routes/(app)/contacts/+page.svelte',
 	'src/routes/(app)/profile/+page.svelte',
-	'src/routes/(app)/sessions/[id]/+page.svelte',
-	'src/routes/(app)/sessions/[id]/participants/[participantId]/+page.svelte',
 	'src/routes/(app)/sessions/new/+page.svelte',
 	'src/routes/(app)/settings/+page.svelte',
 	'src/routes/+error.svelte',

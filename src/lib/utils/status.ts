@@ -48,3 +48,32 @@ export function sessionGroup(status: string): SessionGroup {
 	if (status === 'cancelled') return 'cancelled';
 	return 'open';
 }
+
+/** What the host should know about the WhatsApp message to one person. */
+export type Delivery =
+	| { state: 'none' }
+	| { state: 'sending' }
+	| { state: 'sent'; at?: string }
+	| { state: 'retrying' }
+	| { state: 'failed'; reason?: string | null };
+
+// Mirrors friendlyNotificationStatus in the backend (get_session_detail.go):
+// queued/pending/sending are in flight until they're 2 min old ("Stuck"),
+// failed auto-retries, dead needs a manual retry.
+export function deliveryOf(n: { status: string; friendly_status?: string; sent_at?: string; error_message?: string | null } | null | undefined): Delivery {
+	if (!n) return { state: 'none' };
+	switch (n.status) {
+		case 'sent':
+			return { state: 'sent', at: n.sent_at };
+		case 'queued':
+		case 'pending':
+		case 'sending':
+			return n.friendly_status?.startsWith('Stuck') ? { state: 'failed', reason: 'Stuck in the queue' } : { state: 'sending' };
+		case 'failed':
+			return { state: 'retrying' };
+		case 'dead':
+			return { state: 'failed', reason: n.error_message };
+		default:
+			return { state: 'none' };
+	}
+}
