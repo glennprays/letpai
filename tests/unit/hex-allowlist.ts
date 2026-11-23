@@ -22,8 +22,6 @@ export const HEX_ALLOWLIST: string[] = [
 	'src/routes/(auth)/login/+page.svelte',
 	'src/routes/(auth)/register/+page.svelte',
 	'src/routes/+error.svelte',
-	'src/routes/+page.svelte',
-	'src/routes/about/+page.svelte',
 	'src/routes/admin/+layout.svelte',
 	'src/routes/admin/+page.svelte',
 	'src/routes/admin/admins/+page.svelte',
