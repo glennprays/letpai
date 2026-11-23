@@ -14,6 +14,8 @@
 	import EmptyState from '$lib/components/ui/EmptyState.svelte';
 	import ProgressStepper from '$lib/components/ui/ProgressStepper.svelte';
 	import { toast } from '$lib/stores/toast';
+	import { formatIDR } from '$lib/utils/format';
+	import { ArtCoin, ArtHelmet, ArtPhone, ArtReceipt, ArtSatay, PaidStamp, Receipt } from '$lib/components/art';
 	import { color } from '$lib/constants/design';
 	import { Bell, Check, Plus, Inbox, Send } from 'lucide-svelte';
 	import type { Snippet } from 'svelte';
@@ -143,8 +145,37 @@
 	{/snippet}
 	{@render section('Cards and avatars', cards)}
 
+	{#snippet art()}
+		<div class="flex flex-wrap items-end gap-8">
+			<ArtReceipt class="w-24" /><ArtSatay class="w-36" /><ArtPhone class="w-24" /><ArtCoin class="w-20" /><ArtHelmet class="w-32" />
+		</div>
+		<div class="mt-8 grid gap-6 sm:grid-cols-2">
+			<Receipt>
+				<p class="text-eyebrow">The bill</p>
+				<div class="mt-3 space-y-2 text-sm">
+					<div class="flex justify-between"><span>Sate kambing ×6</span><span class="tabular-nums">540.000</span></div>
+					<div class="flex justify-between"><span>Es teh manis jumbo</span><span class="tabular-nums">168.000</span></div>
+					<div class="my-3 border-t-[1.5px] border-dashed border-hairline"></div>
+					<div class="flex justify-between font-semibold"><span>Total</span><span class="text-amount">{formatIDR(1176915)}</span></div>
+				</div>
+			</Receipt>
+			<div class="relative">
+				<Receipt float tilt={1.5}>
+					<p class="text-eyebrow">Your share</p>
+					<p class="text-amount mt-2 text-4xl">{formatIDR(68145)}</p>
+				</Receipt>
+				<PaidStamp class="absolute top-6 right-4" animate />
+			</div>
+		</div>
+		<div class="mt-6 flex items-center gap-4"><PaidStamp size="sm" /><PaidStamp /><PaidStamp size="lg" label="Settled" /></div>
+	{/snippet}
+	{@render section('Illustrations, receipt and stamp', art)}
+
 	{#snippet empty()}
-		<EmptyState icon={Inbox} title="No sessions yet" description="Start one after your next dinner, trip or groceries run." action={{ label: 'New session', icon: Plus, href: '/dev/styleguide' }} />
+		<EmptyState title="No sessions yet" description="Start one after your next dinner, trip or groceries run." action={{ label: 'New session', icon: Plus, href: '/dev/styleguide' }}>
+			{#snippet art()}<ArtReceipt />{/snippet}
+		</EmptyState>
+		<EmptyState class="mt-4" size="sm" icon={Inbox} title="No contacts match" description="Try another name or number." />
 	{/snippet}
 	{@render section('Empty state', empty)}
 
