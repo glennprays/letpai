@@ -25,3 +25,8 @@ vite.config.ts.timestamp-*
 # Claude Code (per-machine permission overrides)
 .claude/settings.local.json
 .claude/
+
+# Test output
+/test-results
+/playwright-report
+/tests/screenshots/current

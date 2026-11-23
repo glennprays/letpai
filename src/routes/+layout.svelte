@@ -1,5 +1,13 @@
 <script lang="ts">
 	import favicon from '$lib/assets/favicon.svg';
+	// Fonts are imported from JS (not via @import in app.css) so Vite resolves
+	// and fingerprints the woff2 files; Tailwind's CSS pipeline left the
+	// relative url(./files/...) paths unresolved and they 404'd in production.
+	import '@fontsource/plus-jakarta-sans/400.css';
+	import '@fontsource/plus-jakarta-sans/500.css';
+	import '@fontsource/plus-jakarta-sans/600.css';
+	import '@fontsource/plus-jakarta-sans/700.css';
+	import '@fontsource/plus-jakarta-sans/800.css';
 	import '../app.css';
 	import { QueryClientProvider } from '@tanstack/svelte-query';
 	import { queryClient } from '$lib/queryClient';
