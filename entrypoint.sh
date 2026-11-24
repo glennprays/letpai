@@ -1,12 +1,5 @@
 #!/bin/sh
-# Generate runtime-env.js from container environment variables.
-# This allows configuring VITE_API_URL at container startup
-# without rebuilding the Docker image.
-
-cat > /app/build/client/runtime-env.js <<EOF
-window.__env__ = {
-  VITE_API_URL: "${VITE_API_URL:-http://localhost:3000/api/v1}"
-};
-EOF
-
+# Runtime config (VITE_API_URL) is read from the container environment by
+# the app itself: /env.js for the browser (src/hooks.server.ts) and
+# process.env on the server (src/lib/services/api.ts). Nothing to generate.
 exec "$@"

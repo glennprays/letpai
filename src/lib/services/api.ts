@@ -1,9 +1,14 @@
 import { browser } from '$app/environment';
 
-const API_BASE =
-	(typeof window !== 'undefined' && (window as any).__env__?.VITE_API_URL) ||
-	import.meta.env.VITE_API_URL ||
-	'http://localhost:3000/api/v1';
+// Browser: /env.js (served by hooks.server.ts from the container env).
+// Server: the container env at runtime. import.meta.env is baked in at build
+// time, so it only applies to local dev, where .env.local sets it.
+const runtimeUrl =
+	typeof window !== 'undefined'
+		? (window as any).__env__?.VITE_API_URL
+		: (globalThis as any).process?.env?.VITE_API_URL;
+
+const API_BASE = runtimeUrl || import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
 
 // Two parallel cookie namespaces exist:
 //   - `token` for end-user sessions (read by /(app) layout gates)
