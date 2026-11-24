@@ -195,7 +195,7 @@ async function request(
 	}
 
 	if (!response.ok) {
-		if (response.status === 401) {
+		if (response.status === 401 && browser) {
 			handle401(endpoint);
 		}
 		throw await buildApiError(response, endpoint);
