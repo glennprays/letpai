@@ -1,250 +1,149 @@
 <script lang="ts">
-	import {
-		RefreshCw,
-		QrCode,
-		Loader2,
-		CheckCircle2,
-		XCircle,
-		Clock
-	} from 'lucide-svelte';
-	import {
-		generateQRCode,
-		getWhatsAppStatus,
-		type QRCodeResponse,
-		type WhatsAppStatus
-	} from '$lib/services/admin';
+	import { untrack } from 'svelte';
+	import { CircleCheck, QrCode, RefreshCw } from 'lucide-svelte';
+	import Seo from '$lib/components/Seo.svelte';
+	import AdminHeader from '$lib/components/admin/AdminHeader.svelte';
+	import Button from '$lib/components/ui/Button.svelte';
+	import Card from '$lib/components/ui/Card.svelte';
+	import StatusPill from '$lib/components/ui/StatusPill.svelte';
+	import { generateQRCode, getWhatsAppStatus, type QRCodeResponse, type WhatsAppStatus } from '$lib/services/admin';
+	import { toUserMessage } from '$lib/services/api';
+	import { gatewayState, timeAgo } from '$lib/utils/admin';
+	import { formatWhatsappDisplay } from '$lib/utils/phone';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
 
-	// data is a prop, which is reactive but referencing it lazily inside
-	// $state() captures only the initial value. The pattern svelte-check
-	// recommends is initializing from the prop and reacting to changes
-	// via $effect if needed; here the initial snapshot is the source of
-	// truth, then user actions overwrite the local state.
-	let status = $state<WhatsAppStatus | null>(null);
+	// Server snapshot first; refreshes and pairing overwrite it locally.
+	let status = $state<WhatsAppStatus | null>(untrack(() => data.initialStatus));
 	let refreshing = $state(false);
-	$effect(() => {
-		status = data.initialStatus;
-	});
+	let refreshError = $state('');
 	let qr = $state<QRCodeResponse | null>(null);
 	let qrLoading = $state(false);
-	let qrError = $state<string | null>(null);
+	let qrError = $state('');
+	let now = $state(Date.now());
 
-	// Poll for status while a QR has been generated but the gateway hasn't
-	// flipped to "connected" yet. Stop polling when the page is hidden or
-	// the user navigates away.
-	let pollTimer: ReturnType<typeof setInterval> | null = null;
+	const gateway = $derived(gatewayState(status));
+	const connected = $derived(status?.is_connected === true);
+	const secondsLeft = $derived(qr ? Math.max(0, Math.round((Date.parse(qr.qr_code_expires_at) - now) / 1000)) : 0);
+	const expired = $derived(!!qr && secondsLeft === 0);
+	const qrSrc = $derived(qr ? (/^data:image\//.test(qr.qr_code) ? qr.qr_code : `data:image/png;base64,${qr.qr_code}`) : '');
 
-	function startPoll() {
-		if (pollTimer) return;
-		pollTimer = setInterval(refreshStatus, 5000);
-	}
-	function stopPoll() {
-		if (pollTimer) {
-			clearInterval(pollTimer);
-			pollTimer = null;
-		}
-	}
-
+	// While a code is on screen: tick the countdown every second and ask the
+	// gateway every 5 s whether the phone has linked.
 	$effect(() => {
-		const connected = status?.is_connected === true;
-		if (qr && !connected) startPoll();
-		else stopPoll();
-		return stopPoll;
+		if (!qr || connected) return;
+		const tick = setInterval(() => (now = Date.now()), 1000);
+		const poll = setInterval(() => !expired && refresh(true), 5000);
+		return () => {
+			clearInterval(tick);
+			clearInterval(poll);
+		};
 	});
 
-	async function refreshStatus() {
-		refreshing = true;
+	async function refresh(quiet = false) {
+		if (!quiet) refreshing = true;
+		refreshError = '';
 		try {
 			status = await getWhatsAppStatus();
-			if (status?.is_connected) {
-				qr = null;
-				qrError = null;
-			}
+			if (status?.is_connected) qr = null;
 		} catch (err) {
-			console.warn('refresh status failed:', err);
+			if (!quiet) refreshError = toUserMessage(err, "Couldn't reach the gateway.");
 		} finally {
 			refreshing = false;
 		}
 	}
 
-	async function handleGenerateQR(e: Event) {
-		e.preventDefault();
-		// No phone input here — the gateway's JWT is already
-		// phone-scoped. See generateQRCode() in services/admin.ts.
-		qrError = null;
+	async function pair() {
+		qrError = '';
 		qrLoading = true;
 		try {
 			qr = await generateQRCode();
-			await refreshStatus();
+			now = Date.now();
 		} catch (err) {
 			qr = null;
-			qrError = err instanceof Error ? err.message : 'Failed to generate QR';
+			qrError = toUserMessage(err, "The gateway didn't return a code. Try again.");
 		} finally {
 			qrLoading = false;
 		}
 	}
 
-	const statusBadge = $derived.by(() => {
-		if (!status) return { label: 'Unknown', tone: 'neutral' as const, Icon: Clock };
-		if (status.is_connected) return { label: 'Connected', tone: 'success' as const, Icon: CheckCircle2 };
-		if (status.gateway_token_valid)
-			return { label: 'Token saved · not paired', tone: 'warning' as const, Icon: Clock };
-		return { label: 'Not paired', tone: 'danger' as const, Icon: XCircle };
-	});
-
-	const badgeClasses = $derived(
-		statusBadge.tone === 'success'
-			? 'text-[#047857] bg-[#10B981]/15'
-			: statusBadge.tone === 'warning'
-				? 'text-[#92400E] bg-[#F59E0B]/15'
-				: statusBadge.tone === 'danger'
-					? 'text-[#991B1B] bg-[#EF4444]/15'
-					: 'text-[#584140] bg-[#fff0ef]'
-	);
-
-	function lastConnectedRel(iso?: string): string {
-		if (!iso) return 'never';
-		const t = new Date(iso).getTime();
-		if (Number.isNaN(t)) return 'never';
-		const diffSec = Math.max(0, Math.round((Date.now() - t) / 1000));
-		if (diffSec < 60) return 'just now';
-		if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m ago`;
-		if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}h ago`;
-		return `${Math.floor(diffSec / 86400)}d ago`;
-	}
+	const mmss = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 </script>
 
-<svelte:head>
-	<title>WhatsApp gateway · Admin</title>
-</svelte:head>
+<Seo title="WhatsApp gateway" noindex />
 
-<div style="font-family:'Plus Jakarta Sans',sans-serif;">
-	<main class="max-w-4xl mx-auto px-6 py-10">
-		<div class="mb-8">
-			<h1 class="text-3xl font-bold text-[#251818]">WhatsApp gateway</h1>
-			<p class="text-sm text-[#584140] mt-1">
-				Pair Letpai's bill notifications with a WhatsApp account through the gateway.
-			</p>
-		</div>
+<AdminHeader title="WhatsApp gateway" description="Every bill, reminder and sign-in code goes out through this connection.">
+	{#snippet actions()}
+		<Button variant="secondary" size="sm" leftIcon={RefreshCw} loading={refreshing} onclick={() => refresh()}>Check now</Button>
+	{/snippet}
+</AdminHeader>
 
-		<!-- Status card -->
-		<section
-			class="bg-white rounded-3xl shadow-[0_1px_3px_rgba(37,24,24,0.04)] p-6 mb-6"
-		>
-			<div class="flex items-start justify-between gap-4 flex-wrap">
+<div class="mt-6 grid gap-4 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+	<Card class="self-start">
+		<section aria-labelledby="gw-status">
+			<div class="flex items-center justify-between gap-3">
+				<h2 id="gw-status" class="text-eyebrow text-ink-soft">Status</h2>
+				<StatusPill tone={gateway.tone}>{gateway.label}</StatusPill>
+			</div>
+			<p class="mt-4 text-ink">{gateway.detail}</p>
+			<dl class="mt-5 grid grid-cols-2 gap-4 text-sm">
 				<div>
-					<p class="text-xs font-semibold uppercase tracking-wide text-[#584140] mb-1">Status</p>
-					<div class="flex items-center gap-2">
-						<span
-							class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold {badgeClasses}"
-						>
-							<statusBadge.Icon size={14} />
-							{statusBadge.label}
-						</span>
-						{#if status?.phone_number}
-							<span class="text-sm text-[#251818] font-medium">+{status.phone_number}</span>
-						{/if}
-					</div>
-					{#if status?.message}
-						<p class="text-xs text-[#584140] mt-2">{status.message}</p>
-					{/if}
-					<p class="text-xs text-[#584140]/80 mt-1">
-						Phone linked through your gateway token.
-					</p>
-					{#if status?.last_connected_at}
-						<p class="text-xs text-[#584140]/80 mt-1">
-							Last connected {lastConnectedRel(status.last_connected_at)}
-						</p>
-					{/if}
+					<dt class="text-ink-soft">Sending from</dt>
+					<dd class="mt-0.5 font-semibold text-ink tabular-nums">{status?.phone_number ? formatWhatsappDisplay(status.phone_number) : '—'}</dd>
 				</div>
-				<button
-					type="button"
-					onclick={refreshStatus}
-					disabled={refreshing}
-					class="inline-flex items-center gap-2 px-3 py-2 rounded-2xl text-sm font-medium text-[#251818] bg-[#fff0ef] hover:bg-[#f5dddb] transition-colors disabled:opacity-50"
-				>
-					{#if refreshing}
-						<Loader2 class="w-4 h-4 animate-spin" />
-					{:else}
-						<RefreshCw size={16} />
-					{/if}
-					Refresh
-				</button>
-			</div>
+				<div>
+					<dt class="text-ink-soft">Last connected</dt>
+					<dd class="mt-0.5 font-semibold text-ink">{timeAgo(status?.last_connected_at)}</dd>
+				</div>
+			</dl>
+			{#if refreshError}<p class="mt-4 text-sm text-rejected" role="alert">{refreshError}</p>{/if}
 		</section>
+	</Card>
 
-		<!-- QR pairing card -->
-		<section class="bg-white rounded-3xl shadow-[0_1px_3px_rgba(37,24,24,0.04)] p-6 mb-6">
-			<div class="flex items-center gap-2 mb-1">
-				<QrCode size={18} class="text-[#ae2f34]" />
-				<h2 class="text-lg font-semibold text-[#251818]">Pair a device</h2>
-			</div>
-			<p class="text-sm text-[#584140] mb-4">
-				Click <strong>Generate QR</strong>, then scan it from the WhatsApp phone you want to
-				pair (Settings → Linked devices → Link a device). The gateway already knows which
-				phone to pair from the token you configured server-side.
-			</p>
+	<Card>
+		<section aria-labelledby="gw-pair">
+			<h2 id="gw-pair" class="text-heading text-lg">{status?.is_connected ? 'Link a different phone' : 'Link a phone'}</h2>
+			<ol class="mt-3 flex flex-col gap-2 text-sm text-ink">
+				{#each ['Show a code here.', 'On the sending phone, open WhatsApp → Settings → Linked devices → Link a device.', 'Scan the code. This page updates by itself once it links.'] as stepText, i (i)}
+					<li class="flex gap-3">
+						<span class="grid size-6 flex-none place-items-center rounded-full bg-mist text-xs font-bold text-ink tabular-nums">{i + 1}</span>
+						<span class="pt-0.5">{stepText}</span>
+					</li>
+				{/each}
+			</ol>
 
-			<form onsubmit={handleGenerateQR}>
-				<button
-					type="submit"
-					disabled={qrLoading}
-					class="inline-flex items-center justify-center gap-2 px-5 h-12 rounded-2xl text-sm font-semibold text-white bg-gradient-to-br from-[#ae2f34] to-[#FF6B6B] hover:opacity-95 disabled:opacity-50 transition-all"
-				>
-					{#if qrLoading}
-						<Loader2 class="w-4 h-4 animate-spin" />
-					{:else}
-						<QrCode size={16} />
-					{/if}
-					{qr ? 'Refresh QR' : 'Generate QR'}
-				</button>
-			</form>
-
-			{#if qrError}
-				<p class="text-sm text-[#EF4444] mt-3">{qrError}</p>
-			{/if}
-
-			{#if qr}
-				<div class="mt-6 flex flex-col items-center gap-3">
-					{#if /^data:image\//.test(qr.qr_code)}
-						<img
-							src={qr.qr_code}
-							alt="WhatsApp pairing QR"
-							class="w-64 h-64 rounded-2xl bg-white p-3 shadow-[0_1px_3px_rgba(37,24,24,0.06)]"
-						/>
-					{:else}
-						<img
-							src={`data:image/png;base64,${qr.qr_code}`}
-							alt="WhatsApp pairing QR"
-							class="w-64 h-64 rounded-2xl bg-white p-3 shadow-[0_1px_3px_rgba(37,24,24,0.06)]"
-						/>
-					{/if}
-					<p class="text-xs text-[#584140]">
-						QR expires {lastConnectedRel(qr.qr_code_expires_at) === 'just now'
-							? 'soon'
-							: `at ${new Date(qr.qr_code_expires_at).toLocaleTimeString()}`}.
-						Polling every 5s — this page will update when the device connects.
+			{#if qr && !expired}
+				<div class="mt-6 flex flex-col items-center gap-3 rounded-sheet bg-fog p-5">
+					<img src={qrSrc} alt="WhatsApp pairing code" width="224" height="224" class="size-56 rounded-card bg-card p-3" />
+					<p class="text-sm text-ink-soft" aria-live="polite">
+						Expires in <strong class="text-ink tabular-nums">{mmss(secondsLeft)}</strong> · checking every 5 seconds
 					</p>
 				</div>
+			{:else if expired}
+				<div class="mt-6 rounded-sheet bg-fog p-5 text-center">
+					<p class="font-semibold text-ink">That code expired</p>
+					<p class="mt-1 text-sm text-ink-soft">Codes last a short while for safety. Show a fresh one and scan again.</p>
+				</div>
+			{:else if status?.is_connected && !qr}
+				<p class="mt-5 flex items-center gap-2 text-sm font-semibold text-paid">
+					<CircleCheck size={16} aria-hidden="true" /> Linked and sending. Only re-link if you're switching phones.
+				</p>
 			{/if}
-		</section>
 
-		<!-- Token / device lifecycle moved to .env management.
-		     - To rotate the gateway token: edit WHATSAPP_API_KEY in
-		       letpai-backend/.env and restart the backend.
-		     - There's no UI-driven "Disconnect device" anymore: WAGA
-		       doesn't expose a gateway logout, and the previous card
-		       only flipped a local column we no longer read.
-		-->
-		<section class="bg-[#fff0ef]/60 rounded-3xl p-5 text-sm text-[#584140]">
-			<p class="font-medium text-[#251818] mb-1">Rotate or replace the gateway token</p>
-			<p>
-				Update <code class="font-mono text-[#ae2f34]">WHATSAPP_API_KEY</code> in the backend's
-				<code class="font-mono text-[#ae2f34]">.env</code> and restart it. The SDK reads the
-				token at startup and binds every call to the phone the gateway issued it for.
-			</p>
+			{#if qrError}<p class="mt-4 text-sm text-rejected" role="alert">{qrError}</p>{/if}
+
+			<Button class="mt-5" variant={status?.is_connected ? 'secondary' : 'ink'} leftIcon={QrCode} loading={qrLoading} onclick={pair}>
+				{qr ? 'Show a new code' : 'Show pairing code'}
+			</Button>
 		</section>
-	</main>
+	</Card>
 </div>
+
+<section class="mt-4 rounded-card bg-mist p-5 text-sm text-ink-soft" aria-labelledby="gw-token">
+	<h2 id="gw-token" class="font-semibold text-ink">Changing the gateway token</h2>
+	<p class="mt-1">
+		Set <code class="rounded-sm bg-card px-1.5 py-0.5 font-mono text-[13px] text-ink">WHATSAPP_API_KEY</code> in the backend's
+		<code class="rounded-sm bg-card px-1.5 py-0.5 font-mono text-[13px] text-ink">.env</code> and restart it. The token decides which phone number messages come from.
+	</p>
+</section>

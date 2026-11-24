@@ -112,7 +112,7 @@
 				side === 'top' ? 'bottom-[calc(100%+6px)]' : 'top-[calc(100%+6px)]',
 				align === 'right' ? 'right-0' : 'left-0'
 			)}
-			transition:fly={{ y: side === 'top' ? 4 : -4, duration: 120 }}
+			in:fly={{ y: side === "top" ? 4 : -4, duration: 120 }}
 		>
 			{#each items as item, i (i)}
 				{@const Icon = item.icon}

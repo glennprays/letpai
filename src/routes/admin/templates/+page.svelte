@@ -1,234 +1,192 @@
 <script lang="ts">
 	import { invalidateAll } from '$app/navigation';
-	import { Loader2, Save, FileText, AlertCircle, Send } from 'lucide-svelte';
+	import { CloudOff, RotateCcw, Save, Send, TriangleAlert } from 'lucide-svelte';
+	import Seo from '$lib/components/Seo.svelte';
+	import AdminHeader from '$lib/components/admin/AdminHeader.svelte';
+	import Button from '$lib/components/ui/Button.svelte';
+	import Card from '$lib/components/ui/Card.svelte';
+	import EmptyState from '$lib/components/ui/EmptyState.svelte';
+	import Input from '$lib/components/ui/Input.svelte';
 	import { updateAdminTemplate, type AdminMessageTemplate } from '$lib/services/admin';
+	import { toUserMessage } from '$lib/services/api';
 	import { toast } from '$lib/stores/toast';
-	import type { PageData } from './$types';
+	import { cn } from '$lib/utils/cn';
+	import { renderTemplate, templateVariables, timeAgo } from '$lib/utils/admin';
+	import { samplesFor } from './samples';
 	import TestSendModal from './TestSendModal.svelte';
+	import WhatsAppPreview from './WhatsAppPreview.svelte';
+	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
 
-	// Local edit buffers keyed by template_id. They live outside the
-	// server-supplied list so unsaved edits survive `invalidateAll`.
-	type Draft = { name: string; body: string; description: string };
+	type Draft = { name: string; description: string; body: string };
+	const seed = (t: AdminMessageTemplate): Draft => ({ name: t.name, description: t.description ?? '', body: t.body });
+
+	// Drafts live per template so switching between them keeps unsaved edits.
 	let drafts = $state<Record<string, Draft>>({});
-	let saving = $state<Record<string, boolean>>({});
-	let errors = $state<Record<string, string>>({});
-	let testTemplate = $state<AdminMessageTemplate | null>(null);
+	let selectedKey = $state<string | null>(null);
+	let saving = $state(false);
+	let saveError = $state('');
+	let testing = $state<AdminMessageTemplate | null>(null);
+	let bodyEl = $state<HTMLTextAreaElement>();
 
-	function seed(t: AdminMessageTemplate): Draft {
-		return {
-			name: t.name,
-			body: t.body,
-			description: t.description ?? ''
-		};
+	const selected = $derived(data.templates.find((t) => t.key === selectedKey) ?? data.templates[0] ?? null);
+	const draft = $derived(selected ? (drafts[selected.template_id] ?? seed(selected)) : null);
+
+	function edit(field: keyof Draft, value: string) {
+		if (!selected || !draft) return;
+		drafts[selected.template_id] = { ...draft, [field]: value };
 	}
 
-	// Seed `drafts` SYNCHRONOUSLY during component init so the first
-	// `{#each}` pass sees a populated map. The previous version called
-	// a function from inside `{@const}` that mutated `$state` during
-	// render — Svelte 5 runes treats that as `state_unsafe_mutation`,
-	// which silently bailed the each-block body on client-side
-	// navigation (the section header rendered, the content didn't).
-	// One-shot read of `data.templates` is intentional; the `$effect`
-	// below picks up subsequent updates after invalidateAll.
-	// svelte-ignore state_referenced_locally
-	for (const t of data.templates) {
-		if (!drafts[t.template_id]) {
-			drafts[t.template_id] = seed(t);
-		}
-	}
-
-	// Keep `drafts` in sync with later changes to `data.templates`
-	// (e.g. after `invalidateAll` following a save, or a template
-	// added/removed server-side). The `!drafts[id]` guard preserves
-	// any unsaved edits on rows the user is currently editing, and
-	// quiesces the effect after one pass.
-	$effect(() => {
-		for (const t of data.templates) {
-			if (!drafts[t.template_id]) {
-				drafts[t.template_id] = seed(t);
-			}
-		}
-		const ids = new Set(data.templates.map((t) => t.template_id));
-		for (const id of Object.keys(drafts)) {
-			if (!ids.has(id)) {
-				delete drafts[id];
-				delete saving[id];
-				delete errors[id];
-			}
-		}
-	});
-
-	function reset(t: AdminMessageTemplate) {
-		drafts[t.template_id] = seed(t);
-		errors[t.template_id] = '';
-	}
-
-	async function save(t: AdminMessageTemplate) {
+	const isDirty = (t: AdminMessageTemplate) => {
 		const d = drafts[t.template_id];
-		if (!d) return;
-		saving[t.template_id] = true;
-		errors[t.template_id] = '';
+		return !!d && (d.name !== t.name || d.body !== t.body || d.description !== (t.description ?? ''));
+	};
+
+	const unknown = $derived(selected && draft ? templateVariables(draft.body).filter((v) => !selected.variables.includes(v)) : []);
+	const preview = $derived(selected && draft ? renderTemplate(draft.body, samplesFor(selected.variables)) : '');
+
+	function insert(variable: string) {
+		if (!draft || !bodyEl) return;
+		const token = `{{.${variable}}}`;
+		const { selectionStart: a, selectionEnd: b } = bodyEl;
+		edit('body', draft.body.slice(0, a) + token + draft.body.slice(b));
+		requestAnimationFrame(() => {
+			bodyEl?.focus();
+			bodyEl?.setSelectionRange(a + token.length, a + token.length);
+		});
+	}
+
+	function discard() {
+		if (!selected) return;
+		delete drafts[selected.template_id];
+		saveError = '';
+	}
+
+	async function save() {
+		if (!selected || !draft) return;
+		saving = true;
+		saveError = '';
 		try {
-			await updateAdminTemplate(t.key, {
-				name: d.name.trim() || undefined,
-				description: d.description.trim() === '' ? null : d.description.trim(),
-				body: d.body
+			await updateAdminTemplate(selected.key, {
+				name: draft.name.trim() || undefined,
+				description: draft.description.trim() || null,
+				body: draft.body
 			});
-			toast.success(`${t.key} saved`);
-			// Intentionally NOT deleting drafts[t.template_id]: the buffer
-			// already matches what we just sent to the server, and
-			// removing it would briefly leave the textarea's bind:value
-			// pointing at undefined until the $effect repopulates on the
-			// next reactive tick — re-introducing the same race the
-			// synchronous seed was added to avoid.
 			await invalidateAll();
+			delete drafts[selected.template_id];
+			toast.success(`${draft.name.trim() || selected.name} saved`);
 		} catch (err) {
-			const msg = err instanceof Error ? err.message : 'Save failed';
-			errors[t.template_id] = msg;
-			toast.error(msg);
+			saveError = toUserMessage(err, "That didn't save. Check the placeholders and try again.");
 		} finally {
-			saving[t.template_id] = false;
+			saving = false;
 		}
 	}
 </script>
 
-<svelte:head>
-	<title>Message templates · Letpai admin</title>
-</svelte:head>
+<Seo title="Message templates" noindex />
 
-<div class="max-w-3xl mx-auto px-4 py-8">
-	<header class="mb-6 flex items-center gap-3">
-		<div class="w-10 h-10 rounded-2xl bg-[#ae2f34]/10 flex items-center justify-center">
-			<FileText size={18} class="text-[#ae2f34]" />
-		</div>
-		<div>
-			<h1 class="text-2xl font-semibold text-[#251818]">Message templates</h1>
-			<p class="text-sm text-[#584140]">
-				Edit the WhatsApp message bodies sent for notifications, reminders, and OTPs.
-				Use <code class="px-1 py-0.5 rounded bg-[#fbe3e1] text-[12px]">&#123;&#123;.VarName&#125;&#125;</code> placeholders.
-			</p>
-		</div>
-	</header>
+<AdminHeader title="Message templates" description="What people receive on WhatsApp. The preview uses sample values; test-send to see it on a real phone." />
 
-	{#if data.error}
-		<div class="rounded-2xl bg-[#EF4444]/10 text-[#991B1B] p-4 mb-6 flex items-start gap-2">
-			<AlertCircle size={18} class="flex-shrink-0 mt-0.5" />
-			<p class="text-sm">{data.error}</p>
-		</div>
-	{/if}
-
-	{#if data.templates.length === 0 && !data.error}
-		<p class="text-sm text-[#584140]">No templates yet.</p>
-	{/if}
-
-	<div class="space-y-6">
-		{#each data.templates as t (t.template_id)}
-			{@const d = drafts[t.template_id]}
-			{#if d}
-			<section class="bg-white rounded-3xl p-5 shadow-[0_1px_3px_rgba(37,24,24,0.04)]">
-				<div class="flex items-start justify-between gap-3 mb-3">
-					<div>
-						<p class="text-xs font-mono text-[#584140] mb-0.5">{t.key}</p>
-						<h2 class="text-base font-semibold text-[#251818]">{t.name}</h2>
-					</div>
-					<span class="text-xs text-[#584140] flex-shrink-0">
-						Updated {new Date(t.updated_at).toLocaleString()}
+{#if data.error}
+	<EmptyState class="mt-6" icon={CloudOff} title="Couldn't load templates" description={data.error} action={{ label: 'Try again', onclick: () => invalidateAll() }} />
+{:else if !selected || !draft}
+	<EmptyState class="mt-6" title="No templates yet" description="The backend seeds them on first run. Check its migrations." />
+{:else}
+	<div class="mt-6 grid gap-4 lg:grid-cols-[15rem_minmax(0,1fr)]">
+		<nav aria-label="Templates" class="-mx-4 flex gap-1.5 overflow-x-auto px-4 lg:mx-0 lg:flex-col lg:overflow-visible lg:px-0">
+			{#each data.templates as t (t.template_id)}
+				{@const on = t.template_id === selected.template_id}
+				<button
+					type="button"
+					aria-current={on ? 'true' : undefined}
+					onclick={() => {
+						selectedKey = t.key;
+						saveError = '';
+					}}
+					class={cn(
+						'flex flex-none items-center gap-2 rounded-pill px-4 py-2 text-left text-sm font-semibold transition-colors lg:rounded-card lg:py-3',
+						on ? 'bg-ink text-card' : 'bg-card text-ink shadow-[inset_0_0_0_1.5px_var(--color-mist)] hover:bg-mist'
+					)}
+				>
+					<span class="min-w-0 flex-1">
+						<span class="block truncate">{drafts[t.template_id]?.name || t.name}</span>
+						<span class={cn('hidden truncate font-mono text-xs font-normal lg:block', on ? 'text-card/70' : 'text-ink-soft')}>{t.key}</span>
 					</span>
+					{#if isDirty(t)}<span class="size-2 flex-none rounded-full bg-coral" aria-label="Unsaved changes"></span>{/if}
+				</button>
+			{/each}
+		</nav>
+
+		<Card>
+			<div class="flex flex-wrap items-start justify-between gap-3">
+				<div>
+					<p class="font-mono text-xs text-ink-soft">{selected.key}</p>
+					<p class="text-sm text-ink-soft">Saved {timeAgo(selected.updated_at)}</p>
 				</div>
+				<Button variant="secondary" size="sm" leftIcon={Send} onclick={() => (testing = selected)}>Send a test</Button>
+			</div>
 
-				<div class="space-y-4">
-					<div>
-						<label for="name-{t.template_id}" class="block text-xs font-semibold text-[#584140] uppercase tracking-wide mb-1">Display name</label>
-						<input
-							id="name-{t.template_id}"
-							type="text"
-							bind:value={d.name}
-							class="w-full px-3 py-2 bg-[#fff0ef]/50 rounded-xl text-sm text-[#251818] focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]"
-						/>
-					</div>
+			<div class="mt-5 grid gap-4 sm:grid-cols-2">
+				<Input id="tpl-name" label="Name" value={draft.name} oninput={(v) => edit('name', v)} />
+				<Input id="tpl-desc" label="When it's sent" placeholder="Sent when…" value={draft.description} oninput={(v) => edit('description', v)} />
+			</div>
 
-					<div>
-						<label for="desc-{t.template_id}" class="block text-xs font-semibold text-[#584140] uppercase tracking-wide mb-1">Description</label>
-						<input
-							id="desc-{t.template_id}"
-							type="text"
-							bind:value={d.description}
-							placeholder="What this template is used for"
-							class="w-full px-3 py-2 bg-[#fff0ef]/50 rounded-xl text-sm text-[#251818] focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]"
-						/>
-					</div>
-
-					<div>
-						<label for="body-{t.template_id}" class="block text-xs font-semibold text-[#584140] uppercase tracking-wide mb-1">Body</label>
-						<textarea
-							id="body-{t.template_id}"
-							bind:value={d.body}
-							rows="10"
-							class="w-full px-3 py-2 bg-[#fff0ef]/50 rounded-xl text-sm text-[#251818] font-mono focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]"
-						></textarea>
-					</div>
-
-					{#if t.variables.length > 0}
-						<div>
-							<p class="block text-xs font-semibold text-[#584140] uppercase tracking-wide mb-1">Available variables</p>
-							<div class="flex flex-wrap gap-1.5">
-								{#each t.variables as v}
-									<code class="text-[11px] font-mono px-2 py-0.5 rounded-full bg-[#fbe3e1] text-[#251818]">
-										&#123;&#123;.{v}&#125;&#125;
-									</code>
-								{/each}
-							</div>
+			<div class="mt-5 grid gap-5 xl:grid-cols-2">
+				<div class="flex flex-col gap-2">
+					<label for="tpl-body" class="text-sm font-semibold text-ink">Message</label>
+					<textarea
+						id="tpl-body"
+						bind:this={bodyEl}
+						value={draft.body}
+						oninput={(e) => edit('body', e.currentTarget.value)}
+						rows="12"
+						spellcheck="false"
+						class="resize-y rounded-field bg-card px-4 py-3 font-mono text-[13px] leading-relaxed text-ink shadow-[inset_0_0_0_1.5px_var(--color-hairline)] focus:shadow-[inset_0_0_0_2px_var(--color-steel)] focus:outline-none"
+					></textarea>
+					{#if selected.variables.length}
+						<div class="flex flex-wrap items-center gap-1.5" role="group" aria-label="Insert a placeholder">
+							<span class="text-[13px] text-ink-soft">Insert:</span>
+							{#each selected.variables as v (v)}
+								<button
+									type="button"
+									onclick={() => insert(v)}
+									class="rounded-pill bg-mist px-2.5 py-1 font-mono text-xs text-ink transition-colors hover:bg-hairline"
+								>
+									{v}
+								</button>
+							{/each}
 						</div>
 					{/if}
-
-					{#if errors[t.template_id]}
-						<div class="rounded-xl bg-[#EF4444]/10 text-[#991B1B] p-3 text-sm flex items-start gap-2">
-							<AlertCircle size={16} class="flex-shrink-0 mt-0.5" />
-							<p>{errors[t.template_id]}</p>
-						</div>
+					{#if unknown.length}
+						<p class="flex items-start gap-2 text-sm text-pending" role="status">
+							<TriangleAlert size={16} class="mt-0.5 flex-none" aria-hidden="true" />
+							<span>
+								{unknown.map((u) => `{{.${u}}}`).join(', ')}
+								{unknown.length === 1 ? "isn't" : "aren't"} filled for this message and will show up literally.
+							</span>
+						</p>
 					{/if}
-
-					<div class="flex justify-end gap-2">
-						<button
-							type="button"
-							onclick={() => testTemplate = t}
-							disabled={saving[t.template_id]}
-							class="px-4 py-2 text-sm font-medium text-[#ae2f34] hover:bg-[#fff0ef] rounded-xl transition-colors inline-flex items-center gap-1.5 disabled:opacity-50"
-						>
-							<Send size={14} />
-							Send Test
-						</button>
-						<button
-							type="button"
-							onclick={() => reset(t)}
-							disabled={saving[t.template_id]}
-							class="px-4 py-2 text-sm font-medium text-[#251818] hover:bg-[#fff0ef] rounded-xl transition-colors disabled:opacity-50"
-						>
-							Reset
-						</button>
-						<button
-							type="button"
-							onclick={() => save(t)}
-							disabled={saving[t.template_id]}
-							class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-gradient-to-br from-[#ae2f34] to-[#FF6B6B] rounded-xl hover:opacity-95 disabled:opacity-50 transition-colors"
-						>
-							{#if saving[t.template_id]}
-								<Loader2 size={16} class="animate-spin" />
-							{:else}
-								<Save size={16} />
-							{/if}
-							Save
-						</button>
-					</div>
 				</div>
-			</section>
-			{/if}
-		{/each}
+				<div class="flex flex-col gap-2">
+					<p class="text-sm font-semibold text-ink">Preview</p>
+					<WhatsAppPreview text={preview} label="Preview of {draft.name}" />
+				</div>
+			</div>
+
+			{#if saveError}<p class="mt-4 text-sm text-rejected" role="alert">{saveError}</p>{/if}
+
+			<div class="mt-5 flex flex-wrap items-center justify-end gap-2">
+				{#if isDirty(selected)}
+					<span class="mr-auto text-sm text-ink-soft">Unsaved changes</span>
+					<Button variant="ghost" size="sm" leftIcon={RotateCcw} onclick={discard} disabled={saving}>Discard</Button>
+				{/if}
+				<Button variant="ink" size="sm" leftIcon={Save} onclick={save} loading={saving} disabled={!isDirty(selected)}>Save</Button>
+			</div>
+		</Card>
 	</div>
-</div>
+{/if}
 
-{#if testTemplate}
-	<TestSendModal template={testTemplate} onclose={() => testTemplate = null} />
+{#if testing}
+	<TestSendModal template={testing} unsaved={isDirty(testing)} onclose={() => (testing = null)} />
 {/if}

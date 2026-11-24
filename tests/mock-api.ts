@@ -26,12 +26,22 @@ const PREFIX = '/api/v1';
 let sessions: FxSession[] = structuredClone(SESSIONS);
 let contacts = structuredClone(CONTACTS);
 let groups = structuredClone(CONTACT_GROUPS);
+const OTHER_ADMINS = [
+	{ admin_id: 'a-2', whatsapp_number: '+6289911112222', full_name: 'Support Desk', role: 'admin', is_active: true, created_at: hoursAgo(900) },
+	{ admin_id: 'a-3', whatsapp_number: '+6289933334444', full_name: 'Former Contractor With A Long Name', role: 'admin', is_active: false, created_at: hoursAgo(1500) }
+];
+let otherAdmins = structuredClone(OTHER_ADMINS);
+let adminName = ADMIN.full_name;
+let templates: typeof TEMPLATES = [];
 let nextId = 1;
 
 function reset() {
 	sessions = structuredClone(SESSIONS);
 	contacts = structuredClone(CONTACTS);
 	groups = structuredClone(CONTACT_GROUPS);
+	otherAdmins = structuredClone(OTHER_ADMINS);
+	adminName = ADMIN.full_name;
+	templates = structuredClone(TEMPLATES);
 	nextId = 1;
 }
 
@@ -209,26 +219,37 @@ function paymentPage(pid: string) {
 	};
 }
 
+// Bodies mirror the backend's seeded templates (Go text/template syntax).
 const TEMPLATES = [
 	{
 		template_id: 't-1',
-		key: 'payment_request',
-		name: 'Payment request',
-		description: 'Sent when the host shares a session.',
-		body: 'Hi {{name}}, your share for "{{session}}" is {{amount}}. Pay and upload proof here: {{link}}',
-		variables: ['name', 'session', 'amount', 'link'],
+		key: 'session_notification',
+		name: 'New bill',
+		description: 'Sent when a host shares a session.',
+		body: 'Hello, {{.ParticipantName}}\n\n{{.MakerName}} has added you to a bill split: {{.SessionName}}\n\n• Total: Rp{{.Total}}\n• Your share: Rp{{.Share}}\n\nUpload your payment proof:\n{{.URL}}\n\n— Letpai',
+		variables: ['ParticipantName', 'SessionName', 'MakerName', 'Total', 'Share', 'URL'],
 		updated_at: hoursAgo(300)
 	},
 	{
 		template_id: 't-2',
-		key: 'payment_rejected',
-		name: 'Proof rejected',
-		description: 'Sent when the host asks for a new proof.',
-		body: 'Hi {{name}}, {{host}} needs a new proof for "{{session}}": {{reason}}. Upload again: {{link}}',
-		variables: ['name', 'host', 'session', 'reason', 'link'],
+		key: 'payment_reminder',
+		name: 'Reminder',
+		description: 'Sent when a host nudges someone who has not paid.',
+		body: 'Hey {{.ParticipantName}}, just a reminder!\n\n{{.MakerName}} is waiting for your payment on: {{.SessionName}}\n\nAmount due: Rp{{.Share}}\n\n{{.URL}}',
+		variables: ['ParticipantName', 'SessionName', 'MakerName', 'Share', 'URL'],
 		updated_at: hoursAgo(200)
+	},
+	{
+		template_id: 't-3',
+		key: 'otp_code',
+		name: 'Sign-in code',
+		description: null,
+		body: '*Letpai - Verification Code*\n\nYour code is: *{{.Code}}*\n\nIt expires in {{.ExpiresMinutes}} minutes.',
+		variables: ['Code', 'ExpiresMinutes'],
+		updated_at: hoursAgo(100)
 	}
 ];
+templates = structuredClone(TEMPLATES);
 
 type Handler = (ctx: { req: IncomingMessage; m: RegExpMatchArray; body: Record<string, unknown> }) => [number, Json] | Promise<[number, Json]>;
 const routes: Array<[string, RegExp, Handler]> = [];
@@ -499,7 +520,7 @@ route('DELETE', '/contact-groups/([^/]+)', ({ m }) => {
 // ── Admin (returns flat objects, like the real admin API) ──────────────────
 const adminProfile = () => {
 	const { token: _t, ...p } = ADMIN;
-	return { ...p, last_login_at: hoursAgo(3), created_at: hoursAgo(2000), updated_at: hoursAgo(10) };
+	return { ...p, full_name: adminName, last_login_at: hoursAgo(3), created_at: hoursAgo(2000), updated_at: hoursAgo(10) };
 };
 route('GET', '/admin/auth/needs-setup', () => [200, { needs_setup: false }]);
 route('POST', '/admin/auth/initiate', () => [200, { success: true, session_id: 'adm-sess-1', expires_at: hoursAgo(-0.1) }]);
@@ -509,28 +530,41 @@ route('POST', '/admin/auth/verify-otp', ({ body }) =>
 route('POST', '/admin/auth/login', () => [200, { token: ADMIN.token, expires_at: hoursAgo(-24) }]);
 route('POST', '/admin/auth/bootstrap', () => [200, { token: ADMIN.token, expires_at: hoursAgo(-24), admin_id: ADMIN.admin_id }]);
 route('GET', '/admin/profile', ({ req }) => (isAdmin(req) ? [200, adminProfile()] : [401, fail('AUTH_003', 'Admin access required')]));
-route('PUT', '/admin/profile', ({ body }) => [200, { admin_id: ADMIN.admin_id, full_name: body.full_name, message: 'Profile updated' }]);
+route('PUT', '/admin/profile', ({ body }) => {
+	adminName = String(body.full_name ?? adminName);
+	return [200, { admin_id: ADMIN.admin_id, full_name: adminName, message: 'Profile updated' }];
+});
 route('PUT', '/admin/profile/setup-password', () => [200, { success: true }]);
 route('GET', '/admin/status', () => [200, { is_connected: true, gateway_token_valid: true, phone_number: '+6289988776655', last_connected_at: hoursAgo(5), message: 'Connected' }]);
 route('POST', '/admin/qr-code', () => [200, { qr_code: placeholderImage('QR', 240, 240), qr_code_expires_at: hoursAgo(-0.05) }]);
 route('PUT', '/admin/config', () => [200, { success: true }]);
 route('POST', '/admin/disconnect-device', () => [200, { connection_status: 'disconnected', message: 'Device disconnected' }]);
 route('POST', '/admin/logout', () => [200, { success: true }]);
-route('GET', '/admin/admins', () => [
-	200,
-	{
-		admins: [
-			{ ...adminProfile() },
-			{ admin_id: 'a-2', whatsapp_number: '+6289911112222', full_name: 'Support Desk', role: 'admin', is_active: true, created_at: hoursAgo(900) },
-			{ admin_id: 'a-3', whatsapp_number: '+6289933334444', full_name: 'Former Contractor With A Long Name', role: 'admin', is_active: false, created_at: hoursAgo(1500) }
-		]
-	}
-]);
-route('POST', '/admin/admins', ({ body }) => [201, { admin_id: `a-new-${nextId++}`, ...body }]);
-route('PUT', '/admin/admins/([^/]+)', ({ m, body }) => [200, { admin_id: m[1], ...body }]);
-route('DELETE', '/admin/admins/([^/]+)', () => [200, { success: true }]);
-route('GET', '/admin/templates', () => [200, { data: { templates: TEMPLATES } }]);
-route('PUT', '/admin/templates/([^/]+)', ({ m, body }) => [200, { data: { ...TEMPLATES.find((t) => t.key === m[1]), ...body } }]);
+route('GET', '/admin/admins', () => [200, { admins: [adminProfile(), ...otherAdmins] }]);
+route('POST', '/admin/admins', ({ body }) => {
+	const a = { admin_id: `a-new-${nextId++}`, whatsapp_number: String(body.whatsapp_number), full_name: String(body.full_name), role: String(body.role ?? 'admin'), is_active: true, created_at: hoursAgo(0) };
+	otherAdmins.push(a);
+	return [201, a];
+});
+route('PUT', '/admin/admins/([^/]+)', ({ m, body }) => {
+	const a = otherAdmins.find((x) => x.admin_id === m[1]);
+	if (!a) return [404, fail('NOT_FOUND', 'Admin not found')];
+	Object.assign(a, body);
+	return [200, a];
+});
+route('DELETE', '/admin/admins/([^/]+)', ({ m }) => {
+	otherAdmins = otherAdmins.filter((x) => x.admin_id !== m[1]);
+	return [200, { success: true }];
+});
+route('GET', '/admin/templates', () => [200, { data: { templates } }]);
+route('PUT', '/admin/templates/([^/]+)', ({ m, body }) => {
+	const t = templates.find((x) => x.key === m[1]);
+	if (!t) return [404, fail('NOT_FOUND', 'Template not found')];
+	// The backend parses the body at save time; an unclosed action is a 400.
+	if (typeof body.body === 'string' && /\{\{[^}]*$/.test(body.body)) return [400, fail('TEMPLATE_INVALID', 'template: unclosed action')];
+	Object.assign(t, body, { updated_at: hoursAgo(0) });
+	return [200, { data: t }];
+});
 route('POST', '/admin/templates/([^/]+)/test-send', () => [200, { data: { rendered: 'Hi Alya, your share for "Dinner" is Rp 125.000.', status: 'sent', message_id: 'm-1' } }]);
 
 // ── Server ─────────────────────────────────────────────────────────────────

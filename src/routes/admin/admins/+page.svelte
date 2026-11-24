@@ -1,392 +1,205 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { invalidateAll } from '$app/navigation';
-	import {
-		Plus,
-		Users,
-		ShieldCheck,
-		ToggleLeft,
-		ToggleRight,
-		Trash2,
-		AlertCircle,
-		CheckCircle2,
-		Loader2,
-		X
-	} from 'lucide-svelte';
-	import type { PageData, ActionData } from './$types';
+	import { tick } from 'svelte';
+	import { CircleAlert, Pause, Play, ShieldCheck, ShieldMinus, Trash2, UserPlus, Users } from 'lucide-svelte';
+	import Seo from '$lib/components/Seo.svelte';
+	import AdminHeader from '$lib/components/admin/AdminHeader.svelte';
+	import Avatar from '$lib/components/ui/Avatar.svelte';
+	import Button from '$lib/components/ui/Button.svelte';
+	import Checkbox from '$lib/components/ui/Checkbox.svelte';
+	import ConfirmDialog from '$lib/components/ui/ConfirmDialog.svelte';
+	import EmptyState from '$lib/components/ui/EmptyState.svelte';
+	import Input from '$lib/components/ui/Input.svelte';
+	import Menu, { type MenuItem } from '$lib/components/ui/Menu.svelte';
+	import Modal from '$lib/components/ui/Modal.svelte';
+	import PhoneInput from '$lib/components/ui/PhoneInput.svelte';
+	import Segmented from '$lib/components/ui/Segmented.svelte';
+	import StatusPill from '$lib/components/ui/StatusPill.svelte';
+	import { toast } from '$lib/stores/toast';
+	import { adminRoleLabel, formatDay } from '$lib/utils/admin';
+	import { formatWhatsappDisplay } from '$lib/utils/phone';
+	import type { AdminListItem } from '$lib/services/admin';
+	import type { SubmitFunction } from '@sveltejs/kit';
+	import type { PageData } from './$types';
 
-	let { data, form }: { data: PageData; form: ActionData } = $props();
+	let { data }: { data: PageData } = $props();
 
-	let showCreate = $state(false);
-	let setTempPassword = $state(false);
+	// ── Invite ─────────────────────────────────────────────────────────
+	let inviteOpen = $state(false);
+	let inviting = $state(false);
+	let inviteError = $state('');
+	let name = $state('');
+	let phone = $state('');
+	let role = $state<'admin' | 'super_admin'>('admin');
+	let withPassword = $state(false);
 
-	// Reset the temp-password toggle whenever the modal closes so the
-	// next invite starts clean. The toggle drives a name="password"
-	// input; leaving it on while closed could leak a stale value.
-	$effect(() => {
-		if (!showCreate) setTempPassword = false;
-	});
-
-	// Track which row is being acted on so the button knows to spin.
-	let pendingAdminId = $state<string | null>(null);
-
-	const createForm = $derived(form && form.kind === 'create' ? form : null);
-	const updateForm = $derived(form && form.kind === 'update' ? form : null);
-	const deleteForm = $derived(form && form.kind === 'delete' ? form : null);
-
-	function formatRelative(iso: string): string {
-		const t = new Date(iso).getTime();
-		if (Number.isNaN(t)) return '';
-		const d = new Date(t);
-		return d.toLocaleDateString();
+	function openInvite() {
+		name = '';
+		phone = '';
+		role = 'admin';
+		withPassword = false;
+		inviteError = '';
+		inviteOpen = true;
 	}
 
-	function roleLabel(r: string): string {
-		return r === 'super_admin' ? 'Super admin' : 'Admin';
+	const submitInvite: SubmitFunction = () => {
+		inviting = true;
+		inviteError = '';
+		return async ({ result, update }) => {
+			inviting = false;
+			if (result.type === 'success') {
+				inviteOpen = false;
+				toast.success(String(result.data?.message ?? 'Admin invited'));
+				await update();
+			} else if (result.type === 'failure') {
+				inviteError = String(result.data?.error ?? "We couldn't invite them.");
+			} else {
+				await update();
+			}
+		};
+	};
+
+	// ── Row actions: one hidden form, filled in by the menu ────────────
+	let actionForm = $state<HTMLFormElement>();
+	let action = $state<{ kind: 'update' | 'delete'; admin_id: string; role?: string; is_active?: string } | null>(null);
+	let busyId = $state<string | null>(null);
+	let removing = $state<AdminListItem | null>(null);
+
+	async function run(next: NonNullable<typeof action>) {
+		action = next;
+		await tick();
+		actionForm?.requestSubmit();
 	}
+
+	const submitAction: SubmitFunction = () => {
+		busyId = action?.admin_id ?? null;
+		return async ({ result, update }) => {
+			busyId = null;
+			removing = null;
+			if (result.type === 'success') toast.success(String(result.data?.message ?? 'Done'));
+			else if (result.type === 'failure') toast.error(String(result.data?.error ?? 'That didn’t work. Try again.'));
+			await update({ invalidateAll: true });
+		};
+	};
+
+	function itemsFor(a: AdminListItem): MenuItem[] {
+		const isSuper = a.role === 'super_admin';
+		return [
+			{
+				label: isSuper ? 'Make regular admin' : 'Make super admin',
+				icon: isSuper ? ShieldMinus : ShieldCheck,
+				onclick: () => run({ kind: 'update', admin_id: a.admin_id, role: isSuper ? 'admin' : 'super_admin' })
+			},
+			{
+				label: a.is_active ? 'Pause access' : 'Restore access',
+				icon: a.is_active ? Pause : Play,
+				onclick: () => run({ kind: 'update', admin_id: a.admin_id, is_active: a.is_active ? 'false' : 'true' })
+			},
+			{ label: 'Remove', icon: Trash2, danger: true, onclick: () => (removing = a) }
+		];
+	}
+
+	const admins = $derived(
+		[...data.admins].sort((a, b) => Number(b.is_active) - Number(a.is_active) || a.full_name.localeCompare(b.full_name))
+	);
 </script>
 
-<svelte:head>
-	<title>Admins · Letpai admin</title>
-</svelte:head>
+<Seo title="Admins" noindex />
 
-<div class="px-6 py-10 max-w-5xl mx-auto" style="font-family:'Plus Jakarta Sans',sans-serif;">
-	<header class="flex items-start justify-between gap-3 mb-8">
-		<div>
-			<p class="text-xs uppercase tracking-wide font-semibold text-[#584140] mb-1">Admins</p>
-			<h1 class="text-3xl font-bold text-[#251818]">Admin team</h1>
-			<p class="text-sm text-[#584140] mt-1">
-				Invite, update, and remove other admins. Only super admins can make these changes.
-			</p>
-		</div>
-		<button
-			type="button"
-			onclick={() => (showCreate = true)}
-			class="inline-flex items-center gap-2 px-4 h-11 rounded-2xl text-sm font-semibold text-white bg-gradient-to-br from-[#ae2f34] to-[#FF6B6B] hover:opacity-95 transition-all flex-shrink-0"
-		>
-			<Plus size={16} /> Invite admin
-		</button>
-	</header>
+<AdminHeader title="Admins" description="People who can run the gateway and edit templates. Super admins can also manage this list.">
+	{#snippet actions()}
+		<Button size="sm" variant="ink" leftIcon={UserPlus} onclick={openInvite}>Invite admin</Button>
+	{/snippet}
+</AdminHeader>
 
-	{#if form?.error}
-		<div
-			class="bg-[#FEF2F2] border border-[#EF4444]/30 rounded-2xl p-3 flex items-start gap-2 mb-4"
-		>
-			<AlertCircle size={16} class="text-[#EF4444] mt-0.5 flex-shrink-0" />
-			<p class="text-sm text-[#991B1B]">{form.error}</p>
-		</div>
-	{:else if form?.success}
-		<div
-			class="bg-[#ECFDF5] border border-[#10B981]/30 rounded-2xl p-3 flex items-start gap-2 mb-4"
-		>
-			<CheckCircle2 size={16} class="text-[#047857] mt-0.5 flex-shrink-0" />
-			<p class="text-sm text-[#047857]">{form.message ?? 'Done'}</p>
-		</div>
-	{/if}
+{#snippet pills(a: AdminListItem)}
+	{#if !a.is_active}<StatusPill tone="neutral">Paused</StatusPill>{/if}
+	<StatusPill tone={a.role === 'super_admin' ? 'review' : 'neutral'} dot={false}>{adminRoleLabel(a.role)}</StatusPill>
+{/snippet}
 
-	<section class="bg-white rounded-3xl shadow-[0_1px_3px_rgba(37,24,24,0.04)] overflow-hidden">
-		{#if !data.admins || data.admins.length === 0}
-			<div class="text-center py-12 text-[#584140]">
-				<Users size={28} class="mx-auto text-[#584140]/30 mb-3" />
-				<p class="text-sm">No admins yet.</p>
-			</div>
-		{:else}
-			<table class="w-full text-sm">
-				<thead>
-					<tr class="text-left text-[11px] uppercase tracking-wide text-[#584140] bg-[#fff0ef]/60">
-						<th class="px-5 py-3 font-semibold">Name</th>
-						<th class="px-5 py-3 font-semibold">WhatsApp</th>
-						<th class="px-5 py-3 font-semibold">Role</th>
-						<th class="px-5 py-3 font-semibold">Status</th>
-						<th class="px-5 py-3 font-semibold">Joined</th>
-						<th class="px-5 py-3 font-semibold text-right">Actions</th>
-					</tr>
-				</thead>
-				<tbody>
-					{#each data.admins as admin (admin.admin_id)}
-						{@const isSelf = admin.admin_id === data.profile?.admin_id}
-						{@const isSuper = admin.role === 'super_admin'}
-						{@const acting = pendingAdminId === admin.admin_id}
-						<tr class="border-t border-[#fff0ef]">
-							<td class="px-5 py-3 align-middle">
-								<p class="font-medium text-[#251818] truncate">{admin.full_name}</p>
-								{#if isSelf}
-									<p class="text-[11px] text-[#584140]">You</p>
-								{/if}
-							</td>
-							<td class="px-5 py-3 align-middle text-[#251818]">+{admin.whatsapp_number}</td>
-							<td class="px-5 py-3 align-middle">
-								<span
-									class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold {isSuper
-										? 'text-[#5B21B6] bg-[#8B5CF6]/15'
-										: 'text-[#1E40AF] bg-[#3B82F6]/15'}"
-								>
-									{#if isSuper}
-										<ShieldCheck size={12} />
-									{/if}
-									{roleLabel(admin.role)}
-								</span>
-							</td>
-							<td class="px-5 py-3 align-middle">
-								{#if admin.is_active}
-									<span class="inline-flex items-center gap-1 text-xs text-[#047857]">
-										<CheckCircle2 size={14} /> Active
-									</span>
-								{:else}
-									<span class="inline-flex items-center gap-1 text-xs text-[#92400E]">
-										<X size={14} /> Inactive
-									</span>
-								{/if}
-							</td>
-							<td class="px-5 py-3 align-middle text-[#584140]">{formatRelative(admin.created_at)}</td>
-							<td class="px-5 py-3 align-middle">
-								<div class="flex justify-end gap-1">
-									<!-- Toggle role (admin <-> super_admin) -->
-									<form
-										method="POST"
-										action="?/update"
-										use:enhance={() => {
-											pendingAdminId = admin.admin_id;
-											return async ({ update }) => {
-												await update();
-												await invalidateAll();
-												pendingAdminId = null;
-											};
-										}}
-									>
-										<input type="hidden" name="admin_id" value={admin.admin_id} />
-										<input type="hidden" name="role" value={isSuper ? 'admin' : 'super_admin'} />
-										<button
-											type="submit"
-											disabled={isSelf || acting}
-											title={isSuper ? 'Demote to admin' : 'Promote to super admin'}
-											class="inline-flex items-center justify-center w-9 h-9 rounded-xl text-[#584140] hover:bg-[#fff0ef] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-											aria-label={isSuper ? 'Demote' : 'Promote'}
-										>
-											{#if acting}
-												<Loader2 class="w-4 h-4 animate-spin" />
-											{:else}
-												<ShieldCheck size={16} />
-											{/if}
-										</button>
-									</form>
-									<!-- Toggle active -->
-									<form
-										method="POST"
-										action="?/update"
-										use:enhance={() => {
-											pendingAdminId = admin.admin_id;
-											return async ({ update }) => {
-												await update();
-												await invalidateAll();
-												pendingAdminId = null;
-											};
-										}}
-									>
-										<input type="hidden" name="admin_id" value={admin.admin_id} />
-										<input type="hidden" name="is_active" value={admin.is_active ? 'false' : 'true'} />
-										<button
-											type="submit"
-											disabled={isSelf || acting}
-											title={admin.is_active ? 'Deactivate' : 'Activate'}
-											class="inline-flex items-center justify-center w-9 h-9 rounded-xl text-[#584140] hover:bg-[#fff0ef] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-											aria-label={admin.is_active ? 'Deactivate' : 'Activate'}
-										>
-											{#if acting}
-												<Loader2 class="w-4 h-4 animate-spin" />
-											{:else if admin.is_active}
-												<ToggleRight size={18} />
-											{:else}
-												<ToggleLeft size={18} />
-											{/if}
-										</button>
-									</form>
-									<!-- Delete -->
-									<form
-										method="POST"
-										action="?/delete"
-										use:enhance={({ cancel }) => {
-											if (!confirm(`Remove ${admin.full_name}? This cannot be undone.`)) {
-												cancel();
-												return;
-											}
-											pendingAdminId = admin.admin_id;
-											return async ({ update }) => {
-												await update();
-												await invalidateAll();
-												pendingAdminId = null;
-											};
-										}}
-									>
-										<input type="hidden" name="admin_id" value={admin.admin_id} />
-										<button
-											type="submit"
-											disabled={isSelf || acting}
-											title="Remove admin"
-											class="inline-flex items-center justify-center w-9 h-9 rounded-xl text-[#991B1B] hover:bg-[#EF4444]/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-											aria-label="Remove admin"
-										>
-											{#if acting}
-												<Loader2 class="w-4 h-4 animate-spin" />
-											{:else}
-												<Trash2 size={16} />
-											{/if}
-										</button>
-									</form>
-								</div>
-							</td>
-						</tr>
-					{/each}
-				</tbody>
-			</table>
-		{/if}
-	</section>
-
-	{#if showCreate}
-		<div
-			class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-[#251818]/30 backdrop-blur-sm"
-			role="dialog"
-			aria-modal="true"
-			tabindex="-1"
-			onclick={(e) => {
-				if (e.target === e.currentTarget) showCreate = false;
-			}}
-			onkeydown={(e) => {
-				if (e.key === 'Escape') showCreate = false;
-			}}
-		>
-			<div class="w-full max-w-md bg-white rounded-3xl shadow-[0_8px_32px_-4px_rgba(37,24,24,0.12)] p-6">
-				<div class="flex items-center justify-between mb-4">
-					<h2 class="text-lg font-semibold text-[#251818]">Invite admin</h2>
-					<button
-						type="button"
-						onclick={() => (showCreate = false)}
-						class="inline-flex items-center justify-center w-9 h-9 rounded-full text-[#584140] hover:bg-[#fff0ef] transition-colors"
-						aria-label="Close"
-					>
-						<X size={18} />
-					</button>
+{#if admins.length === 0}
+	<EmptyState class="mt-6" icon={Users} title="Couldn't load the team" description="Refresh the page in a moment." />
+{:else}
+	<ul class="mt-6 divide-y divide-mist overflow-hidden rounded-card bg-card shadow-raised">
+		{#each admins as a (a.admin_id)}
+			{@const self = a.admin_id === data.profile?.admin_id}
+			<li class="flex items-center gap-3 px-4 py-3 sm:px-5" class:opacity-60={!a.is_active} data-testid="admin-row" aria-busy={busyId === a.admin_id}>
+				<Avatar size="md" fullName={a.full_name} phoneNumber={a.whatsapp_number} identifier={a.admin_id} class="flex-none" />
+				<div class="min-w-0 flex-1">
+					<p class="flex items-center gap-2">
+						<span class="truncate font-semibold text-ink">{a.full_name}</span>
+						{#if self}<span class="flex-none rounded-pill bg-mist px-2 py-0.5 text-[11px] font-semibold text-ink-soft">You</span>{/if}
+					</p>
+					<p class="mt-0.5 text-sm whitespace-nowrap text-ink-soft tabular-nums">
+						{formatWhatsappDisplay(a.whatsapp_number)}<span class="hidden sm:inline"> · joined {formatDay(a.created_at)}</span>
+					</p>
+					<!-- Mobile: pills go under the name so it isn't squeezed. -->
+					<div class="mt-1.5 flex flex-wrap gap-1.5 sm:hidden">{@render pills(a)}</div>
 				</div>
-				<form
-					method="POST"
-					action="?/create"
-					class="space-y-3"
-					use:enhance={() => {
-						return async ({ update, result }) => {
-							await update();
-							if (result.type === 'success') {
-								showCreate = false;
-								await invalidateAll();
-							}
-						};
-					}}
-				>
-					<div>
-						<label for="full_name" class="block text-xs font-semibold text-[#584140] mb-1"
-							>Name</label
-						>
-						<input
-							id="full_name"
-							name="full_name"
-							type="text"
-							required
-							value={createForm?.full_name || ''}
-							placeholder="Jane Doe"
-							class="w-full px-4 py-3 bg-[#fff0ef] rounded-2xl text-sm text-[#251818] focus:outline-none focus:ring-2 focus:ring-[#ae2f34]/30"
-						/>
-					</div>
-					<div>
-						<label
-							for="whatsapp_number"
-							class="block text-xs font-semibold text-[#584140] mb-1">WhatsApp number (E.164, no +)</label
-						>
-						<input
-							id="whatsapp_number"
-							name="whatsapp_number"
-							type="tel"
-							inputmode="numeric"
-							required
-							value={createForm?.whatsapp_number || ''}
-							placeholder="6281234567890"
-							class="w-full px-4 py-3 bg-[#fff0ef] rounded-2xl text-sm text-[#251818] focus:outline-none focus:ring-2 focus:ring-[#ae2f34]/30"
-						/>
-					</div>
-					<div>
-						<label for="role" class="block text-xs font-semibold text-[#584140] mb-1">Role</label>
-						<select
-							id="role"
-							name="role"
-							value={createForm?.role || 'admin'}
-							class="w-full px-4 py-3 bg-[#fff0ef] rounded-2xl text-sm text-[#251818] focus:outline-none focus:ring-2 focus:ring-[#ae2f34]/30"
-						>
-							<option value="admin">Admin</option>
-							<option value="super_admin">Super admin</option>
-						</select>
-					</div>
+				<div class="hidden flex-none items-center gap-2 sm:flex">{@render pills(a)}</div>
+				{#if self}
+					<!-- Keep the column aligned; nobody demotes or removes themselves. -->
+					<span class="size-9 flex-none" aria-hidden="true"></span>
+				{:else}
+					<Menu items={itemsFor(a)} label="Actions for {a.full_name}" />
+				{/if}
+			</li>
+		{/each}
+	</ul>
+{/if}
 
-					<!-- Optional temporary password.
-						Useful when WAGA isn't paired yet — the invited admin can
-						sign in via password instead of OTP. They're still nudged
-						to change it on /admin/profile. -->
-					<div class="pt-1">
-						<label class="flex items-center gap-2 cursor-pointer">
-							<input
-								type="checkbox"
-								name="set_temp_password"
-								bind:checked={setTempPassword}
-								class="w-4 h-4 accent-[#ae2f34]"
-							/>
-							<span class="text-sm text-[#584140]">Set a temporary password</span>
-						</label>
-						{#if setTempPassword}
-							<div class="mt-2">
-								<input
-									name="password"
-									type="password"
-									autocomplete="new-password"
-									placeholder="At least 8 characters"
-									minlength="8"
-									maxlength="100"
-									class="w-full px-4 py-3 bg-[#fff0ef] rounded-2xl text-sm text-[#251818] focus:outline-none focus:ring-2 focus:ring-[#ae2f34]/30 font-mono"
-								/>
-								<p class="text-xs text-[#584140] mt-1">
-									Share it with the new admin securely. They'll be nudged to change it on their first
-									sign in.
-								</p>
-							</div>
-						{/if}
-					</div>
+<form method="POST" action={action?.kind === 'delete' ? '?/delete' : '?/update'} use:enhance={submitAction} bind:this={actionForm} class="hidden">
+	<input type="hidden" name="admin_id" value={action?.admin_id ?? ''} />
+	{#if action?.role}<input type="hidden" name="role" value={action.role} />{/if}
+	{#if action?.is_active}<input type="hidden" name="is_active" value={action.is_active} />{/if}
+</form>
 
-					{#if createForm?.error}
-						<p class="text-sm text-[#EF4444]">{createForm.error}</p>
-					{/if}
+<ConfirmDialog
+	open={!!removing}
+	title="Remove {removing?.full_name ?? 'admin'}?"
+	message="They lose access straight away. Invite them again if you need them back."
+	confirmText="Remove"
+	loading={!!busyId}
+	onconfirm={() => removing && run({ kind: 'delete', admin_id: removing.admin_id })}
+	oncancel={() => (removing = null)}
+/>
 
-					<div class="flex gap-2 pt-1">
-						<button
-							type="button"
-							onclick={() => (showCreate = false)}
-							class="flex-1 px-4 py-2.5 rounded-2xl text-sm font-medium text-[#251818] bg-white hover:bg-[#fff0ef] transition-colors"
-						>
-							Cancel
-						</button>
-						<button
-							type="submit"
-							class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-semibold text-white bg-gradient-to-br from-[#ae2f34] to-[#FF6B6B] hover:opacity-95 transition-all"
-						>
-							Send invite
-						</button>
-					</div>
-				</form>
-			</div>
-		</div>
-	{/if}
-
-	<!-- Surface per-row update/delete errors as toast-y banners -->
-	{#if (updateForm && updateForm.error) || (deleteForm && deleteForm.error)}
-		<div class="fixed bottom-6 right-6 z-50 bg-[#FEF2F2] border border-[#EF4444]/30 rounded-2xl p-3 max-w-sm shadow-lg">
-			<p class="text-sm text-[#991B1B]">
-				{updateForm?.error ?? deleteForm?.error}
+<Modal bind:open={inviteOpen} title="Invite an admin" description="They sign in with a WhatsApp code sent to this number." busy={inviting}>
+	<form method="POST" action="?/create" class="flex flex-col gap-5" use:enhance={submitInvite} novalidate>
+		{#if inviteError}
+			<p class="flex items-start gap-2 rounded-field bg-rejected-tint px-4 py-3 text-sm font-medium text-rejected" role="alert">
+				<CircleAlert size={18} class="mt-px flex-none" aria-hidden="true" />{inviteError}
 			</p>
+		{/if}
+		<Input id="invite-name" name="full_name" label="Name" autocomplete="off" bind:value={name} maxLength={100} />
+		<PhoneInput id="invite-phone" label="WhatsApp number" bind:value={phone} />
+		<input type="hidden" name="whatsapp_number" value={phone} />
+		<Segmented
+			label="Role"
+			bind:value={role}
+			options={[
+				{ value: 'admin', label: 'Admin' },
+				{ value: 'super_admin', label: 'Super admin' }
+			]}
+		/>
+		<input type="hidden" name="role" value={role} />
+		<div class="flex flex-col gap-2">
+			<Checkbox bind:checked={withPassword} label="Also set a temporary password" />
+			{#if withPassword}
+				<input type="hidden" name="set_temp_password" value="on" />
+				<Input
+					id="invite-password"
+					name="password"
+					type="password"
+					label="Temporary password"
+					autocomplete="new-password"
+					helperText="For when WhatsApp codes aren't arriving. Share it privately; they'll be asked to change it."
+				/>
+			{/if}
 		</div>
-	{/if}
-</div>
+		<div class="flex gap-3 pt-1">
+			<Button type="button" variant="ghost" class="flex-1" onclick={() => (inviteOpen = false)} disabled={inviting}>Cancel</Button>
+			<Button type="submit" variant="ink" class="flex-1" loading={inviting}>Send invite</Button>
+		</div>
+	</form>
+</Modal>
