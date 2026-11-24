@@ -5,7 +5,7 @@ export const SAMPLE_VALUES: Record<string, string> = {
 	MakerName: 'Raka',
 	Total: '1.250.000',
 	Share: '125.000',
-	URL: 'https://letpai.app/payment/7f3k2',
+	URL: 'https://letpai.xyz/payment/7f3k2',
 	Code: '482913',
 	ExpiresMinutes: '5'
 };

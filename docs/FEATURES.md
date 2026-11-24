@@ -120,7 +120,7 @@
 **Message Content:**
 - Overview of total bill per person
 - Unique link to payment page
-- Example: "Halo! Total tagihanmu: Rp 125.000 untuk 'Makan Siang'. Lihat detail & upload bukti bayar: letpai.app/xyz"
+- Example: "Halo! Total tagihanmu: Rp 125.000 untuk 'Makan Siang'. Lihat detail & upload bukti bayar: letpai.xyz/payment/7f3k2"
 
 **Payment Page Link:**
 - Unique URL per participant

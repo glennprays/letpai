@@ -96,7 +96,7 @@
 			<span class="self-center rounded-[8px] bg-card/70 px-2.5 py-1 text-xs font-semibold text-ink-soft">Today</span>
 			<div class="max-w-[85%] self-start rounded-card rounded-tl-[4px] bg-card px-3.5 pt-2.5 pb-1.5 text-[15px] shadow-raised">
 				Hi Gita, your share for <b>Friday dinner</b> is <b>Rp 68.145</b>. Transfer to BCA 5270 1234 88 (Raka Pratama), then upload the proof:
-				<span class="font-semibold text-review">letpai.app/p/7KQ2</span>
+				<span class="font-semibold text-review">letpai.xyz/payment/7KQ2</span>
 				<span class="mt-0.5 block text-right text-[11px] text-ink-soft">21:12</span>
 			</div>
 			<div class="max-w-[85%] self-end rounded-card rounded-tr-[4px] bg-chat-out px-3.5 pt-2.5 pb-1.5 text-[15px] shadow-raised">
