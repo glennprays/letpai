@@ -24,7 +24,6 @@ export const HEX_ALLOWLIST: string[] = [
 	'src/routes/admin/templates/TestSendModal.svelte',
 	'src/routes/admin/whatsapp/+page.svelte',
 	'src/routes/cookies/+page.svelte',
-	'src/routes/payment/[token]/+page.svelte',
 	'src/routes/privacy/+page.svelte',
 	'src/routes/tos/+page.svelte',
 ];

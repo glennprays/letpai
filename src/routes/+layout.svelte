@@ -69,6 +69,8 @@
 
 	const navbarVariant = $derived.by(() => {
 		if (isAppPage || isAdminPage) return null;
+		// Payment links are for guests: no marketing nav, the page has its own slim header.
+		if ($page.url.pathname.startsWith('/payment/')) return null;
 		if ($page.route.id?.startsWith('/(auth)')) {
 			return 'auth';
 		} else if (data.isAuthenticated && data.token) {
