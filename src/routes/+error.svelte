@@ -1,131 +1,52 @@
 <script lang="ts">
-  import { page } from "$app/stores";
-  import { ArrowRight } from "lucide-svelte";
+	import { page } from '$app/state';
+	import { ArrowLeft, RefreshCw } from 'lucide-svelte';
+	import Seo from '$lib/components/Seo.svelte';
+	import Button from '$lib/components/ui/Button.svelte';
+	import { ArtReceipt, ArtHelmet } from '$lib/components/art';
 
-  const status = $derived($page.status);
-  const headline = $derived.by(() => {
-    if (status === 404) return "Page not found";
-    if (status >= 500) return "Something broke on our side";
-    return $page.error?.message || "Something went wrong";
-  });
-  const body = $derived.by(() => {
-    if (status === 404) {
-      return "The page you're looking for moved or never existed. Let's get you back somewhere familiar.";
-    }
-    if (status >= 500) {
-      return "We've been notified. Try refreshing in a moment, or head back home.";
-    }
-    return "Try again, or head back home.";
-  });
+	const status = $derived(page.status);
+	const signedIn = $derived(!!page.data?.isAuthenticated);
+	const isAdmin = $derived(page.url.pathname.startsWith('/admin'));
+	const home = $derived(isAdmin ? '/admin' : signedIn ? '/dashboard' : '/');
+	const homeLabel = $derived(isAdmin ? 'Admin overview' : signedIn ? 'Go to dashboard' : 'Go to Letpai');
+
+	const copy = $derived.by(() => {
+		if (status === 404)
+			return {
+				title: "This page isn't here",
+				body: page.url.pathname.startsWith('/payment/')
+					? 'The payment link may have a typo, or the host cancelled the session. Ask them to send it again.'
+					: 'The link may be old or mistyped.'
+			};
+		if (status === 403) return { title: "You can't open this", body: page.error?.message || 'Your account doesn’t have access to this page.' };
+		if (status >= 500) return { title: 'Something broke on our side', body: "It isn't you. Try again in a moment." };
+		return { title: 'Something went wrong', body: page.error?.message || 'Try again, or head back.' };
+	});
 </script>
 
-<svelte:head>
-  <title>{status} · Letpai</title>
-</svelte:head>
+<Seo title={copy.title} noindex />
 
-<main class="error-page">
-  <div class="error-card">
-    <p class="error-code">{status}</p>
-    <h1>{headline}</h1>
-    <p class="error-body">{body}</p>
-
-    <div class="error-actions">
-      <a href="/" class="btn-primary">
-        Go home <ArrowRight size={16} />
-      </a>
-      <a href="/login" class="btn-secondary">Sign in</a>
-    </div>
-  </div>
+<main class="mx-auto grid min-h-[70dvh] max-w-4xl content-center items-center gap-6 px-4 py-12 sm:px-6 md:grid-cols-[1fr_auto] md:gap-16">
+	<div>
+		<p class="text-eyebrow text-coral-ink">Error {status}</p>
+		<h1 class="text-poster mt-3 max-w-[14ch] text-5xl sm:text-6xl">{copy.title}</h1>
+		<p class="mt-4 max-w-md text-lg text-ink-soft">{copy.body}</p>
+		<div class="mt-8 flex flex-wrap gap-3">
+			{#if status >= 500}
+				<Button variant="ink" leftIcon={RefreshCw} onclick={() => location.reload()}>Try again</Button>
+				<Button variant="secondary" href={home}>{homeLabel}</Button>
+			{:else}
+				<Button variant="ink" href={home}>{homeLabel}</Button>
+				<Button variant="ghost" leftIcon={ArrowLeft} onclick={() => history.back()}>Go back</Button>
+			{/if}
+		</div>
+	</div>
+	<div class="order-first justify-self-start md:order-none md:justify-self-center" aria-hidden="true">
+		{#if status >= 500}
+			<ArtHelmet class="w-24 md:w-48" />
+		{:else}
+			<ArtReceipt class="w-20 -rotate-6 md:w-44" />
+		{/if}
+	</div>
 </main>
-
-<style>
-  .error-page {
-    min-height: 100vh;
-    background: #fff8f7;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
-    font-family: "Plus Jakarta Sans", sans-serif;
-  }
-
-  .error-card {
-    max-width: 480px;
-    width: 100%;
-    text-align: center;
-  }
-
-  .error-code {
-    font-size: clamp(72px, 14vw, 112px);
-    font-weight: 700;
-    line-height: 1;
-    letter-spacing: -0.04em;
-    margin: 0 0 12px;
-    background: linear-gradient(135deg, #ae2f34, #FF6B6B);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  .error-card h1 {
-    font-size: clamp(22px, 3vw, 28px);
-    font-weight: 700;
-    color: #251818;
-    margin: 0 0 12px;
-    letter-spacing: -0.02em;
-  }
-
-  .error-body {
-    font-size: 16px;
-    line-height: 1.6;
-    color: #584140;
-    margin: 0 0 32px;
-  }
-
-  .error-actions {
-    display: flex;
-    gap: 12px;
-    justify-content: center;
-    flex-wrap: wrap;
-  }
-
-  .btn-primary {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 12px 22px;
-    border-radius: 16px;
-    background: linear-gradient(135deg, #ae2f34, #FF6B6B);
-    color: #fff;
-    font-size: 15px;
-    font-weight: 600;
-    text-decoration: none;
-    transition: opacity 0.15s, transform 0.15s;
-  }
-
-  .btn-primary:hover {
-    opacity: 0.95;
-  }
-
-  .btn-primary:active {
-    transform: scale(0.98);
-  }
-
-  .btn-secondary {
-    display: inline-flex;
-    align-items: center;
-    padding: 12px 22px;
-    border-radius: 16px;
-    background: #fff;
-    color: #251818;
-    font-size: 15px;
-    font-weight: 600;
-    text-decoration: none;
-    border: 1px solid #fbe3e1;
-    transition: background 0.15s;
-  }
-
-  .btn-secondary:hover {
-    background: #fff0ef;
-  }
-</style>

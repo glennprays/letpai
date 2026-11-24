@@ -1,137 +1,65 @@
 <script lang="ts">
-  import SharedFooter from "$lib/components/layout/SharedFooter.svelte";
+	import LegalPage from '$lib/components/legal/LegalPage.svelte';
+
+	const sections = [
+		{ id: 'acceptance', title: 'Agreeing to these terms' },
+		{ id: 'use', title: 'What Letpai is for' },
+		{ id: 'messages', title: 'Messages we send for you' },
+		{ id: 'accounts', title: 'Your account' },
+		{ id: 'money', title: 'Money stays between you' },
+		{ id: 'liability', title: 'Liability' },
+		{ id: 'changes', title: 'Changes' }
+	];
 </script>
 
-<svelte:head>
-  <title>Terms of Service · Letpai</title>
-  <meta name="description" content="The terms that govern your use of Letpai." />
-</svelte:head>
+<LegalPage
+	title="Terms of service"
+	updated="2026-05-29"
+	description="The terms for using Letpai to split bills and collect payments over WhatsApp."
+	summary="Use Letpai to split real bills with people who expect to hear from you. Keep your password to yourself. Letpai keeps track of who paid; it never holds or moves your money."
+	{sections}
+>
+	<section id="acceptance">
+		<h2>Agreeing to these terms</h2>
+		<p>By creating an account or using Letpai you agree to these terms. If you don't agree, please don't use the service.</p>
+	</section>
 
-<main class="legal-page">
-  <article class="legal-prose">
-    <p class="legal-eyebrow">Legal</p>
-    <h1>Terms of Service</h1>
-    <p class="legal-updated">Last updated: 2026-05-29</p>
+	<section id="use">
+		<h2>What Letpai is for</h2>
+		<p>Letpai helps you split a bill, send each person their share, and keep track of who has paid. Use it only for that, and within the law.</p>
+	</section>
 
-    <p class="legal-callout">
-      This is placeholder copy. The production terms will be drafted with
-      legal review and will replace the text below.
-    </p>
+	<section id="messages">
+		<h2>Messages we send for you</h2>
+		<p>
+			When you share a session or send a reminder, Letpai messages the people you added on WhatsApp. Only add people who know you and expect to
+			hear about the bill. Follow WhatsApp's rules for those messages; repeated reminders are limited to one a day per person for this reason.
+		</p>
+	</section>
 
-    <section>
-      <h2>Acceptance</h2>
-      <p>
-        By creating an account or using Letpai you agree to these terms.
-        If you don't agree, please don't use the service.
-      </p>
-    </section>
+	<section id="accounts">
+		<h2>Your account</h2>
+		<p>You're responsible for keeping your password safe and for what happens under your account. Tell us straight away if you think someone else has signed in.</p>
+	</section>
 
-    <section>
-      <h2>Use of the service</h2>
-      <p>
-        Letpai is a tool for organising bill splits and notifying the people
-        you split with. You agree to use it only for that purpose, and to
-        follow applicable laws — including the rules of WhatsApp's Business
-        API for the messages we send on your behalf.
-      </p>
-    </section>
+	<section id="money">
+		<h2>Money stays between you</h2>
+		<p>
+			Payments go directly from each person to you, by bank transfer or e-wallet. Letpai never holds, moves or guarantees money. A
+			<strong>Paid</strong> mark means you approved their proof, not that Letpai checked the transfer.
+		</p>
+	</section>
 
-    <section>
-      <h2>Accounts</h2>
-      <p>
-        You are responsible for keeping your account credentials safe and
-        for any activity that happens under your account. Notify us
-        immediately if you suspect unauthorised access.
-      </p>
-    </section>
+	<section id="liability">
+		<h2>Liability</h2>
+		<p>
+			Letpai is provided "as is". We don't promise it will always be available or free of errors. As far as the law allows, we aren't liable
+			for indirect or consequential losses from using it.
+		</p>
+	</section>
 
-    <section>
-      <h2>Liability</h2>
-      <p>
-        Letpai is provided "as is". We don't guarantee the service will be
-        uninterrupted or error-free. To the extent permitted by law, we are
-        not liable for indirect or consequential losses arising from your
-        use of the service.
-      </p>
-    </section>
-
-    <section>
-      <h2>Changes</h2>
-      <p>
-        We may update these terms from time to time. Material changes will
-        be communicated in the app or by message. Continued use after a
-        change means you accept the new terms.
-      </p>
-    </section>
-  </article>
-</main>
-
-<SharedFooter />
-
-<style>
-  .legal-page {
-    background: #fff8f7;
-    padding: 64px 24px 96px;
-    min-height: calc(100vh - 64px);
-    font-family: "Plus Jakarta Sans", sans-serif;
-  }
-
-  .legal-prose {
-    max-width: 720px;
-    margin: 0 auto;
-    color: #251818;
-  }
-
-  .legal-eyebrow {
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: #ae2f34;
-    margin: 0 0 12px;
-  }
-
-  .legal-prose h1 {
-    font-size: clamp(32px, 5vw, 44px);
-    line-height: 1.15;
-    margin: 0 0 8px;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-  }
-
-  .legal-updated {
-    font-size: 14px;
-    color: #584140;
-    margin: 0 0 32px;
-  }
-
-  .legal-callout {
-    background: #fff0ef;
-    border-left: 3px solid #ae2f34;
-    padding: 14px 18px;
-    border-radius: 12px;
-    font-size: 14px;
-    color: #584140;
-    margin: 0 0 40px;
-    line-height: 1.6;
-  }
-
-  .legal-prose section {
-    margin-bottom: 32px;
-  }
-
-  .legal-prose h2 {
-    font-size: 20px;
-    font-weight: 600;
-    margin: 0 0 12px;
-    color: #251818;
-    letter-spacing: -0.01em;
-  }
-
-  .legal-prose p {
-    font-size: 16px;
-    line-height: 1.7;
-    color: #584140;
-    margin: 0 0 12px;
-  }
-</style>
+	<section id="changes">
+		<h2>Changes</h2>
+		<p>We may update these terms. We'll tell you about important changes in the app or on WhatsApp. Using Letpai after a change means you accept it.</p>
+	</section>
+</LegalPage>
