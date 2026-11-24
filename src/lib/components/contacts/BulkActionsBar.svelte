@@ -1,187 +1,105 @@
 <script lang="ts">
-  import { cn } from '$lib/utils/cn';
-  import { Trash2, FolderOpen, X, Star, StarOff } from 'lucide-svelte';
-  import Button from '../ui/Button.svelte';
-  import type { ContactGroup } from '$lib/types/api';
+	import { cn } from '$lib/utils/cn';
+	import { FolderInput, FolderMinus, Star, StarOff, Trash2, X } from 'lucide-svelte';
+	import { fly } from 'svelte/transition';
+	import Menu, { type MenuItem } from '../ui/Menu.svelte';
+	import type { ContactGroup } from '$lib/types/api';
 
-  interface Props {
-    selectedCount: number;
-    groups?: ContactGroup[];
-    loading?: boolean;
-    onclear?: () => void;
-    ondelete?: () => void;
-    onassigngroup?: (groupId: string) => void;
-    ontogglefavorite?: (isFavorite: boolean) => void;
-    class?: string;
-  }
+	interface Props {
+		selectedCount: number;
+		/** How many contacts are visible, for the "Select all" shortcut. */
+		visibleCount?: number;
+		groups?: ContactGroup[];
+		loading?: boolean;
+		onclear?: () => void;
+		onselectall?: () => void;
+		ondelete?: () => void;
+		/** Empty string means "remove from group". */
+		onassigngroup?: (groupId: string) => void;
+		ontogglefavorite?: (isFavorite: boolean) => void;
+		class?: string;
+	}
 
-  let {
-    selectedCount,
-    groups = [],
-    loading = false,
-    onclear,
-    ondelete,
-    onassigngroup,
-    ontogglefavorite,
-    class: className,
-    ...props
-  }: Props = $props();
+	let {
+		selectedCount,
+		visibleCount = 0,
+		groups = [],
+		loading = false,
+		onclear,
+		onselectall,
+		ondelete,
+		onassigngroup,
+		ontogglefavorite,
+		class: className
+	}: Props = $props();
 
-  let showGroupMenu = $state(false);
-  let showFavoriteMenu = $state(false);
+	const none = $derived(selectedCount === 0 || loading);
 
-  // Separate refs per menu — sharing one ref across multiple bind:this
-  // targets means the last-mounted binding wins, so the click-outside
-  // handler would close whichever menu the user just clicked to open.
-  let favoriteMenuElement = $state<HTMLElement>();
-  let groupMenuElement = $state<HTMLElement>();
+	const favouriteItems = $derived<MenuItem[]>([
+		{ label: 'Add to favourites', icon: Star, onclick: () => ontogglefavorite?.(true), disabled: none },
+		{ label: 'Remove from favourites', icon: StarOff, onclick: () => ontogglefavorite?.(false), disabled: none }
+	]);
 
-  function handleAssignGroup(groupId: string) {
-    if (onassigngroup) onassigngroup(groupId);
-    showGroupMenu = false;
-  }
+	const groupItems = $derived<MenuItem[]>([
+		...groups.map((g) => ({ label: `Move to ${g.name}`, icon: FolderInput, onclick: () => onassigngroup?.(g.group_id), disabled: none })),
+		{ label: 'Remove from group', icon: FolderMinus, onclick: () => onassigngroup?.(''), disabled: none }
+	]);
 
-  function handleToggleFavorite(isFavorite: boolean) {
-    if (ontogglefavorite) ontogglefavorite(isFavorite);
-    showFavoriteMenu = false;
-  }
-
-  // Close each menu only when the click happens outside its own wrapper.
-  $effect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      const target = e.target as Node;
-      if (favoriteMenuElement && !favoriteMenuElement.contains(target)) {
-        showFavoriteMenu = false;
-      }
-      if (groupMenuElement && !groupMenuElement.contains(target)) {
-        showGroupMenu = false;
-      }
-    }
-
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
-  });
+	const action =
+		'h-10 w-full justify-center rounded-pill bg-fog px-3 text-sm font-semibold text-ink shadow-none hover:bg-mist sm:w-auto';
 </script>
 
-{#if selectedCount > 0}
-  <div
-    class={cn(
-      // z-50 on mobile so we sit above BottomTabBar (z-40) — otherwise the
-      // tab bar paints over us and bulk actions become unreachable.
-      'fixed bottom-0 left-0 right-0 bg-[#251818]/90 backdrop-blur-xl shadow-lg z-50',
-      'md:static md:z-auto md:rounded-2xl md:shadow-md md:p-3',
-      'animate-in slide-in-from-bottom-4 duration-200',
-      className
-    )}
-    {...props}
-  >
-    <div class="flex items-center justify-between gap-4 p-4 md:p-0">
-      <!-- Selection Info -->
-      <div class="flex items-center gap-3">
-        <span class="text-sm font-medium text-white md:text-[#251818]">
-          {selectedCount} {selectedCount === 1 ? 'contact' : 'contacts'} selected
-        </span>
-      </div>
+<!-- Pinned where the tab bar sits on mobile (select mode replaces it), and
+     floating centred over the content column on desktop. -->
+<div
+	class={cn(
+		'fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-50',
+		'md:inset-x-auto md:bottom-6 md:left-[calc(50%+7.5rem)] md:w-max md:-translate-x-1/2',
+		className
+	)}
+	role="toolbar"
+	aria-label="Selected contacts"
+	transition:fly={{ y: 16, duration: 180 }}
+>
+	<div class="flex flex-wrap items-center gap-2 rounded-sheet bg-card p-2 shadow-pop sm:flex-nowrap sm:rounded-pill">
+		<button
+			type="button"
+			onclick={onclear}
+			class="grid size-10 flex-none place-items-center rounded-full text-ink-soft transition-colors hover:bg-fog hover:text-ink focus-visible:outline-2 focus-visible:outline-steel"
+			aria-label="Done selecting"
+		>
+			<X size={18} aria-hidden="true" />
+		</button>
+		<p class="min-w-0 flex-1 text-sm font-semibold text-ink sm:flex-none sm:pr-2" aria-live="polite">
+			{selectedCount} selected
+		</p>
+		{#if onselectall && visibleCount > selectedCount}
+			<button
+				type="button"
+				onclick={onselectall}
+				class="h-10 rounded-pill px-3 text-sm font-semibold text-steel transition-colors hover:bg-fog"
+			>
+				Select all {visibleCount}
+			</button>
+		{/if}
 
-      <!-- Actions -->
-      <div class="flex items-center gap-2 flex-wrap">
-        <!-- Clear Selection -->
-        <Button
-          variant="ghost"
-          size="sm"
-          onclick={onclear}
-          disabled={loading}
-          leftIcon={X}
-        >
-          Clear
-        </Button>
-
-        <!-- Toggle Favorite -->
-        {#if ontogglefavorite}
-          <div class="relative" bind:this={favoriteMenuElement}>
-            <Button
-              variant="secondary"
-              size="sm"
-              onclick={() => showFavoriteMenu = !showFavoriteMenu}
-              disabled={loading}
-              leftIcon={Star}
-            >
-              Favorite
-            </Button>
-
-            {#if showFavoriteMenu}
-              <div class="absolute bottom-full mb-2 left-0 w-48 bg-white rounded-2xl shadow-[0_24px_48px_-4px_rgba(37,24,24,0.12)] py-1 z-10">
-                <button
-                  onclick={() => handleToggleFavorite(true)}
-                  class="w-full px-4 py-2 text-left text-sm text-[#251818] hover:bg-[#fff0ef] flex items-center gap-3"
-                >
-                  <Star class="w-4 h-4 text-[#F59E0B] fill-[#F59E0B]" />
-                  <span>Add to favorites</span>
-                </button>
-                <button
-                  onclick={() => handleToggleFavorite(false)}
-                  class="w-full px-4 py-2 text-left text-sm text-[#251818] hover:bg-[#fff0ef] flex items-center gap-3"
-                >
-                  <StarOff class="w-4 h-4 text-[#584140]/60" />
-                  <span>Remove from favorites</span>
-                </button>
-              </div>
-            {/if}
-          </div>
-        {/if}
-
-        <!-- Assign to Group -->
-        {#if onassigngroup && groups.length > 0}
-          <div class="relative" bind:this={groupMenuElement}>
-            <Button
-              variant="secondary"
-              size="sm"
-              onclick={() => showGroupMenu = !showGroupMenu}
-              disabled={loading}
-              leftIcon={FolderOpen}
-            >
-              Add to Group
-            </Button>
-
-            {#if showGroupMenu}
-              <div class="absolute bottom-full mb-2 left-0 w-56 bg-white rounded-2xl shadow-[0_24px_48px_-4px_rgba(37,24,24,0.12)] py-1 z-10 max-h-64 overflow-y-auto">
-                <button
-                  onclick={() => handleAssignGroup('')}
-                  class="w-full px-4 py-2 text-left text-sm hover:bg-[#fff0ef] text-[#584140]"
-                >
-                  Remove from group
-                </button>
-                <div class="h-2"></div>
-                {#each groups as group}
-                  <button
-                    onclick={() => handleAssignGroup(group.group_id)}
-                    class="w-full px-4 py-2 text-left text-sm text-[#251818] hover:bg-[#fff0ef] flex items-center gap-3"
-                  >
-                    <span
-                      class="w-3 h-3 rounded-full flex-shrink-0"
-                      style="background-color: {group.color};"
-                    ></span>
-                    <span>{group.name}</span>
-                  </button>
-                {/each}
-              </div>
-            {/if}
-          </div>
-        {/if}
-
-        <!-- Delete -->
-        {#if ondelete}
-          <Button
-            variant="destructive"
-            size="sm"
-            onclick={ondelete}
-            disabled={loading}
-            leftIcon={Trash2}
-          >
-            Delete
-          </Button>
-        {/if}
-      </div>
-    </div>
-  </div>
-{/if}
+		<div class="grid w-full grid-cols-3 gap-2 sm:flex sm:w-auto">
+			{#if ontogglefavorite}
+				<Menu items={favouriteItems} label="Favourite selected contacts" text="Favourite" icon={Star} side="top" align="left" triggerClass={action} class="w-full sm:w-auto" />
+			{/if}
+			{#if onassigngroup}
+				<Menu items={groupItems} label="Move selected contacts to a group" text="Group" icon={FolderInput} side="top" triggerClass={action} class="w-full sm:w-auto" />
+			{/if}
+			{#if ondelete}
+				<button
+					type="button"
+					onclick={ondelete}
+					disabled={none}
+					class="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-pill bg-rejected-tint px-3 text-sm font-semibold text-rejected transition-colors hover:bg-rejected hover:text-card disabled:pointer-events-none disabled:opacity-40 sm:w-auto"
+				>
+					<Trash2 size={16} aria-hidden="true" />Delete
+				</button>
+			{/if}
+		</div>
+	</div>
+</div>

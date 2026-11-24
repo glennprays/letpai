@@ -1,424 +1,196 @@
 <script lang="ts">
-  import { cn } from '$lib/utils/cn';
-  import { Upload, X, Phone, AlertCircle, CheckCircle, Edit2 } from 'lucide-svelte';
-  import Button from '../ui/Button.svelte';
-  import Input from '../ui/Input.svelte';
-  import EmptyState from '../ui/EmptyState.svelte';
-  import {
-    selectDeviceContacts,
-    formatDevicePhoneNumber,
-    isDuplicatePhoneNumber,
-    getUniquePhoneNumbers,
-    type DeviceContact
-  } from '$lib/utils/contactPicker';
-  import type { ContactGroup, CreateContactRequest } from '$lib/types/api';
+	import { onMount } from 'svelte';
+	import { cn } from '$lib/utils/cn';
+	import { CircleCheck, Smartphone, UserPlus } from 'lucide-svelte';
+	import Button from '../ui/Button.svelte';
+	import Checkbox from '../ui/Checkbox.svelte';
+	import { ArtPhone } from '../art';
+	import { isContactPickerSupported, selectDeviceContacts, getUniquePhoneNumbers } from '$lib/utils/contactPicker';
+	import { digitsOnly, formatWhatsappDisplay } from '$lib/utils/phone';
+	import type { ContactGroup, CreateContactRequest } from '$lib/types/api';
 
-  interface ImportContact {
-    id: string;
-    name: string;
-    phone_numbers: string[];
-    status: 'new' | 'existing';
-    existing_id?: string;
-    selected: boolean;
-    editing: boolean;
-  }
+	interface Row {
+		id: string;
+		name: string;
+		phone: string;
+		existing: boolean;
+		selected: boolean;
+	}
 
-  interface Props {
-    existingContacts?: Map<string, string>; // phone -> contact_id mapping
-    groups?: ContactGroup[];
-    loading?: boolean;
-    onimport?: (contacts: CreateContactRequest[]) => void;
-    oncancel?: () => void;
-    class?: string;
-  }
+	interface Props {
+		/** Digits-only WhatsApp numbers already saved, for duplicate detection. */
+		existingNumbers?: Set<string>;
+		groups?: ContactGroup[];
+		loading?: boolean;
+		/** Resolve true when the import succeeded. */
+		onimport?: (contacts: CreateContactRequest[]) => Promise<boolean> | boolean;
+		/** Offered when the device can't share contacts. */
+		onaddmanually?: () => void;
+		oncancel?: () => void;
+		class?: string;
+	}
 
-  let {
-    existingContacts = new Map(),
-    groups = [],
-    loading = false,
-    onimport,
-    oncancel,
-    class: className,
-    ...props
-  }: Props = $props();
+	let { existingNumbers = new Set(), groups = [], loading = false, onimport, onaddmanually, oncancel, class: className }: Props = $props();
 
-  let step = $state<'intro' | 'preview' | 'success'>('intro');
-  let importContacts = $state<ImportContact[]>([]);
-  let selectedGroupId = $state('');
-  let importError = $state('');
-  let successCount = $state(0);
+	let step = $state<'intro' | 'review' | 'done'>('intro');
+	let rows = $state<Row[]>([]);
+	let groupId = $state('');
+	let error = $state('');
+	let imported = $state(0);
+	// Unknown until mounted: the Contact Picker API only exists in the browser.
+	let supported = $state<boolean | null>(null);
 
-  async function handleSelectContacts() {
-    importError = '';
+	onMount(() => {
+		supported = isContactPickerSupported();
+	});
 
-    const result = await selectDeviceContacts();
+	async function pick() {
+		error = '';
+		const result = await selectDeviceContacts();
+		if (!result.success || !result.contacts) {
+			// Closing the picker without choosing isn't an error worth shouting about.
+			if (result.error && result.error !== 'No contacts selected.') error = result.error;
+			return;
+		}
+		rows = result.contacts
+			.map((c) => {
+				const phone = getUniquePhoneNumbers(c)[0] ?? '';
+				const existing = existingNumbers.has(digitsOnly(phone));
+				return { id: c.id, name: c.name?.trim() || 'No name', phone, existing, selected: !existing };
+			})
+			.filter((r) => r.phone);
+		if (rows.length === 0) {
+			error = "None of those contacts have a phone number we can use.";
+			return;
+		}
+		step = 'review';
+	}
 
-    if (!result.success || !result.contacts) {
-      importError = result.error || 'Failed to access contacts';
-      return;
-    }
+	const fresh = $derived(rows.filter((r) => !r.existing));
+	const chosen = $derived(fresh.filter((r) => r.selected));
+	const allChosen = $derived(fresh.length > 0 && chosen.length === fresh.length);
 
-    // Transform to import contacts with duplicate detection
-    importContacts = result.contacts.map(contact => {
-      const uniquePhones = getUniquePhoneNumbers(contact);
-      let status: 'new' | 'existing' = 'new';
-      let existingId: string | undefined;
+	function toggleAll() {
+		const next = !allChosen;
+		for (const r of rows) if (!r.existing) r.selected = next;
+	}
 
-      // Check for duplicates
-      for (const phone of uniquePhones) {
-        const existingIdForPhone = existingContacts.get(phone);
-        if (existingIdForPhone) {
-          status = 'existing';
-          existingId = existingIdForPhone;
-          break;
-        }
-      }
+	async function runImport() {
+		error = '';
+		const payload: CreateContactRequest[] = chosen.map((r) => ({
+			name: r.name,
+			whatsapp_number: r.phone,
+			...(groupId && { group_id: groupId })
+		}));
+		const ok = (await onimport?.(payload)) ?? false;
+		if (!ok) {
+			error = "We couldn't import those contacts. Try again in a moment.";
+			return;
+		}
+		imported = payload.length;
+		step = 'done';
+	}
 
-      return {
-        id: contact.id,
-        name: contact.name,
-        phone_numbers: uniquePhones,
-        status,
-        existing_id: existingId,
-        selected: status === 'new', // Auto-select new contacts
-        editing: false
-      };
-    }).filter(c => c.phone_numbers.length > 0);
-
-    step = 'preview';
-  }
-
-  function handleToggleSelect(contactId: string) {
-    const contact = importContacts.find(c => c.id === contactId);
-    if (contact) {
-      contact.selected = !contact.selected;
-    }
-  }
-
-  function handleToggleAll() {
-    const allSelected = importContacts.every(c => c.selected);
-    importContacts.forEach(c => {
-      c.selected = !allSelected && c.status === 'new';
-    });
-  }
-
-  function handleToggleEdit(contactId: string) {
-    const contact = importContacts.find(c => c.id === contactId);
-    if (contact) {
-      contact.editing = !contact.editing;
-    }
-  }
-
-  function handleImport() {
-    const contactsToImport: CreateContactRequest[] = importContacts
-      .filter(c => c.selected && c.status === 'new')
-      .map(c => ({
-        name: c.name.trim(),
-        whatsapp_number: c.phone_numbers[0], // Use first phone number
-        ...(selectedGroupId && { group_id: selectedGroupId })
-      }));
-
-    if (contactsToImport.length === 0) {
-      importError = 'Please select at least one contact to import';
-      return;
-    }
-
-    if (onimport) {
-      onimport(contactsToImport);
-      successCount = contactsToImport.length;
-      step = 'success';
-    }
-  }
-
-  function handleReset() {
-    step = 'intro';
-    importContacts = [];
-    importError = '';
-    selectedGroupId = '';
-    successCount = 0;
-  }
-
-  function handleCancel() {
-    handleReset();
-    if (oncancel) oncancel();
-  }
-
-  const newContactsCount = $derived(
-    importContacts.filter(c => c.status === 'new').length
-  );
-
-  const existingContactsCount = $derived(
-    importContacts.filter(c => c.status === 'existing').length
-  );
-
-  const selectedCount = $derived(
-    importContacts.filter(c => c.selected).length
-  );
-
-  const allSelected = $derived(
-    importContacts.length > 0 && importContacts.every(c => c.selected)
-  );
+	function restart() {
+		step = 'intro';
+		rows = [];
+		groupId = '';
+		error = '';
+	}
 </script>
 
-<div class={cn('space-y-4', className)} {...props}>
-  {#if step === 'intro'}
-    <!-- Intro Step -->
-    <div class="text-center py-8">
-      <div class="w-16 h-16 bg-gradient-to-br from-[#ae2f34] to-[#FF6B6B] rounded-2xl flex items-center justify-center mx-auto mb-4">
-        <Upload class="w-8 h-8 text-white" />
-      </div>
+<div class={cn('flex flex-col gap-4', className)}>
+	{#if step === 'intro'}
+		<div class="flex flex-col items-center gap-4 py-2 text-center">
+			<ArtPhone class="h-28 w-auto" />
+			<p class="max-w-sm text-ink-soft">
+				Pick people from your phone's address book. You'll see the list before anything is saved, and numbers you already have are skipped.
+			</p>
+		</div>
 
-      <h3 class="text-xl font-bold text-[#251818] mb-2">
-        Import from Device
-      </h3>
+		{#if supported === false}
+			<div class="rounded-card bg-pending-tint p-4 text-sm text-ink" role="status">
+				<p class="font-semibold text-pending">This browser can't share your phone's contacts</p>
+				<p class="mt-1">Importing works in Chrome on Android. On other devices, add people one at a time; it takes a few seconds each.</p>
+			</div>
+		{/if}
 
-      <p class="text-[#584140] mb-6 max-w-md mx-auto">
-        Select contacts from your device to import. You can edit them before saving and assign them to groups.
-      </p>
+		{#if error}<p class="text-sm text-rejected" role="alert">{error}</p>{/if}
 
-      <div class="bg-[#F59E0B]/15 rounded-2xl p-4 mb-6 text-left">
-        <div class="flex gap-3">
-          <AlertCircle class="w-5 h-5 text-[#92400E] flex-shrink-0 mt-0.5" />
-          <div>
-            <p class="text-sm font-medium text-[#92400E]">
-              Contact Picker API
-            </p>
-            <p class="text-xs text-[#92400E]/80 mt-1">
-              This feature only works on Chrome or Edge browsers on Android. Other browsers are not supported yet.
-            </p>
-          </div>
-        </div>
-      </div>
+		<div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+			{#if oncancel}<Button variant="ghost" onclick={oncancel}>Cancel</Button>{/if}
+			{#if supported === false && onaddmanually}
+				<Button variant="ink" leftIcon={UserPlus} onclick={onaddmanually}>Add a contact</Button>
+			{:else}
+				<Button variant="ink" leftIcon={Smartphone} onclick={pick} disabled={!supported}>Choose from phone</Button>
+			{/if}
+		</div>
+	{:else if step === 'review'}
+		<div class="flex items-baseline justify-between gap-3">
+			<p class="text-sm text-ink-soft">
+				<strong class="text-ink">{fresh.length} new</strong>{#if rows.length > fresh.length}, {rows.length - fresh.length} already saved{/if}
+			</p>
+			{#if fresh.length > 1}
+				<button type="button" onclick={toggleAll} class="text-sm font-semibold text-steel hover:underline">
+					{allChosen ? 'Clear all' : 'Select all'}
+				</button>
+			{/if}
+		</div>
 
-      <div class="flex gap-3 justify-center">
-        {#if oncancel}
-          <button
-            onclick={handleCancel}
-            class="h-11 px-5 text-[15px] font-bold rounded-2xl bg-[#f5dddb] text-[#584140] hover:bg-[#fbe3e1] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6]"
-          >
-            Cancel
-          </button>
-        {/if}
+		<ul class="max-h-80 divide-y divide-mist overflow-y-auto rounded-card bg-card shadow-[inset_0_0_0_1.5px_var(--color-mist)]">
+			{#each rows as row (row.id)}
+				<li>
+					{#if row.existing}
+						<div class="flex items-center gap-3 px-4 py-2.5 opacity-60">
+							<CircleCheck size={22} class="flex-none text-ink-soft" aria-hidden="true" />
+							<span class="min-w-0 flex-1">
+								<span class="block truncate font-medium text-ink">{row.name}</span>
+								<span class="text-sm text-ink-soft tabular-nums">{formatWhatsappDisplay(row.phone)} · already saved</span>
+							</span>
+						</div>
+					{:else}
+						<Checkbox bind:checked={row.selected} ariaLabel="Import {row.name}" class="flex w-full px-4 py-2.5">
+							<span class="min-w-0 flex-1">
+								<span class="block truncate font-medium text-ink">{row.name}</span>
+								<span class="text-sm text-ink-soft tabular-nums">{formatWhatsappDisplay(row.phone)}</span>
+							</span>
+						</Checkbox>
+					{/if}
+				</li>
+			{/each}
+		</ul>
 
-        <Button
-          variant="primary"
-          onclick={handleSelectContacts}
-          leftIcon={Upload}
-        >
-          Select Contacts
-        </Button>
-      </div>
+		{#if groups.length > 0}
+			<div class="flex flex-col gap-1.5">
+				<label for="import-group" class="text-sm font-semibold text-ink">Put them in a group <span class="font-normal text-ink-soft">(optional)</span></label>
+				<select
+					id="import-group"
+					bind:value={groupId}
+					class="h-11 rounded-field bg-card px-4 text-[15px] font-medium text-ink shadow-[inset_0_0_0_1.5px_var(--color-hairline)] focus:shadow-[inset_0_0_0_2px_var(--color-steel)] focus:outline-none"
+				>
+					<option value="">No group</option>
+					{#each groups as g (g.group_id)}<option value={g.group_id}>{g.name}</option>{/each}
+				</select>
+			</div>
+		{/if}
 
-      {#if importError}
-        <p class="text-sm text-[#991B1B] mt-4">{importError}</p>
-      {/if}
-    </div>
+		{#if error}<p class="text-sm text-rejected" role="alert">{error}</p>{/if}
 
-  {:else if step === 'preview'}
-    <!-- Preview Step -->
-    <div class="space-y-4">
-      <!-- Header -->
-      <div class="flex items-center justify-between">
-        <div>
-          <h3 class="font-semibold text-[#251818]">
-            Review Contacts
-          </h3>
-          <p class="text-sm text-[#584140]">
-            {newContactsCount} new, {existingContactsCount} already exist
-          </p>
-        </div>
-        <button
-          onclick={handleCancel}
-          class="p-2 rounded-full hover:bg-[#fbe3e1] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6]"
-        >
-          <X class="w-5 h-5 text-[#584140]" />
-        </button>
-      </div>
-
-      <!-- Group Assignment -->
-      {#if groups && groups.length > 0}
-        <div>
-          <label for="import-assign-group" class="block text-sm font-semibold text-[#584140] mb-2">
-            Assign to Group (Optional)
-          </label>
-          <select
-            id="import-assign-group"
-            bind:value={selectedGroupId}
-            class="w-full h-11 px-4 bg-[#f5dddb] rounded-2xl font-medium text-[15px] text-[#251818] focus:ring-2 focus:ring-[#ae2f34]/30 transition-all duration-150 focus:outline-none"
-          >
-            <option value="">No group</option>
-            {#each groups as group}
-              <option value={group.group_id}>{group.name}</option>
-            {/each}
-          </select>
-        </div>
-      {/if}
-
-      <!-- Select All -->
-      {#if newContactsCount > 0}
-        <button
-          onclick={handleToggleAll}
-          class="text-sm font-medium text-[#ae2f34] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6] rounded"
-        >
-          {allSelected ? 'Deselect All' : 'Select All New'}
-        </button>
-      {/if}
-
-      <!-- Contact List -->
-      <div class="max-h-96 overflow-y-auto space-y-2 pr-2 social-ledger-scrollbar">
-        {#each importContacts as contact (contact.id)}
-          <div
-            class={cn(
-              'bg-white rounded-2xl p-3 transition-all',
-              contact.selected
-                ? 'ring-2 ring-[#ae2f34]/30'
-                : '',
-              contact.status === 'existing' && 'opacity-60'
-            )}
-          >
-            <div class="flex items-start gap-3">
-              <!-- Checkbox -->
-              {#if contact.status === 'new'}
-                <input
-                  type="checkbox"
-                  checked={contact.selected}
-                  onchange={() => handleToggleSelect(contact.id)}
-                  class="mt-1 w-4 h-4 rounded-[6px] border-2 border-[#e0bfbd] text-[#ae2f34] focus:ring-[#ae2f34]/30"
-                />
-              {:else}
-                <div class="mt-1 w-4 h-4 flex items-center justify-center">
-                  <CheckCircle class="w-4 h-4 text-[#584140]/60" />
-                </div>
-              {/if}
-
-              <!-- Info -->
-              <div class="flex-1 min-w-0">
-                {#if contact.editing}
-                  <Input
-                    value={contact.name}
-                    oninput={(val) => contact.name = val}
-                    size="sm"
-                    class="mb-2"
-                  />
-                {:else}
-                  <h4 class="font-medium text-[#251818] truncate">
-                    {contact.name || 'Unknown'}
-                  </h4>
-                {/if}
-
-                <div class="space-y-1">
-                  {#each contact.phone_numbers as phone}
-                    <div class="flex items-center gap-2 text-sm text-[#584140]">
-                      <Phone class="w-3 h-3 flex-shrink-0" />
-                      <span>{phone}</span>
-                    </div>
-                  {/each}
-                </div>
-
-                {#if contact.status === 'existing'}
-                  <p class="text-xs text-[#92400E] mt-1">
-                    Already in your contacts
-                  </p>
-                {/if}
-              </div>
-
-              <!-- Edit Button -->
-              {#if contact.status === 'new'}
-                <button
-                  onclick={() => handleToggleEdit(contact.id)}
-                  class="p-1.5 rounded-full hover:bg-[#fbe3e1] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6]"
-                  aria-label="Edit contact"
-                >
-                  <Edit2 class="w-4 h-4 text-[#584140]" />
-                </button>
-              {/if}
-            </div>
-          </div>
-        {/each}
-      </div>
-
-      <!-- Actions -->
-      <div class="flex gap-3 pt-2">
-        <Button
-          variant="secondary"
-          onclick={handleCancel}
-          disabled={loading}
-          class="flex-1"
-        >
-          Cancel
-        </Button>
-
-        <Button
-          variant="primary"
-          onclick={handleImport}
-          disabled={selectedCount === 0 || loading}
-          loading={loading}
-          class="flex-1"
-        >
-          Import {selectedCount} {selectedCount === 1 ? 'Contact' : 'Contacts'}
-        </Button>
-      </div>
-
-      {#if importError}
-        <p class="text-sm text-[#991B1B] text-center">{importError}</p>
-      {/if}
-    </div>
-
-  {:else if step === 'success'}
-    <!-- Success Step -->
-    <div class="text-center py-8">
-      <div class="w-16 h-16 bg-[#10B981]/15 rounded-2xl flex items-center justify-center mx-auto mb-4">
-        <CheckCircle class="w-8 h-8 text-[#047857]" />
-      </div>
-
-      <h3 class="text-xl font-bold text-[#251818] mb-2">
-        Import Complete!
-      </h3>
-
-      <p class="text-[#584140] mb-6">
-        {successCount} {successCount === 1 ? 'contact has' : 'contacts have'} been imported successfully.
-      </p>
-
-      <div class="flex gap-3 justify-center">
-        <Button
-          variant="secondary"
-          onclick={handleReset}
-        >
-          Import More
-        </Button>
-
-        <Button
-          variant="primary"
-          onclick={handleCancel}
-        >
-          Done
-        </Button>
-      </div>
-    </div>
-  {/if}
+		<div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+			<Button variant="ghost" onclick={restart} disabled={loading}>Pick again</Button>
+			<Button variant="ink" onclick={runImport} disabled={chosen.length === 0} {loading}>
+				Import {chosen.length} {chosen.length === 1 ? 'contact' : 'contacts'}
+			</Button>
+		</div>
+	{:else}
+		<div class="flex flex-col items-center gap-2 py-4 text-center" role="status">
+			<span class="grid size-12 place-items-center rounded-full bg-paid-tint text-paid"><CircleCheck size={24} aria-hidden="true" /></span>
+			<p class="text-heading text-xl">{imported} {imported === 1 ? 'contact' : 'contacts'} added</p>
+			<p class="text-sm text-ink-soft">They're ready to add to your next session.</p>
+		</div>
+		<div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+			<Button variant="ghost" onclick={restart}>Import more</Button>
+			{#if oncancel}<Button variant="ink" onclick={oncancel}>Done</Button>{/if}
+		</div>
+	{/if}
 </div>
-
-<style>
-  .social-ledger-scrollbar {
-    scrollbar-width: thin;
-    scrollbar-color: #e0bfbd #fff0ef;
-  }
-
-  .social-ledger-scrollbar::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  .social-ledger-scrollbar::-webkit-scrollbar-track {
-    background: #fff0ef;
-    border-radius: 3px;
-  }
-
-  .social-ledger-scrollbar::-webkit-scrollbar-thumb {
-    background: #e0bfbd;
-    border-radius: 3px;
-  }
-
-  .social-ledger-scrollbar:hover::-webkit-scrollbar-thumb {
-    background: #8c706f;
-  }
-</style>

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { cn } from '$lib/utils/cn';
 	import { Check } from 'lucide-svelte';
+	import type { Snippet } from 'svelte';
 
 	interface Props {
 		checked?: boolean;
@@ -11,6 +12,8 @@
 		label?: string;
 		/** Accessible name when there is no visible label. */
 		ariaLabel?: string;
+		/** Rich label content (e.g. a whole list row); replaces `label`. */
+		children?: Snippet;
 	}
 
 	let {
@@ -20,7 +23,8 @@
 		onchange,
 		id,
 		label,
-		ariaLabel
+		ariaLabel,
+		children
 	}: Props = $props();
 
 	const uid = $props.id();
@@ -61,5 +65,5 @@
 			{#if checked}<Check size={14} strokeWidth={3} />{/if}
 		</span>
 	</span>
-	{#if label}<span class="text-sm font-medium text-ink">{label}</span>{/if}
+	{#if children}{@render children()}{:else if label}<span class="text-sm font-medium text-ink">{label}</span>{/if}
 </label>

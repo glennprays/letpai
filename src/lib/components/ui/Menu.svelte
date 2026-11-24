@@ -19,10 +19,16 @@
 		align?: 'left' | 'right';
 		/** Visible trigger text; icon-only when omitted. */
 		text?: string;
+		/** Trigger icon; defaults to the three-dot glyph. */
+		icon?: any;
+		/** Open above the trigger, for bars pinned to the bottom of the screen. */
+		side?: 'bottom' | 'top';
+		triggerClass?: string;
 		class?: string;
 	}
 
-	let { items, label, align = 'right', text, class: className }: Props = $props();
+	let { items, label, align = 'right', text, icon, side = 'bottom', triggerClass, class: className }: Props = $props();
+	const TriggerIcon = $derived(icon ?? MoreHorizontal);
 
 	const uid = $props.id();
 	let open = $state(false);
@@ -89,10 +95,11 @@
 		}}
 		class={cn(
 			'inline-flex items-center justify-center gap-1.5 rounded-pill text-ink-soft transition-colors hover:bg-mist hover:text-ink',
-			text ? 'h-9 px-3.5 text-sm font-semibold shadow-[inset_0_0_0_1.5px_var(--color-hairline)]' : 'size-9'
+			text ? 'h-9 px-3.5 text-sm font-semibold shadow-[inset_0_0_0_1.5px_var(--color-hairline)]' : 'size-9',
+			triggerClass
 		)}
 	>
-		<MoreHorizontal size={18} aria-hidden="true" />
+		<TriggerIcon size={18} aria-hidden="true" />
 		{#if text}<span>{text}</span>{/if}
 	</button>
 	{#if open}
@@ -100,10 +107,14 @@
 			id="{uid}-menu"
 			role="menu"
 			aria-label={label}
-			class={cn('absolute top-[calc(100%+6px)] z-40 w-60 rounded-card bg-card p-1.5 shadow-pop', align === 'right' ? 'right-0' : 'left-0')}
-			transition:fly={{ y: -4, duration: 120 }}
+			class={cn(
+				'absolute z-40 max-h-72 w-60 overflow-y-auto rounded-card bg-card p-1.5 shadow-pop',
+				side === 'top' ? 'bottom-[calc(100%+6px)]' : 'top-[calc(100%+6px)]',
+				align === 'right' ? 'right-0' : 'left-0'
+			)}
+			transition:fly={{ y: side === 'top' ? 4 : -4, duration: 120 }}
 		>
-			{#each items as item (item.label)}
+			{#each items as item, i (i)}
 				{@const Icon = item.icon}
 				{#if item.href}
 					<a role="menuitem" href={item.href} class={itemClass(item)} aria-disabled={item.disabled || undefined} tabindex="-1" onclick={() => close()}>

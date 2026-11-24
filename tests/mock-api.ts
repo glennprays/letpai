@@ -16,6 +16,7 @@ import {
 	placeholderImage,
 	sessionTotal,
 	shareOf,
+	type FxContact,
 	type FxSession
 } from './fixtures/data.ts';
 
@@ -24,12 +25,26 @@ const PREFIX = '/api/v1';
 
 let sessions: FxSession[] = structuredClone(SESSIONS);
 let contacts = structuredClone(CONTACTS);
+let groups = structuredClone(CONTACT_GROUPS);
 let nextId = 1;
 
 function reset() {
 	sessions = structuredClone(SESSIONS);
 	contacts = structuredClone(CONTACTS);
+	groups = structuredClone(CONTACT_GROUPS);
 	nextId = 1;
+}
+
+// Mirror the backend's join: a contact carries its group's name and colour.
+function applyGroup(c: { group_id?: string; group_name?: string; group_color?: string }, groupId: unknown) {
+	const g = typeof groupId === 'string' && groupId ? groups.find((x) => x.group_id === groupId) : undefined;
+	c.group_id = g?.group_id;
+	c.group_name = g?.name;
+	c.group_color = g?.color;
+}
+
+function groupsWithCounts() {
+	return groups.map((g) => ({ ...g, contact_count: contacts.filter((c) => c.group_id === g.group_id).length }));
 }
 
 type Json = Record<string, unknown> | unknown[] | null;
@@ -432,12 +447,15 @@ route('POST', '/contacts', ({ body }) => {
 		updated_at: hoursAgo(0)
 	};
 	contacts.unshift(c);
+	applyGroup(c, body.group_id);
 	return [201, ok(c)];
 });
 route('PUT', '/contacts/([^/]+)', ({ m, body }) => {
 	const c = contacts.find((x) => x.contact_id === m[1]);
 	if (!c) return [404, fail('NOT_FOUND', 'Contact not found')];
-	Object.assign(c, body);
+	const { group_id, ...rest } = body;
+	Object.assign(c, rest);
+	if ('group_id' in body) applyGroup(c, group_id);
 	return [200, ok(c)];
 });
 route('DELETE', '/contacts/([^/]+)', ({ m }) => {
@@ -447,16 +465,36 @@ route('DELETE', '/contacts/([^/]+)', ({ m }) => {
 route('POST', '/contacts/bulk', ({ body }) => {
 	const ids = (body.contact_ids as string[]) ?? [];
 	if (body.operation === 'delete') contacts = contacts.filter((c) => !ids.includes(c.contact_id));
+	if (body.operation === 'add_to_group') for (const c of contacts) if (ids.includes(c.contact_id)) applyGroup(c, body.group_id);
 	return [200, ok({ succeeded: ids.length, failed: 0, errors: [] }, { message: 'Done' })];
 });
 route('POST', '/contacts/import', ({ body }) => {
-	const list = (body.contacts as Array<{ name: string; whatsapp_number: string }>) ?? [];
+	const list = (body.contacts as Array<{ name: string; whatsapp_number: string; group_id?: string }>) ?? [];
+	for (const item of list) {
+		const c: FxContact = { contact_id: `c-new-${nextId++}`, name: item.name, whatsapp_number: item.whatsapp_number, is_favorite: false, created_at: hoursAgo(0), updated_at: hoursAgo(0) };
+		applyGroup(c, item.group_id);
+		contacts.unshift(c);
+	}
 	return [200, ok({ succeeded: list.length, failed: 0, errors: [] }, { message: 'Imported' })];
 });
-route('GET', '/contact-groups', ({ req }) => [200, ok(userFor(req) === 'empty' ? [] : CONTACT_GROUPS)]);
-route('POST', '/contact-groups', ({ body }) => [201, ok({ group_id: `g-new-${nextId++}`, contact_count: 0, created_at: hoursAgo(0), ...body })]);
-route('PUT', '/contact-groups/([^/]+)', ({ m, body }) => [200, ok({ group_id: m[1], ...body })]);
-route('DELETE', '/contact-groups/([^/]+)', () => [200, ok()]);
+route('GET', '/contact-groups', ({ req }) => [200, ok(userFor(req) === 'empty' ? [] : groupsWithCounts())]);
+route('POST', '/contact-groups', ({ body }) => {
+	const g = { group_id: `g-new-${nextId++}`, name: String(body.name ?? ''), color: String(body.color ?? ''), contact_count: 0, created_at: hoursAgo(0) };
+	groups.push(g);
+	return [201, ok(g)];
+});
+route('PUT', '/contact-groups/([^/]+)', ({ m, body }) => {
+	const g = groups.find((x) => x.group_id === m[1]);
+	if (!g) return [404, fail('NOT_FOUND', 'Group not found')];
+	Object.assign(g, body);
+	for (const c of contacts) if (c.group_id === g.group_id) applyGroup(c, g.group_id);
+	return [200, ok(groupsWithCounts().find((x) => x.group_id === g.group_id))];
+});
+route('DELETE', '/contact-groups/([^/]+)', ({ m }) => {
+	groups = groups.filter((x) => x.group_id !== m[1]);
+	for (const c of contacts) if (c.group_id === m[1]) applyGroup(c, null);
+	return [200, ok()];
+});
 
 // ── Admin (returns flat objects, like the real admin API) ──────────────────
 const adminProfile = () => {
