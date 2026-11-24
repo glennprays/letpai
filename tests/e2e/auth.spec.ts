@@ -68,10 +68,19 @@ test('register: number and password, then the WhatsApp code', async ({ page }) =
 	await expect(page).toHaveURL(/\/dashboard$/, { timeout: 10_000 });
 });
 
-test('forgot password confirms without revealing whether the number exists', async ({ page }) => {
+test('forgot password uses the WhatsApp code to set a new password', async ({ page }) => {
 	await page.goto('/forgot-password');
 	await page.getByLabel('WhatsApp number').fill('81234567890');
-	await page.getByRole('button', { name: 'Send reset link' }).click();
-	await expect(page.getByText(/If an account uses this number/)).toBeVisible();
-	await expect(page.getByRole('button', { name: /Send again in 0:\d\d/ })).toBeDisabled();
-});
+	await page.getByRole('button', { name: 'Send me a code' }).click();
+
+	await expect(page.getByRole('heading', { name: 'Check WhatsApp' })).toBeVisible();
+	await expect(page.getByText('+62 812 3456 7890')).toBeVisible();
+	await expect(page.getByLabel('Digit 1 of 6')).toBeVisible();
+	await expect(page.getByLabel('New password')).toBeVisible();
+	await expect(page.getByText(/reset link/i)).not.toBeVisible();
+
+	await page.getByLabel('Digit 1 of 6').fill('123456');
+	await page.getByLabel('New password').fill('new-correct-horse');
+	await page.getByRole('button', { name: 'Reset password' }).click();
+	await expect(page.getByRole('heading', { name: 'Password updated' })).toBeVisible();
+})
