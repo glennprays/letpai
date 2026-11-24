@@ -1,169 +1,108 @@
 <script lang="ts">
-	import {
-		MessageCircle,
-		Users,
-		ArrowRight,
-		CheckCircle2,
-		XCircle,
-		Clock,
-		Shield,
-		AlertTriangle
-	} from 'lucide-svelte';
+	import { ArrowRight, CircleCheck, FileText, KeyRound, Info, MessageCircle, Users } from 'lucide-svelte';
+	import Seo from '$lib/components/Seo.svelte';
+	import AdminHeader from '$lib/components/admin/AdminHeader.svelte';
+	import Card from '$lib/components/ui/Card.svelte';
+	import StatusPill from '$lib/components/ui/StatusPill.svelte';
+	import { gatewayState, timeAgo } from '$lib/utils/admin';
+	import { formatWhatsappDisplay } from '$lib/utils/phone';
+	import { getFirstName } from '$lib/utils/avatar';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
 
-	const statusBadge = $derived.by(() => {
-		const s = data.status;
-		if (!s) return { label: 'Unknown', tone: 'neutral' as const, Icon: Clock };
-		if (s.is_connected) return { label: 'Connected', tone: 'success' as const, Icon: CheckCircle2 };
-		if (s.gateway_token_valid)
-			return { label: 'Token saved · not paired', tone: 'warning' as const, Icon: Clock };
-		return { label: 'Not paired', tone: 'danger' as const, Icon: XCircle };
-	});
+	const gateway = $derived(gatewayState(data.status));
+	const isSuper = $derived(data.profile?.role === 'super_admin');
+	const active = $derived((data.admins ?? []).filter((a) => a.is_active));
+	const supers = $derived(active.filter((a) => a.role === 'super_admin').length);
 
-	const badgeClasses = $derived(
-		statusBadge.tone === 'success'
-			? 'text-[#047857] bg-[#10B981]/15'
-			: statusBadge.tone === 'warning'
-				? 'text-[#92400E] bg-[#F59E0B]/15'
-				: statusBadge.tone === 'danger'
-					? 'text-[#991B1B] bg-[#EF4444]/15'
-					: 'text-[#584140] bg-[#fff0ef]'
-	);
-
-	const activeAdminCount = $derived(
-		(data.admins ?? []).filter((a) => a.is_active).length
-	);
-	const superAdminCount = $derived(
-		(data.admins ?? []).filter((a) => a.is_active && a.role === 'super_admin').length
+	// Things only an admin can fix, most urgent first.
+	const alerts = $derived(
+		[
+			!gateway.healthy && {
+				icon: MessageCircle,
+				title: gateway.label === 'Unknown' ? "Can't confirm WhatsApp is sending" : "WhatsApp isn't sending",
+				body: gateway.detail,
+				href: '/admin/whatsapp',
+				cta: 'Open WhatsApp'
+			},
+			data.profile?.password_setup_required && {
+				icon: KeyRound,
+				title: 'Set your own password',
+				body: "You don't have one yet, or another admin set it for you. With your own, you can sign in even when WhatsApp is down.",
+				href: '/admin/profile',
+				cta: 'Set password'
+			}
+		].filter(Boolean) as { icon: typeof MessageCircle; title: string; body: string; href: string; cta: string }[]
 	);
 </script>
 
-<svelte:head>
-	<title>Admin dashboard · Letpai</title>
-</svelte:head>
+<Seo title="Admin overview" noindex />
 
-<div class="px-6 py-10 max-w-5xl mx-auto" style="font-family:'Plus Jakarta Sans',sans-serif;">
-	<header class="mb-8">
-		<p class="text-xs uppercase tracking-wide font-semibold text-[#584140] mb-1">Dashboard</p>
-		<h1 class="text-3xl font-bold text-[#251818]">Hi {data.profile?.full_name || 'admin'} 👋</h1>
-		<p class="text-sm text-[#584140] mt-1">
-			Manage Letpai's WhatsApp integration and admin team from one place.
+<AdminHeader title="Hi {getFirstName(data.profile?.full_name, data.profile?.whatsapp_number)}" description="The WhatsApp gateway, message templates and the admin team." />
+
+<section aria-label="Needs attention" class="mt-6">
+	{#if alerts.length}
+		<ul class="flex flex-col gap-2">
+			{#each alerts as a (a.title)}
+				{@const Icon = a.icon}
+				<li class="flex flex-col gap-3 rounded-card bg-pending-tint p-4 sm:flex-row sm:items-center sm:gap-4">
+					<span class="grid size-10 flex-none place-items-center rounded-full bg-card text-pending"><Icon size={18} aria-hidden="true" /></span>
+					<div class="min-w-0 flex-1">
+						<p class="font-semibold text-ink">{a.title}</p>
+						<p class="mt-0.5 text-sm text-ink-soft">{a.body}</p>
+					</div>
+					<a href={a.href} class="inline-flex h-9 flex-none items-center gap-1.5 self-start rounded-pill bg-ink px-4 text-sm font-semibold text-card hover:bg-ink-hover sm:self-auto">
+						{a.cta} <ArrowRight size={15} aria-hidden="true" />
+					</a>
+				</li>
+			{/each}
+		</ul>
+	{:else}
+		<p class="flex items-center gap-2 rounded-card bg-paid-tint px-4 py-3 text-sm font-semibold text-paid">
+			<CircleCheck size={18} aria-hidden="true" /> Nothing needs you right now.
 		</p>
-	</header>
-
-	<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-		<!-- WhatsApp status tile -->
-		<a
-			href="/admin/whatsapp"
-			class="group bg-white rounded-3xl p-6 shadow-[0_1px_3px_rgba(37,24,24,0.04)] hover:shadow-[0_8px_32px_rgba(174,47,52,0.08)] transition-all no-underline"
-		>
-			<div class="flex items-start justify-between gap-3">
-				<div
-					class="w-11 h-11 rounded-2xl bg-[#ae2f34]/10 text-[#ae2f34] flex items-center justify-center"
-				>
-					<MessageCircle size={20} />
-				</div>
-				<span
-					class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold {badgeClasses}"
-				>
-					<statusBadge.Icon size={14} />
-					{statusBadge.label}
-				</span>
-			</div>
-			<h2 class="text-lg font-semibold text-[#251818] mt-4">WhatsApp gateway</h2>
-			<p class="text-sm text-[#584140] mt-1">
-				{#if data.status?.phone_number}
-					Currently paired with <strong>+{data.status.phone_number}</strong>.
-				{:else}
-					No device paired yet. Generate a QR to connect one.
-				{/if}
-			</p>
-			{#if data.status?.message}
-				<p class="text-xs text-[#584140]/80 mt-2">{data.status.message}</p>
-			{/if}
-			<p
-				class="text-sm font-medium text-[#ae2f34] mt-4 inline-flex items-center gap-1 group-hover:translate-x-0.5 transition-transform"
-			>
-				Open WhatsApp settings <ArrowRight size={14} />
-			</p>
-		</a>
-
-		<!-- Admin team tile -->
-		<a
-			href={data.profile?.role === 'super_admin' ? '/admin/admins' : '/admin'}
-			class:opacity-60={data.profile?.role !== 'super_admin'}
-			class:pointer-events-none={data.profile?.role !== 'super_admin'}
-			class="group bg-white rounded-3xl p-6 shadow-[0_1px_3px_rgba(37,24,24,0.04)] hover:shadow-[0_8px_32px_rgba(174,47,52,0.08)] transition-all no-underline"
-		>
-			<div class="flex items-start justify-between gap-3">
-				<div class="w-11 h-11 rounded-2xl bg-[#14B8A6]/15 text-[#0F766E] flex items-center justify-center">
-					<Users size={20} />
-				</div>
-				{#if data.profile?.role === 'super_admin'}
-					<span class="text-xs font-semibold text-[#584140]">Super admin</span>
-				{:else}
-					<span class="inline-flex items-center gap-1 text-xs text-[#584140]"
-						><Shield size={12} /> Restricted</span
-					>
-				{/if}
-			</div>
-			<h2 class="text-lg font-semibold text-[#251818] mt-4">Admin team</h2>
-			{#if data.admins}
-				<p class="text-sm text-[#584140] mt-1">
-					{activeAdminCount} active · {superAdminCount}
-					{superAdminCount === 1 ? 'super admin' : 'super admins'}
-				</p>
-			{:else if data.profile?.role === 'super_admin'}
-				<p class="text-sm text-[#584140] mt-1">Couldn't load the admin list right now.</p>
-			{:else}
-				<p class="text-sm text-[#584140] mt-1">
-					Only super admins can manage the team. Ask one of them for changes.
-				</p>
-			{/if}
-			{#if data.profile?.role === 'super_admin'}
-				<p
-					class="text-sm font-medium text-[#ae2f34] mt-4 inline-flex items-center gap-1 group-hover:translate-x-0.5 transition-transform"
-				>
-					Manage admins <ArrowRight size={14} />
-				</p>
-			{/if}
-		</a>
-	</div>
-
-	<!-- Heads up if no admins are listed -->
-	{#if data.status && !data.status.gateway_token_valid}
-		<div
-			class="bg-[#FFFBEB] border border-[#F59E0B]/40 rounded-2xl p-4 flex items-start gap-3 mb-6"
-		>
-			<AlertTriangle size={18} class="text-[#92400E] mt-0.5 flex-shrink-0" />
-			<div>
-				<p class="text-sm font-medium text-[#92400E]">No gateway token configured</p>
-				<p class="text-xs text-[#92400E]/90 mt-0.5">
-					Notifications won't be delivered until the gateway has a valid token. Paste one from
-					the WhatsApp gateway service in <a class="underline" href="/admin/whatsapp"
-						>WhatsApp settings</a
-					>.
-				</p>
-			</div>
-		</div>
 	{/if}
+</section>
 
-	{#if (data.profile as { password_setup_required?: boolean } | null)?.password_setup_required}
-		<div
-			class="bg-[#FFFBEB] border border-[#F59E0B]/40 rounded-2xl p-4 flex items-start gap-3 mb-6"
-		>
-			<AlertTriangle size={18} class="text-[#92400E] mt-0.5 flex-shrink-0" />
-			<div>
-				<p class="text-sm font-medium text-[#92400E]">Set your own password</p>
-				<p class="text-xs text-[#92400E]/90 mt-0.5">
-					Either you haven't picked a password yet, or you're using one another admin set for
-					you. Choose one in
-					<a class="underline" href="/admin/profile">your profile</a> so only you know it and
-					you can sign in even when the WhatsApp gateway is down.
-				</p>
-			</div>
+<div class="mt-6 grid gap-4 md:grid-cols-2">
+	<Card href="/admin/whatsapp">
+		<div class="flex items-start justify-between gap-3">
+			<MessageCircle size={20} class="text-ink-soft" aria-hidden="true" />
+			<StatusPill tone={gateway.tone}>{gateway.label}</StatusPill>
 		</div>
+		<h2 class="text-heading mt-4 text-lg">WhatsApp gateway</h2>
+		{#if data.status?.phone_number}
+			<p class="mt-1 text-ink tabular-nums">{formatWhatsappDisplay(data.status.phone_number)}</p>
+			<p class="text-sm text-ink-soft">Last connected {timeAgo(data.status.last_connected_at)}</p>
+		{:else}
+			<p class="mt-1 text-sm text-ink-soft">{gateway.detail}</p>
+		{/if}
+	</Card>
+
+	<Card href="/admin/templates">
+		<FileText size={20} class="text-ink-soft" aria-hidden="true" />
+		<h2 class="text-heading mt-4 text-lg">Message templates</h2>
+		<p class="mt-1 text-sm text-ink-soft">The WhatsApp texts for new bills, reminders and sign-in codes. Preview and test before saving.</p>
+	</Card>
+
+	{#if isSuper}
+		<Card href="/admin/admins">
+			<Users size={20} class="text-ink-soft" aria-hidden="true" />
+			<h2 class="text-heading mt-4 text-lg">Admin team</h2>
+			{#if data.admins}
+				<p class="mt-1 text-sm text-ink-soft tabular-nums">
+					{active.length} active · {supers} {supers === 1 ? 'super admin' : 'super admins'}
+				</p>
+			{:else}
+				<p class="mt-1 text-sm text-ink-soft">Couldn't load the team just now.</p>
+			{/if}
+		</Card>
 	{/if}
 </div>
+
+{#if !isSuper}
+	<p class="mt-4 flex items-center gap-2 text-sm text-ink-soft">
+		<Info size={15} aria-hidden="true" /> Only super admins can invite or remove admins.
+	</p>
+{/if}

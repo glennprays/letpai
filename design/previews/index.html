@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Letpai redesign · options</title>
+<link rel="stylesheet" href="shared.css" />
+<style>
+	body { padding: 32px 24px 80px; }
+	main { max-width: 1680px; margin: 0 auto; }
+	h1 { font-size: 56px; letter-spacing: -0.05em; margin: 0 0 8px; }
+	h2 { font: 700 32px/1 var(--display); letter-spacing: -0.03em; margin: 48px 0 16px; }
+	.opt { display: grid; grid-template-columns: 1fr 260px 340px; gap: 20px; margin-bottom: 28px; align-items: start; }
+	.opt img { width: 100%; border-radius: 12px; box-shadow: var(--shadow-card); background: #fff; display: block; }
+	.note { padding: 20px; font-size: 14px; }
+	.note h3 { font: 700 22px/1.1 var(--display); margin: 0 0 10px; }
+	.note dt { font-weight: 700; margin-top: 10px; }
+	.note dd { margin: 2px 0 0; color: var(--ink-soft); }
+	.rec { display: inline-block; background: var(--lime); color: var(--ink); font-weight: 700; font-size: 12px; padding: 3px 8px; border-radius: 999px; margin-left: 8px; vertical-align: middle; }
+	a.open { font-weight: 600; color: var(--review); }
+	@media (max-width: 1100px) { .opt { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<main>
+	<h1 class="display">Pick a direction</h1>
+	<p class="muted" style="max-width:70ch">Same content and fixture data in every option (see <code>design/BRIEF.md</code>). Desktop 1280px on the left, mobile 375px in the middle. Regenerate the shots with <code>node design/render-previews.mjs</code>.</p>
+
+	<h2>Landing page</h2>
+	<div class="opt">
+		<img src="shots/landing-a-desktop.png" alt="Landing A desktop" /><img src="shots/landing-a-mobile.png" alt="Landing A mobile" />
+		<dl class="card note"><h3>A · Poster</h3>
+			<dt>Reading order</dt><dd>Object cluster, centred 100px headline, one CTA, then a session card beside three numbered lines.</dd>
+			<dt>Distinctive choice</dt><dd>Closest to Fold: centred poster headline with floating satay, receipt, phone and coin.</dd>
+			<dt>Trade-off</dt><dd>Faithful to the reference, so it is the least "Letpai". The numbered steps drift back toward a template.</dd>
+			<dd><a class="open" href="landing-a.html">Open</a></dd></dl>
+	</div>
+	<div class="opt">
+		<img src="shots/landing-b-desktop.png" alt="Landing B desktop" /><img src="shots/landing-b-mobile.png" alt="Landing B mobile" />
+		<dl class="card note"><h3>B · Receipt <span class="rec">Recommended</span></h3>
+			<dt>Reading order</dt><dd>Left-aligned poster line, CTA, then a tilted torn receipt with per-person shares and the one lime Paid stamp. "How it works" is a real-looking WhatsApp thread.</dd>
+			<dt>Distinctive choice</dt><dd>The receipt is the evidence: it shows the product doing the maths, not a feature list.</dd>
+			<dt>Trade-off</dt><dd>Asymmetric hero needs care on tablet widths; the receipt stacks under the headline on mobile.</dd>
+			<dd><a class="open" href="landing-b.html">Open</a></dd></dl>
+	</div>
+	<div class="opt">
+		<img src="shots/landing-c-desktop.png" alt="Landing C desktop" /><img src="shots/landing-c-mobile.png" alt="Landing C mobile" />
+		<dl class="card note"><h3>C · Chat</h3>
+			<dt>Reading order</dt><dd>Quote headline, CTA, a phone frame with the WhatsApp request, then three illustrated cards.</dd>
+			<dt>Distinctive choice</dt><dd>Leads with the participant's experience instead of the host's.</dd>
+			<dt>Trade-off</dt><dd>The three-card strip is the familiar SaaS pattern we are trying to leave; hosts are the ones signing up.</dd>
+			<dd><a class="open" href="landing-c.html">Open</a></dd></dl>
+	</div>
+
+	<h2>Session detail</h2>
+	<div class="opt">
+		<img src="shots/session-a-desktop.png" alt="Session A desktop" /><img src="shots/session-a-mobile.png" alt="Session A mobile" />
+		<dl class="card note"><h3>A · Poster column</h3>
+			<dt>Reading order</dt><dd>Huge outstanding amount, faces coloured by status, proofs, still owes, the bill.</dd>
+			<dt>Primary action</dt><dd>Sticky "Remind 5" in the floating top bar.</dd>
+			<dt>Trade-off</dt><dd>Beautiful on mobile, but desktop wastes width and the bill, accounts and photos fall far below.</dd>
+			<dd><a class="open" href="session-a.html">Open</a></dd></dl>
+	</div>
+	<div class="opt">
+		<img src="shots/session-b-desktop.png" alt="Session B desktop" /><img src="shots/session-b-mobile.png" alt="Session B mobile" />
+		<dl class="card note"><h3>B · Queue and receipt <span class="rec">Recommended</span></h3>
+			<dt>Reading order</dt><dd>Title, outstanding amount, segmented bar (one segment per person), then "Check these proofs" and "Still owes" with inline actions. Paid people collapse into one row.</dd>
+			<dt>Desktop</dt><dd>The bill sits as a torn receipt in a second column with transfer accounts and photos.</dd>
+			<dt>Mobile</dt><dd>Same queue first; receipt, accounts and photos follow. Approve, send back, remind and retry are all above the receipt.</dd>
+			<dt>Trade-off</dt><dd>Two columns mean the page is split into components; behaviour stays, layout code changes a lot.</dd>
+			<dd><a class="open" href="session-b.html">Open</a></dd></dl>
+	</div>
+	<div class="opt">
+		<img src="shots/session-c-desktop.png" alt="Session C desktop" /><img src="shots/session-c-mobile.png" alt="Session C mobile" />
+		<dl class="card note"><h3>C · Activity timeline</h3>
+			<dt>Reading order</dt><dd>A feed of events (proof sent, message failed, payment approved) with actions on each event.</dd>
+			<dt>Trade-off</dt><dd>Needs event timestamps the backend does not expose today (no proof-upload time, no activity log), so it would require backend work. Harder to compare people side by side.</dd>
+			<dd><a class="open" href="session-c.html">Open</a></dd></dl>
+	</div>
+
+	<h2>Logo</h2>
+	<div class="opt">
+		<img src="shots/logos-desktop.png" alt="Logo options" /><img src="shots/logos-mobile.png" alt="Logo options mobile" />
+		<dl class="card note"><h3>Recommendation: B · Torn ticket</h3>
+			<dd>It repeats the perforated receipt edge used in the bill and the payment page, so the brand and the product share one detail. A is clearer but generic; C reads as a messaging app.</dd>
+			<dd><a class="open" href="logos.html">Open</a></dd></dl>
+	</div>
+</main>
+</body>
+</html>

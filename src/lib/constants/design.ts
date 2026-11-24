@@ -1,94 +1,77 @@
-export const colors = {
-  // Primary - Coral Red (gradient pair: deep → bright)
-  primary: {
-    DEFAULT: '#FF6B6B',
-    hover: '#EE5A5A',
-    contrast: '#CC4444',
-    deep: '#ae2f34',
-  },
+// Letpai design tokens ("Ink & Receipt"). Source of truth for colour, radius
+// and shadow values. `src/app.css` mirrors these in its @theme block so
+// Tailwind utilities (bg-fog, text-ink, rounded-card, shadow-float…) resolve;
+// tests/unit/tokens.test.ts fails if the two drift apart.
+//
+// Names describe roles, not hues, so a dark theme can remap them later.
 
-  // Secondary - Teal Blue
-  secondary: {
-    DEFAULT: '#14B8A6',
-    hover: '#10A392',
-    deep: '#006b5f',
-    light: '#6df5e1',
-  },
+export const color = {
+	// Surfaces (max three levels: fog canvas → card → mist inset)
+	fog: '#eff0f4',
+	card: '#ffffff',
+	mist: '#e3e5ed',
+	hairline: '#d3d7e3',
 
-  // Tertiary - Purple (premium/settled)
-  tertiary: {
-    DEFAULT: '#842bd2',
-  },
+	// Ink
+	ink: '#1d2442',
+	'ink-hover': '#2b3560',
+	'ink-soft': '#5d627e',
+	steel: '#3a5088',
 
-  // Accents
-  accent: {
-    purple: '#8B5CF6',
-    yellow: '#F59E0B',
-  },
+	// The one accent: primary actions and money still owed
+	coral: '#cf3a31',
+	'coral-hover': '#b8322b',
+	'coral-ink': '#b8322b',
+	'coral-tint': '#fbe4e1',
 
-  // Status Colors (functional only — never decorative)
-  status: {
-    pending: '#F59E0B',
-    submitted: '#3B82F6',
-    paid: '#10B981',
-    rejected: '#EF4444',
-  },
+	// Rare highlight: the Paid stamp, once per screen
+	lime: '#d4f25c',
 
-  // Social Ledger Surface Colors (tonal layering)
-  surfaces: {
-    surface: '#fff8f7',
-    containerLow: '#fff0ef',
-    containerLowest: '#ffffff',
-    container: '#ffe9e7',
-    containerHigh: '#fbe3e1',
-    containerHighest: '#f5dddb',
-    dim: '#ecd5d3',
-  },
+	// Payment status (text on tint)
+	pending: '#8a5a00',
+	'pending-tint': '#fbefd3',
+	review: '#24508f',
+	'review-tint': '#e1eaf8',
+	paid: '#1f6b47',
+	'paid-tint': '#dcefe4',
+	rejected: '#a3241c',
+	'rejected-tint': '#f8e0dd',
 
-  // Social Ledger On-Surface Colors
-  onSurface: {
-    DEFAULT: '#251818',
-    variant: '#584140',
-  },
+	// WhatsApp chat illustration + WhatsApp-branded action
+	'chat-bg': '#e7e1d6',
+	'chat-out': '#d7f5c9',
+	whatsapp: '#1a7a49',
+	'whatsapp-hover': '#156a3f'
+} as const;
 
-  outline: {
-    variant: '#e0bfbd',
-  },
+export const radius = {
+	field: '12px',
+	card: '16px',
+	sheet: '24px',
+	pill: '9999px'
+} as const;
 
-  // Pure neutrals (use sparingly — prefer surface/onSurface tokens above)
-  neutral: {
-    white: '#FFFFFF',
-    black: '#000000',
-  },
-};
+export const shadow = {
+	raised: '0 1px 3px rgba(29, 36, 66, 0.06), 0 4px 11px rgba(29, 36, 66, 0.05)',
+	float: '0 9px 25px rgba(29, 36, 66, 0.12)',
+	pop: '0 24px 48px -8px rgba(29, 36, 66, 0.18)'
+} as const;
 
-export const spacing = {
-  xs: '4px',
-  sm: '8px',
-  md: '16px',
-  lg: '24px',
-  xl: '32px',
-  '2xl': '48px',
-  '3xl': '64px',
-};
+export const font = {
+	sans: '"Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif',
+	display: '"Bricolage Grotesque Variable", "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif'
+} as const;
 
-// Mirror of --radius-* in src/app.css. Keep these in sync.
-export const borderRadius = {
-  sm: '4px',
-  md: '10px',
-  icon: '14px',
-  DEFAULT: '18px',
-  card: '20px',
-  lg: '24px',
-  xl: '28px',
-  full: '100px',
-};
+// Palette offered when a user colours a contact group. Stored on the backend
+// as a hex string, so these are data values, not styling shortcuts.
+export const groupColors = ['#3a5088', '#cf3a31', '#1f6b47', '#8a5a00', '#6b3fa0', '#0f7c86', '#5d627e', '#b3416f'] as const;
 
-// Social Ledger ambient shadows — tinted with on-surface, low opacity.
-// Never pure black, never above 12% opacity.
-export const shadows = {
-  none: 'none',
-  card: '0 1px 3px rgba(37, 24, 24, 0.04)',
-  cardHover: '0 10px 30px rgba(37, 24, 24, 0.06)',
-  modal: '0 24px 48px -4px rgba(37, 24, 24, 0.12)',
-};
+// Initials avatars: text-on-tint pairs (all pass AA, see tokens.test.ts).
+// Chosen by a hash of the person's id so a face keeps its colour.
+export const avatarTones: ReadonlyArray<readonly [bg: string, fg: string]> = [
+	[color.mist, color.ink],
+	[color['coral-tint'], color['coral-ink']],
+	[color['review-tint'], color.review],
+	[color['paid-tint'], color.paid],
+	[color['pending-tint'], color.pending]
+];

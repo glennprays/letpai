@@ -1,129 +1,82 @@
 <script lang="ts">
-  import { cn } from '$lib/utils/cn';
-  import { checkScrollDirection } from '$lib/utils/scroll';
-  import ContactCard from './ContactCard.svelte';
-  import EmptyState from '../ui/EmptyState.svelte';
-  import { Users } from 'lucide-svelte';
-  import type { Contact } from '$lib/types/api';
+	import { cn } from '$lib/utils/cn';
+	import ContactCard from './ContactCard.svelte';
+	import { sectionByLetter } from '$lib/services/contacts-list';
+	import type { Contact } from '$lib/types/api';
+	import type { Snippet } from 'svelte';
 
-  interface Props {
-    contacts: Contact[];
-    loading?: boolean;
-    selectedContacts?: Set<string>;
-    // Single-open kebab state lives at the page level. Threading
-    // through ContactList keeps the list component thin while still
-    // enforcing the "only one menu open at a time" invariant.
-    openMenuId?: string | null;
-    onSetOpenMenu?: (id: string | null) => void;
-    onSelect?: (contact: Contact) => void;
-    onEdit?: (contact: Contact) => void;
-    onDelete?: (contact: Contact) => void;
-    onToggleFavorite?: (contact: Contact) => void;
-    onCall?: (contact: Contact) => void;
-    onMessage?: (contact: Contact) => void;
-    emptyTitle?: string;
-    emptyDescription?: string;
-    class?: string;
-  }
+	interface Props {
+		contacts: Contact[];
+		loading?: boolean;
+		selecting?: boolean;
+		selectedIds?: Set<string>;
+		onSelect?: (contact: Contact) => void;
+		onEdit?: (contact: Contact) => void;
+		onDelete?: (contact: Contact) => void;
+		onToggleFavorite?: (contact: Contact) => void;
+		/** Shown when `contacts` is empty and not loading. */
+		empty?: Snippet;
+		class?: string;
+	}
 
-  let {
-    contacts,
-    loading = false,
-    selectedContacts = new Set(),
-    openMenuId = null,
-    onSetOpenMenu,
-    onSelect,
-    onEdit,
-    onDelete,
-    onToggleFavorite,
-    onCall,
-    onMessage,
-    emptyTitle = 'No contacts found',
-    emptyDescription = 'Try adjusting your search or add a new contact.',
-    class: className,
-    ...props
-  }: Props = $props();
+	let {
+		contacts,
+		loading = false,
+		selecting = false,
+		selectedIds = new Set(),
+		onSelect,
+		onEdit,
+		onDelete,
+		onToggleFavorite,
+		empty,
+		class: className
+	}: Props = $props();
 
-  let listElement: HTMLDivElement;
-
-  // Smooth scroll handling
-  function handleScroll(e: Event) {
-    const target = e.target as HTMLDivElement;
-    checkScrollDirection(target);
-  }
+	// Letter headings help scanning a long address book; for a short list
+	// they only chop it into tiny cards.
+	const SECTION_FROM = 20;
+	const sections = $derived(
+		contacts.length >= SECTION_FROM ? sectionByLetter(contacts) : [{ key: '', contacts: sectionByLetter(contacts).flatMap((s) => s.contacts) }]
+	);
 </script>
 
-<div
-  bind:this={listElement}
-  onscroll={handleScroll}
-  class={cn(
-    'space-y-3 overflow-y-auto h-full pb-20 md:pb-0',
-    'social-ledger-scrollbar',
-    className
-  )}
-  {...props}
->
-  {#if loading}
-    <!-- Skeleton Loading -->
-    {#each Array(5) as _}
-      <div class="flex items-center gap-3 p-4 bg-white rounded-2xl">
-        <div class="w-12 h-12 rounded-full bg-[#f5dddb] animate-pulse"></div>
-        <div class="flex-1 space-y-2">
-          <div class="h-4 bg-[#f5dddb] rounded w-32 animate-pulse"></div>
-          <div class="h-3 bg-[#f5dddb] rounded w-40 animate-pulse"></div>
-        </div>
-      </div>
-    {/each}
-  {:else if contacts.length === 0}
-    <!-- Empty State -->
-    <EmptyState
-      icon={Users}
-      title={emptyTitle}
-      description={emptyDescription}
-      size="md"
-    />
-  {:else}
-    <!-- Contact List -->
-    {#each contacts as contact (contact.contact_id)}
-      <ContactCard
-        {contact}
-        selected={selectedContacts.has(contact.contact_id)}
-        {openMenuId}
-        {onSetOpenMenu}
-        onSelect={onSelect ? () => onSelect(contact) : undefined}
-        onEdit={onEdit ? () => onEdit(contact) : undefined}
-        onDelete={onDelete ? () => onDelete(contact) : undefined}
-        onToggleFavorite={onToggleFavorite ? () => onToggleFavorite(contact) : undefined}
-        onCall={onCall ? () => onCall(contact) : undefined}
-        onMessage={onMessage ? () => onMessage(contact) : undefined}
-        showActions={true}
-      />
-    {/each}
-  {/if}
-</div>
-
-<style>
-  /* Social Ledger tonal scrollbar */
-  .social-ledger-scrollbar {
-    scrollbar-width: thin;
-    scrollbar-color: #e0bfbd #fff0ef;
-  }
-
-  .social-ledger-scrollbar::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  .social-ledger-scrollbar::-webkit-scrollbar-track {
-    background: #fff0ef;
-    border-radius: 3px;
-  }
-
-  .social-ledger-scrollbar::-webkit-scrollbar-thumb {
-    background: #e0bfbd;
-    border-radius: 3px;
-  }
-
-  .social-ledger-scrollbar:hover::-webkit-scrollbar-thumb {
-    background: #8c706f;
-  }
-</style>
+{#if loading}
+	<div class={cn('overflow-hidden rounded-card bg-card shadow-raised', className)} aria-busy="true" aria-label="Loading contacts">
+		{#each Array(5) as _, i (i)}
+			<div class="flex items-center gap-3 px-4 py-3 sm:px-5">
+				<div class="size-10 animate-pulse rounded-full bg-mist"></div>
+				<div class="flex-1 space-y-2">
+					<div class="h-3.5 w-36 animate-pulse rounded-pill bg-mist"></div>
+					<div class="h-3 w-48 animate-pulse rounded-pill bg-mist"></div>
+				</div>
+			</div>
+		{/each}
+	</div>
+{:else if contacts.length === 0}
+	{@render empty?.()}
+{:else}
+	<div class={cn('space-y-4', className)}>
+		{#each sections as section (section.key)}
+			<section aria-labelledby={section.key ? `contacts-${section.key}` : undefined} aria-label={section.key ? undefined : 'Contacts'}>
+				{#if section.key}
+					<h2 id="contacts-{section.key}" class="text-eyebrow mb-1.5 px-1 text-ink-soft">
+						<span class="sr-only">{'Contacts starting with '}</span>{section.key}
+					</h2>
+				{/if}
+				<ul class="divide-y divide-mist overflow-hidden rounded-card bg-card shadow-raised">
+					{#each section.contacts as contact (contact.contact_id)}
+						<ContactCard
+							{contact}
+							{selecting}
+							selected={selectedIds.has(contact.contact_id)}
+							{onSelect}
+							{onEdit}
+							{onDelete}
+							{onToggleFavorite}
+						/>
+					{/each}
+				</ul>
+			</section>
+		{/each}
+	</div>
+{/if}

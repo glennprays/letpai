@@ -1,54 +1,40 @@
 <script lang="ts">
-  import { toasts, removeToast } from '$lib/stores/toast';
-  import { X } from 'lucide-svelte';
-  import { cn } from '$lib/utils/cn';
+	import { toasts, removeToast } from '$lib/stores/toast';
+	import { X, CircleCheck, CircleAlert, TriangleAlert } from 'lucide-svelte';
+	import { fly } from 'svelte/transition';
+	import { cn } from '$lib/utils/cn';
 
-  const variants: Record<string, string> = {
-    success: 'bg-[#10B981] text-white',
-    error: 'bg-[#EF4444] text-white',
-    warning: 'bg-[#F59E0B] text-[#251818]',
-  };
+	const meta = {
+		success: { icon: CircleCheck, dot: 'text-lime' },
+		error: { icon: CircleAlert, dot: 'text-coral-tint' },
+		warning: { icon: TriangleAlert, dot: 'text-pending-tint' }
+	} as const;
 </script>
 
-<div class="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2">
-  {#each $toasts as toast}
-    {@const variantClass = variants[toast.variant as string]}
-
-    <div
-      class={cn(
-        'min-w-[300px] max-w-md px-4 py-3 rounded-2xl flex items-center justify-between gap-3',
-        'shadow-[0_24px_48px_-4px_rgba(37,24,24,0.12)]',
-        'animate-slide-down transition-all duration-150',
-        variantClass
-      )}
-      role="alert"
-    >
-      <span class="flex-1 text-sm font-medium">{toast.message}</span>
-      
-      <button
-        onclick={() => removeToast(toast.id)}
-        class="opacity-75 hover:opacity-100 transition-opacity"
-        aria-label="Close"
-      >
-        <X class="h-4 w-4" />
-      </button>
-    </div>
-  {/each}
+<!-- Ink toasts read on every surface; the icon colour carries the tone.
+     Polite region for confirmations, assertive alert for errors. -->
+<div
+	class="pointer-events-none fixed inset-x-0 top-3 z-[70] flex flex-col items-center gap-2 px-3 sm:top-5"
+	aria-live="polite"
+>
+	{#each $toasts as toast (toast.id)}
+		{@const m = meta[toast.variant] ?? meta.success}
+		{@const Icon = m.icon}
+		<div
+			class="pointer-events-auto flex w-full max-w-md items-start gap-3 rounded-card bg-ink py-3 pr-2 pl-4 text-card shadow-pop"
+			role={toast.variant === 'error' ? 'alert' : 'status'}
+			transition:fly={{ y: -12, duration: 160 }}
+		>
+			<Icon size={20} class={cn('mt-px flex-none', m.dot)} aria-hidden="true" />
+			<p class="flex-1 text-sm leading-snug font-medium">{toast.message}</p>
+			<button
+				type="button"
+				onclick={() => removeToast(toast.id)}
+				class="-my-1 grid size-8 flex-none place-items-center rounded-full text-card/70 transition-colors hover:bg-card/10 hover:text-card"
+				aria-label="Dismiss"
+			>
+				<X size={16} />
+			</button>
+		</div>
+	{/each}
 </div>
-
-<style>
-  @keyframes slide-down {
-    from {
-      transform: translateY(-100%);
-      opacity: 0;
-    }
-    to {
-      transform: translateY(0);
-      opacity: 1;
-    }
-  }
-
-  .animate-slide-down {
-    animation: slide-down 150ms ease-out;
-  }
-</style>

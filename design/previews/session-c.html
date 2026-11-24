@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Session C · Activity timeline</title>
+<link rel="stylesheet" href="shared.css" />
+<style>
+	main { max-width: 1040px; margin: 0 auto; padding: 28px 24px 96px; display: grid; grid-template-columns: 1fr 300px; gap: 32px; }
+	header { grid-column: 1 / -1; }
+	h1 { font-size: clamp(28px, 3.4vw, 40px); letter-spacing: -0.035em; line-height: 1.02; margin: 8px 0 0; max-width: 26ch; }
+	.feed { position: relative; padding-left: 28px; }
+	.feed::before { content: ''; position: absolute; left: 9px; top: 6px; bottom: 6px; width: 2px; background: var(--hairline); border-radius: 2px; }
+	.day { font: 700 13px/1 var(--ui); color: var(--ink-soft); margin: 24px 0 10px -28px; padding-left: 28px; }
+	.ev { position: relative; padding: 16px 18px; margin-bottom: 10px; }
+	.ev::before { content: ''; position: absolute; left: -24px; top: 22px; width: 12px; height: 12px; border-radius: 50%; background: var(--fog); box-shadow: inset 0 0 0 3px var(--ink); }
+	.ev.alert::before { box-shadow: inset 0 0 0 3px var(--rejected); }
+	.ev.review::before { box-shadow: inset 0 0 0 3px var(--review); }
+	.ev p { margin: 0; }
+	.ev .t { font-size: 13px; color: var(--ink-soft); margin-top: 2px; }
+	.ev .btns { display: flex; gap: 8px; margin-top: 12px; }
+	.side .card { padding: 20px; margin-bottom: 16px; }
+	.who { display: flex; justify-content: space-between; font-size: 14px; padding: 6px 0; }
+	.who + .who { border-top: 1px solid var(--mist); }
+	@media (max-width: 860px) { main { grid-template-columns: 1fr; } .side { order: -1; } }
+</style>
+</head>
+<body>
+<main>
+	<header>
+		<span class="muted" style="font-weight:600; font-size:14px">Sessions</span>
+		<h1 class="display">Friday dinner at Sate Khas Senayan with the design team and their plus-ones</h1>
+	</header>
+	<section class="feed">
+		<div class="day">Today</div>
+		<div class="card ev review"><p><b>Bima Santoso</b> sent a transfer screenshot for <b class="amount">Rp 177.870</b></p><div class="t">12 min ago</div><div class="btns"><button class="pill-btn ink sm">Approve</button><button class="pill-btn ghost sm">View</button><button class="pill-btn ghost sm">Send back</button></div></div>
+		<div class="card ev review"><p><b>Gita Ramadhani</b> sent a transfer screenshot for <b class="amount">Rp 68.145</b></p><div class="t">40 min ago</div><div class="btns"><button class="pill-btn ink sm">Approve</button><button class="pill-btn ghost sm">View</button></div></div>
+		<div class="card ev alert"><p>The message to <b>Indra Wijaya</b> could not be delivered.</p><div class="t">3 h ago · +62 813 0000 0009</div><div class="btns"><button class="pill-btn ink sm">Send again</button><button class="pill-btn ghost sm">Edit number</button></div></div>
+		<div class="day">Yesterday</div>
+		<div class="card ev"><p>You sent <b>Dimas Arya</b>'s proof back: "The screenshot is cropped…"</p><div class="t">Yesterday 22:10</div></div>
+		<div class="card ev"><p><b>Hana Lestari</b> paid <b class="amount">Rp 68.145</b>. You approved it.</p><div class="t">Yesterday 21:48</div></div>
+		<div class="card ev"><p>12 people got their WhatsApp payment request.</p><div class="t">Yesterday 21:04</div></div>
+	</section>
+	<aside class="side">
+		<div class="card">
+			<div class="amount" style="font-size:40px; letter-spacing:-0.04em">Rp 726.465</div>
+			<div class="muted">still out of Rp 1.176.915</div>
+			<button class="pill-btn primary sm" style="margin-top:14px">Remind 4 people</button>
+		</div>
+		<div class="card">
+			<div class="eyebrow" style="margin-bottom:6px">Not paid yet</div>
+			<div class="who"><span>Citra Wulandari N.</span><span class="amount">177.870</span></div>
+			<div class="who"><span>Dimas Arya</span><span class="amount">98.145</span></div>
+			<div class="who"><span>Fajar Nugroho</span><span class="amount">68.145</span></div>
+			<div class="who"><span>Indra Wijaya</span><span class="amount">68.145</span></div>
+			<div class="who"><span>Kirana Dewi</span><span class="amount">68.145</span></div>
+		</div>
+	</aside>
+</main>
+<script src="art.js"></script>
+</body>
+</html>

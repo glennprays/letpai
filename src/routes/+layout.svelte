@@ -1,6 +1,18 @@
 <script lang="ts">
 	import favicon from '$lib/assets/favicon.svg';
+	import { color } from '$lib/constants/design';
+	// Fonts are imported from JS (not via @import in app.css) so Vite resolves
+	// and fingerprints the woff2 files; Tailwind's CSS pipeline left the
+	// relative url(./files/...) paths unresolved and they 404'd in production.
+	import '@fontsource/plus-jakarta-sans/400.css';
+	import '@fontsource/plus-jakarta-sans/500.css';
+	import '@fontsource/plus-jakarta-sans/600.css';
+	import '@fontsource/plus-jakarta-sans/700.css';
+	import '@fontsource-variable/bricolage-grotesque/opsz.css';
 	import '../app.css';
+	import { QueryClientProvider } from '@tanstack/svelte-query';
+	import { queryClient } from '$lib/queryClient';
+	import Toaster from '$lib/components/ui/Toaster.svelte';
 	import Navbar from '$lib/components/layout/Navbar.svelte';
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
@@ -57,8 +69,9 @@
 
 	const navbarVariant = $derived.by(() => {
 		if (isAppPage || isAdminPage) return null;
-		const pathname = $page.url.pathname;
-		if (pathname.startsWith('/login') || pathname.startsWith('/register')) {
+		// Payment links are for guests: no marketing nav, the page has its own slim header.
+		if ($page.url.pathname.startsWith('/payment/')) return null;
+		if ($page.route.id?.startsWith('/(auth)')) {
 			return 'auth';
 		} else if (data.isAuthenticated && data.token) {
 			return 'loggedIn';
@@ -69,11 +82,17 @@
 </script>
 
 <svelte:head>
-	<link rel="icon" href={favicon} />
+	<link rel="icon" href={favicon} type="image/svg+xml" />
+	<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+	<link rel="manifest" href="/site.webmanifest" />
+	<meta name="theme-color" content={color.fog} />
 </svelte:head>
 
 {#if navbarVariant}
 	<Navbar variant={navbarVariant} />
 {/if}
 
-{@render children()}
+<QueryClientProvider client={queryClient}>
+	{@render children()}
+</QueryClientProvider>
+<Toaster />

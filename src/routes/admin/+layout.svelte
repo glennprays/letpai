@@ -1,149 +1,120 @@
 <script lang="ts">
-	import { page } from '$app/stores';
-	import { enhance } from '$app/forms';
-	import {
-		Shield,
-		LayoutDashboard,
-		MessageCircle,
-		Users,
-		User,
-		FileText,
-		LogOut
-	} from 'lucide-svelte';
+	import { page } from '$app/state';
+	import { FileText, LayoutDashboard, LogOut, MessageCircle, UserRound, Users } from 'lucide-svelte';
+	import Logo from '$lib/components/layout/Logo.svelte';
+	import { cn } from '$lib/utils/cn';
+	import { adminRoleLabel } from '$lib/utils/admin';
 	import type { Snippet } from 'svelte';
 	import type { LayoutData } from './$types';
 
 	let { data, children }: { data: LayoutData; children: Snippet } = $props();
 
-	const onLoginRoute = $derived($page.url.pathname === '/admin/login');
 	const isSuperAdmin = $derived(data.profile?.role === 'super_admin');
 
 	const nav = $derived([
-		{ href: '/admin', icon: LayoutDashboard, label: 'Dashboard', exact: true },
+		{ href: '/admin', icon: LayoutDashboard, label: 'Overview', exact: true },
 		{ href: '/admin/whatsapp', icon: MessageCircle, label: 'WhatsApp', exact: false },
 		{ href: '/admin/templates', icon: FileText, label: 'Templates', exact: false },
-		{ href: '/admin/profile', icon: User, label: 'Profile', exact: false },
-		...(isSuperAdmin
-			? [{ href: '/admin/admins', icon: Users, label: 'Admins', exact: false }]
-			: [])
+		...(isSuperAdmin ? [{ href: '/admin/admins', icon: Users, label: 'Admins', exact: false }] : []),
+		{ href: '/admin/profile', icon: UserRound, label: 'Your account', exact: false }
 	]);
 
+	// Keep the current page's pill in view on the scrolling mobile nav.
+	let mobileNav = $state<HTMLElement>();
+	$effect(() => {
+		void page.url.pathname;
+		mobileNav?.querySelector('[aria-current="page"]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+	});
+
 	function isActive(href: string, exact: boolean): boolean {
-		const pathname = $page.url.pathname;
-		return exact ? pathname === href : pathname === href || pathname.startsWith(href + '/');
+		const p = page.url.pathname;
+		return exact ? p === href : p === href || p.startsWith(href + '/');
 	}
 </script>
 
-{#if onLoginRoute || !data.profile}
+{#snippet signOut(extra: string)}
+	<form method="POST" action="/admin?/logout">
+		<button
+			type="submit"
+			class={cn('inline-flex items-center gap-2 rounded-pill font-semibold text-card/75 transition-colors hover:bg-card/10 hover:text-card', extra)}
+		>
+			<LogOut size={16} aria-hidden="true" /> Sign out
+		</button>
+	</form>
+{/snippet}
+
+{#if !data.profile}
 	{@render children()}
 {:else}
-	<div
-		class="min-h-screen flex bg-[#fff8f7]"
-		style="font-family:'Plus Jakarta Sans',sans-serif;"
-	>
-		<aside
-			class="hidden md:flex flex-col w-60 h-screen bg-[#fff0ef]/80 backdrop-blur-xl fixed left-0 top-0 z-40"
-		>
-			<div class="px-6 py-6 flex items-center gap-3">
-				<div
-					class="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#ae2f34] to-[#FF6B6B] flex items-center justify-center"
-				>
-					<Shield size={18} color="#fff" />
-				</div>
-				<div class="overflow-hidden">
-					<p class="text-sm font-semibold text-[#251818] leading-tight truncate">Letpai admin</p>
-					<p class="text-xs text-[#584140] leading-tight truncate">
-						{data.profile.full_name}
-					</p>
-				</div>
-			</div>
+	<a href="#admin-main" class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-pill focus:bg-card focus:px-4 focus:py-2 focus:text-ink">
+		Skip to content
+	</a>
 
-			<nav aria-label="Admin" class="flex-1 px-3 space-y-1 mt-2">
-				{#each nav as item (item.href)}
-					{@const Icon = item.icon}
-					{@const active = isActive(item.href, item.exact)}
-					<a
-						href={item.href}
-						class="flex items-center gap-3 px-3 py-2.5 rounded-2xl text-sm font-medium transition-colors {active
-							? 'bg-[#ae2f34]/10 text-[#ae2f34]'
-							: 'text-[#584140] hover:bg-[#fbe3e1]'}"
-					>
-						<Icon size={18} />
-						<span>{item.label}</span>
-					</a>
-				{/each}
-			</nav>
+	<!-- Ink rail: the admin tools are visibly a different place from the
+	     host app (fog sidebar), with the same type and spacing. -->
+	<aside class="fixed inset-y-0 left-0 z-40 hidden w-56 flex-col bg-ink px-3 py-6 md:flex">
+		<div class="flex items-center gap-2.5 px-3 pb-8">
+			<Logo size="sm" tone="light" href="/admin" />
+			<span class="rounded-pill bg-card/10 px-2 py-0.5 text-[11px] font-semibold text-card">Admin</span>
+		</div>
 
-			<div class="px-3 py-4">
-				<div class="text-xs text-[#584140] px-3 mb-2 uppercase tracking-wide font-semibold">
-					Signed in as
-				</div>
-				<div class="px-3 py-2 rounded-2xl bg-white">
-					<p class="text-sm font-medium text-[#251818] truncate">{data.profile.full_name}</p>
-					<p class="text-xs text-[#584140]">{data.profile.role.replace('_', ' ')}</p>
-				</div>
-				<form
-					method="POST"
-					action="/admin?/logout"
-					class="mt-2"
-					use:enhance={() => {
-						return async ({ update }) => {
-							await update();
-						};
-					}}
-				>
-					<button
-						type="submit"
-						class="w-full inline-flex items-center justify-center gap-2 px-3 py-2 rounded-2xl text-sm font-medium text-[#ae2f34] hover:bg-[#fbe3e1] transition-colors"
-					>
-						<LogOut size={16} /> Sign out
-					</button>
-				</form>
-			</div>
-		</aside>
-
-		<!-- Mobile top bar (collapsed sidebar) -->
-		<header
-			class="md:hidden sticky top-0 z-30 w-full bg-[#fff0ef]/90 backdrop-blur-xl border-b border-[#f5dddb] px-4 py-3 flex items-center gap-3"
-		>
-			<div
-				class="w-9 h-9 rounded-2xl bg-gradient-to-br from-[#ae2f34] to-[#FF6B6B] flex items-center justify-center flex-shrink-0"
-			>
-				<Shield size={16} color="#fff" />
-			</div>
-			<div class="flex-1 min-w-0">
-				<p class="text-sm font-semibold text-[#251818] truncate">Letpai admin</p>
-				<p class="text-[11px] text-[#584140] truncate">{data.profile.full_name} · {data.profile.role.replace('_', ' ')}</p>
-			</div>
-			<form method="POST" action="/admin?/logout">
-				<button
-					type="submit"
-					class="inline-flex items-center gap-1 px-2 py-1.5 rounded-xl text-xs font-medium text-[#ae2f34] hover:bg-[#fbe3e1] transition-colors"
-				>
-					<LogOut size={14} /> Sign out
-				</button>
-			</form>
-		</header>
-
-		<!-- Mobile horizontal nav -->
-		<nav class="md:hidden sticky top-[60px] z-20 bg-[#fff8f7] border-b border-[#f5dddb] px-3 py-2 flex gap-2 overflow-x-auto">
+		<nav aria-label="Admin" class="flex flex-col gap-0.5">
 			{#each nav as item (item.href)}
 				{@const Icon = item.icon}
 				{@const active = isActive(item.href, item.exact)}
 				<a
 					href={item.href}
-					class="inline-flex items-center gap-2 px-3 py-1.5 rounded-2xl text-xs font-medium whitespace-nowrap transition-colors {active
-						? 'bg-[#ae2f34]/10 text-[#ae2f34]'
-						: 'text-[#584140] hover:bg-[#fbe3e1]'}"
+					aria-current={active ? 'page' : undefined}
+					class={cn(
+						'flex h-10 items-center gap-3 rounded-pill px-3.5 text-sm font-semibold transition-colors duration-150',
+						active ? 'bg-card text-ink' : 'text-card/70 hover:bg-card/10 hover:text-card'
+					)}
 				>
-					<Icon size={14} />
+					<Icon size={17} aria-hidden="true" />
 					{item.label}
 				</a>
 			{/each}
 		</nav>
 
-		<main class="flex-1 md:ml-60 min-h-screen">
+		<div class="mt-auto px-3">
+			<p class="truncate text-sm font-semibold text-card">{data.profile.full_name}</p>
+			<p class="text-xs text-card/60">{adminRoleLabel(data.profile.role)}</p>
+			{@render signOut('-ml-2 mt-3 h-9 px-2 text-sm')}
+		</div>
+	</aside>
+
+	<!-- Mobile: ink bar with the name and sign out, then a scrolling pill row. -->
+	<header class="sticky top-0 z-30 md:hidden">
+		<div class="flex items-center gap-3 bg-ink px-4 py-3">
+			<Logo size="sm" tone="light" href="/admin" markOnly />
+			<div class="min-w-0 flex-1">
+				<p class="truncate text-sm font-semibold text-card">{data.profile.full_name}</p>
+				<p class="text-[11px] text-card/60">{adminRoleLabel(data.profile.role)}</p>
+			</div>
+			{@render signOut('h-9 px-3 text-xs')}
+		</div>
+		<nav aria-label="Admin" bind:this={mobileNav} class="flex gap-1.5 overflow-x-auto bg-fog/95 px-3 py-2 backdrop-blur [scrollbar-width:none]">
+			{#each nav as item (item.href)}
+				{@const Icon = item.icon}
+				{@const active = isActive(item.href, item.exact)}
+				<a
+					href={item.href}
+					aria-current={active ? 'page' : undefined}
+					class={cn(
+						'inline-flex h-9 flex-none items-center gap-1.5 rounded-pill px-3 text-sm font-semibold transition-colors',
+						active ? 'bg-ink text-card' : 'bg-card text-ink-soft shadow-[inset_0_0_0_1.5px_var(--color-hairline)] hover:text-ink'
+					)}
+				>
+					<Icon size={15} aria-hidden="true" />
+					{item.label}
+				</a>
+			{/each}
+		</nav>
+	</header>
+
+	<main id="admin-main" class="min-h-dvh md:ml-56">
+		<div class="mx-auto max-w-5xl px-4 pt-6 pb-12 sm:px-8 md:pt-10">
 			{@render children()}
-		</main>
-	</div>
+		</div>
+	</main>
 {/if}

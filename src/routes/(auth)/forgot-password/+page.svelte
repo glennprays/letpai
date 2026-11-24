@@ -1,421 +1,77 @@
 <script lang="ts">
-  import { goto } from '$app/navigation';
-  import Button from '$lib/components/ui/Button.svelte';
-  import Input from '$lib/components/ui/Input.svelte';
-  import { toast } from '$lib/stores/toast';
-  import { sendResetLink } from '$lib/services/auth';
-  import { validatePhone } from '$lib/utils/validation';
-  import { formatPhoneNumber } from '$lib/utils/format';
-  import { Lock, ArrowRight, CheckCircle2, Mail, Clock, RotateCw } from 'lucide-svelte';
+	import Button from '$lib/components/ui/Button.svelte';
+	import PhoneInput from '$lib/components/ui/PhoneInput.svelte';
+	import Seo from '$lib/components/Seo.svelte';
+	import { toast } from '$lib/stores/toast';
+	import { sendResetLink } from '$lib/services/auth';
+	import { toUserMessage } from '$lib/services/api';
+	import { validatePhone } from '$lib/utils/validation';
+	import { ArtPhone } from '$lib/components/art';
+	import { onDestroy } from 'svelte';
 
-  const countryCodes = [
-    { code: '62', label: 'ID (Indonesia)', short: 'ID' },
-    { code: '1', label: 'US (USA)', short: 'US' },
-    { code: '44', label: 'GB (UK)', short: 'GB' },
-    { code: '61', label: 'AU (Australia)', short: 'AU' },
-    { code: '65', label: 'SG (Singapore)', short: 'SG' },
-    { code: '60', label: 'MY (Malaysia)', short: 'MY' },
-  ];
+	let phone = $state('');
+	let error = $state('');
+	let loading = $state(false);
+	let sent = $state(false);
+	let resendIn = $state(0);
+	let timer: ReturnType<typeof setInterval> | undefined;
+	onDestroy(() => clearInterval(timer));
 
-  let step = $state(1); // 1: enter phone, 2: success
-  let formData = $state({
-    country_code: '62',
-    whatsapp_number: '',
-  });
-  let isSubmitted = $state(false);
+	function countdown() {
+		resendIn = 60;
+		clearInterval(timer);
+		timer = setInterval(() => {
+			resendIn = Math.max(0, resendIn - 1);
+			if (resendIn === 0) clearInterval(timer);
+		}, 1000);
+	}
 
-  async function handleSubmit(e: Event) {
-    e.preventDefault();
-
-    const whatsapp_number = formData.country_code + formatPhoneNumber(formData.whatsapp_number);
-    const phoneValidation = validatePhone(whatsapp_number);
-
-    if (!phoneValidation.valid) {
-      toast.error(phoneValidation.error || 'Nomor WhatsApp tidak valid');
-      return;
-    }
-
-    try {
-      const response = await sendResetLink({ whatsapp_number });
-
-      if (response.success) {
-        isSubmitted = true;
-        step = 2;
-        toast.success('Reset link sent successfully!');
-      } else {
-        toast.error('Failed to send reset link');
-      }
-    } catch (error) {
-      toast.error('An error occurred. Please try again.');
-      console.error(error);
-    }
-  }
-
-  async function handleResend() {
-    const whatsapp_number = formData.country_code + formatPhoneNumber(formData.whatsapp_number);
-
-    try {
-      const response = await sendResetLink({ whatsapp_number });
-
-      if (response.success) {
-        toast.success('Reset link sent again!');
-      }
-    } catch (error) {
-      toast.error('Failed to resend reset link');
-      console.error(error);
-    }
-  }
+	async function send() {
+		const v = validatePhone(phone);
+		error = v.valid ? '' : (v.error ?? '');
+		if (!v.valid) return;
+		loading = true;
+		try {
+			const res = await sendResetLink({ whatsapp_number: phone });
+			if ('success' in res && res.success) {
+				if (sent) toast.success('We sent another link.');
+				sent = true;
+				countdown();
+			} else {
+				error = ('error' in res && res.error?.message) || 'We could not send the link. Try again.';
+			}
+		} catch (e) {
+			error = toUserMessage(e, 'We could not send the link. Try again.');
+		} finally {
+			loading = false;
+		}
+	}
 </script>
 
-<div class="forgot-password-container">
-  <!-- Step 1: Enter phone -->
-  {#if step === 1}
-    <div class="step-content animate-in">
-      <!-- Header illustration -->
-      <div class="illustration animate-in" style="animation-delay: 0.08s;">
-        <div class="icon-circle-large">
-          <Lock size={40} style="color: #FF6B6B;" />
-        </div>
-      </div>
+<Seo title="Reset your password" noindex />
 
-      <!-- Title and subtitle -->
-      <div class="header animate-in" style="animation-delay: 0.16s;">
-        <h1>Forgot Password?</h1>
-        <p>No worries! Enter your WhatsApp number and we'll send you a link to reset your password.</p>
-      </div>
+{#if !sent}
+	<h1 class="text-heading text-[32px]">Forgot your password?</h1>
+	<p class="mt-1.5 text-ink-soft">Enter your WhatsApp number and we'll send you a link to set a new one.</p>
+	<form class="mt-6 flex flex-col gap-5" novalidate onsubmit={(e) => (e.preventDefault(), send())}>
+		<PhoneInput label="WhatsApp number" id="whatsapp" bind:value={phone} error={error || undefined} autofocus />
+		<Button type="submit" size="lg" {loading} class="w-full">Send reset link</Button>
+	</form>
+{:else}
+	<ArtPhone class="mx-auto w-20" />
+	<h1 class="text-heading mt-5 text-center text-[30px]">Check WhatsApp</h1>
+	<p class="mt-2 text-center text-ink-soft">If an account uses this number, a reset link is on its way. It can take a minute.</p>
+	<div class="mt-6 flex flex-col gap-2">
+		<Button href="/login" variant="ink" size="lg" class="w-full">Back to sign in</Button>
+		<Button variant="secondary" size="lg" class="w-full" disabled={resendIn > 0} {loading} onclick={send}>
+			{resendIn > 0 ? `Send again in 0:${String(resendIn).padStart(2, '0')}` : 'Send again'}
+		</Button>
+		<button type="button" class="mt-1 text-sm font-semibold text-ink-soft hover:text-ink" onclick={() => (sent = false)}>Use a different number</button>
+	</div>
+{/if}
 
-      <!-- Form -->
-      <form onsubmit={handleSubmit}>
-        <div class="form-group animate-in" style="animation-delay: 0.24s;">
-          <span class="form-label" style="font-size: 13px; font-weight: 600; color: #251818; margin-bottom: 6px; display: block;">
-            WhatsApp Number
-          </span>
-          <div class="phone-input-group">
-            <select class="country-selector" bind:value={formData.country_code}>
-              {#each countryCodes as country}
-                <option value={country.code}>{country.short} (+{country.code})</option>
-              {/each}
-            </select>
-            <input
-              type="tel"
-              bind:value={formData.whatsapp_number}
-              class="phone-input"
-              placeholder="8123456789"
-              required
-              style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; font-weight: 500; color: #251818; background: transparent;"
-            />
-          </div>
-          <p style="font-size: 12px; color: #584140; margin-top: 6px; line-height: 1.5;">
-            We'll send reset link to your WhatsApp
-          </p>
-        </div>
-
-        <div class="button-group animate-in" style="animation-delay: 0.32s;">
-          <Button
-            type="button"
-            variant="secondary"
-            size="default"
-            onclick={() => goto('/login')}
-          >
-            Back to Login
-          </Button>
-          <Button type="submit" variant="primary" size="default" rightIcon={ArrowRight}>
-            Send Reset Link
-          </Button>
-        </div>
-      </form>
-    </div>
-  {/if}
-
-  <!-- Step 2: Success -->
-  {#if step === 2}
-    <div class="success-content animate-in">
-      <!-- Success illustration -->
-      <div class="success-illustration">
-        <div class="icon-circle-large success">
-          <CheckCircle2 size={48} style="color: #10B981;" />
-        </div>
-      </div>
-
-      <!-- Title and subtitle -->
-      <div class="header">
-        <h1>Check Your WhatsApp</h1>
-        <p>We've sent a password reset link to</p>
-        <div class="phone-display">
-          <Mail size={16} style="color: #FF6B6B;" />
-          <span>{formData.country_code}{formData.whatsapp_number}</span>
-        </div>
-      </div>
-
-      <!-- Helpful tips -->
-      <div class="tips-section">
-        <div class="tip-item">
-          <Mail size={16} style="color: #6B7280;" />
-          <span>Check your WhatsApp messages for the reset link</span>
-        </div>
-        <div class="tip-item">
-          <Clock size={16} style="color: #6B7280;" />
-          <span>The link will expire in 1 hour</span>
-        </div>
-      </div>
-
-      <!-- Timer info -->
-      <div class="timer-info">
-        <Clock size={16} style="color: #6B7280;" />
-        <span>Reset link is active for 2 minutes</span>
-      </div>
-
-      <button class="resend-button" onclick={handleResend}>
-        <RotateCw size={16} style="color: #FF6B6B;" />
-        Resend Reset Link
-      </button>
-
-      <Button variant="primary" size="default" onclick={() => goto('/login')} class="submit-button" rightIcon={ArrowRight}>
-        Back to Login
-      </Button>
-
-      <!-- Help section -->
-      <div class="help-section">
-        <p style="font-size: 14px; color: #584140; margin: 0 0 12px; text-align: center;">
-          Didn't receive the link?
-        </p>
-        <div class="help-links">
-          <a
-            href="/contact"
-            style="
-              display: flex;
-              align-items: center;
-              gap: 8px;
-              font-size: 14px;
-              font-weight: 600;
-              color: #ae2f34;
-              text-decoration: none;
-              transition: color 0.15s;
-            "
-            onmouseenter={(e) => (e.currentTarget.style.color = '#FF5252')}
-            onmouseleave={(e) => (e.currentTarget.style.color = '#ae2f34')}
-          >
-            <Mail size={16} />
-            Contact Support
-          </a>
-        </div>
-      </div>
-    </div>
-  {/if}
-</div>
-
-<style>
-  .forgot-password-container {
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
-  }
-
-  .step-content,
-  .success-content {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-  }
-
-  .illustration {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 8px;
-  }
-
-  .success-illustration {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 16px;
-  }
-
-  .icon-circle-large {
-    width: 80px;
-    height: 80px;
-    border-radius: 24px;
-    background: linear-gradient(135deg, #FFF5F5, #FFF);
-    border: 1.5px solid #FFE5E5;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 12px 32px rgba(255, 107, 107, 0.2);
-  }
-
-  .icon-circle-large.success {
-    background: linear-gradient(135deg, #DCFCE7, #FFF);
-    border-color: #BBF7D0;
-    box-shadow: 0 12px 32px rgba(16, 185, 129, 0.2);
-  }
-
-  .header {
-    text-align: center;
-  }
-
-  .header h1 {
-    font-size: 26px;
-    font-weight: 800;
-    color: #251818;
-    margin: 0 0 12px;
-    letter-spacing: -0.02em;
-  }
-
-  .header p {
-    font-size: 15px;
-    color: #584140;
-    margin: 0 0 16px;
-    line-height: 1.6;
-  }
-
-  .phone-display {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 12px 20px;
-    background: #f5dddb;
-    border-radius: 16px;
-    font-size: 16px;
-    font-weight: 700;
-    color: #251818;
-  }
-
-  .form-group {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .phone-input-group {
-    display: flex;
-    align-items: stretch;
-    gap: 0;
-    background: #f5dddb;
-    border-radius: 16px;
-    overflow: hidden;
-  }
-
-  .country-selector {
-    width: auto;
-    min-width: 90px;
-    padding: 12px 8px;
-    border: none;
-    border-right: 1px solid #fbe3e1;
-    background: transparent;
-    font: 14px 'Plus Jakarta Sans', sans-serif;
-    color: #251818;
-    cursor: pointer;
-    transition: all 0.15s;
-  }
-
-  .phone-input {
-    flex: 1;
-    padding: 12px 16px;
-    border: none;
-    font: 14px 'Plus Jakarta Sans', sans-serif;
-    color: #251818;
-    background: transparent;
-    transition: all 0.15s;
-  }
-
-  .country-selector:focus,
-  .phone-input:focus {
-    outline: none;
-    box-shadow: inset 0 -2px 0 #ae2f34;
-  }
-
-  .button-group {
-    display: flex;
-    gap: 12px;
-    margin-top: 8px;
-  }
-
-  .tips-section {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    padding: 16px;
-    background: #FAFAFA;
-    border-radius: 16px;
-  }
-
-  .tip-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 14px;
-    color: #374151;
-  }
-
-  .timer-info,
-  .resend-button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    padding: 12px 20px;
-    border-radius: 16px;
-  }
-
-  .timer-info {
-    color: #584140;
-    background: #f5dddb;
-    width: 100%;
-  }
-
-  .resend-button {
-    color: #ae2f34;
-    background: #f5dddb;
-    border: none;
-    cursor: pointer;
-    transition: all 0.15s;
-    width: 100%;
-  }
-
-  .resend-button:hover {
-    background: #fbe3e1;
-    transform: translateY(-1px);
-  }
-
-  .help-section {
-    margin-top: 16px;
-    padding-top: 16px;
-  }
-
-  .help-links {
-    display: flex;
-    justify-content: center;
-  }
-
-  .animate-in {
-    opacity: 0;
-    transform: translateY(24px);
-    animation: slideIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-  }
-
-  @keyframes slideIn {
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  @media (max-width: 640px) {
-    .icon-circle-large {
-      width: 64px;
-      height: 64px;
-    }
-
-    .header h1 {
-      font-size: 22px;
-    }
-
-    .header p {
-      font-size: 14px;
-    }
-
-    .button-group {
-      flex-direction: column;
-    }
-  }
-</style>
+{#if !sent}
+	<p class="mt-6 text-center text-[15px] text-ink-soft">
+		Remembered it? <a href="/login" class="font-semibold text-ink underline decoration-hairline decoration-2 underline-offset-4 hover:decoration-ink">Sign in</a>
+	</p>
+{/if}

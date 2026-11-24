@@ -59,7 +59,11 @@ export async function selectDeviceContacts(
     const deviceContacts: DeviceContact[] = contacts.map((contact: any) => ({
       id: crypto.randomUUID(),
       name: contact.name?.[0] || 'Unknown',
-      phone_numbers: contact.tel?.map((tel: any) => tel.value) || []
+      // The spec returns `tel` as plain strings; accept `{ value }` objects
+      // too in case a browser wraps them.
+      phone_numbers: (contact.tel ?? [])
+        .map((tel: unknown) => (typeof tel === 'string' ? tel : (tel as { value?: string })?.value))
+        .filter((tel: unknown): tel is string => typeof tel === 'string' && tel.trim() !== '')
     })).filter((c: DeviceContact) => c.phone_numbers.length > 0);
 
     return {

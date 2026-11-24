@@ -1,192 +1,166 @@
 <script lang="ts">
-  import { cn } from '$lib/utils/cn';
-  import { Eye, EyeOff, X, AlertCircle, CheckCircle } from 'lucide-svelte';
+	import { cn } from '$lib/utils/cn';
+	import { Eye, EyeOff, X, CircleAlert, CircleCheck } from 'lucide-svelte';
+	import type { HTMLInputAttributes } from 'svelte/elements';
 
-  type InputType = 'text' | 'email' | 'password' | 'tel' | 'number';
-  type InputSize = 'sm' | 'default' | 'lg';
+	type InputType = 'text' | 'email' | 'password' | 'tel' | 'number' | 'search' | 'url';
+	type InputSize = 'sm' | 'default' | 'lg';
 
-  interface Props {
-    type?: InputType;
-    size?: InputSize;
-    placeholder?: string;
-    value?: string;
-    disabled?: boolean;
-    error?: boolean;
-    success?: boolean;
-    class?: string;
-    name?: string;
-    id?: string;
-    oninput?: (value: string) => void;
-    onfocus?: () => void;
-    onblur?: () => void;
-    required?: boolean;
-    // lucide-svelte icons — broad typing for consumer compatibility.
-    leftIcon?: any;
-    showClear?: boolean;
-    helperText?: string;
-    errorText?: string;
-    successText?: string;
-    showCount?: boolean;
-    maxLength?: number;
-    label?: string;
-  }
+	interface Props extends Omit<HTMLInputAttributes, 'type' | 'size' | 'value' | 'class' | 'oninput' | 'onfocus' | 'onblur'> {
+		type?: InputType;
+		size?: InputSize;
+		value?: string;
+		error?: boolean;
+		success?: boolean;
+		class?: string;
+		oninput?: (value: string) => void;
+		onfocus?: () => void;
+		onblur?: () => void;
+		onclear?: () => void;
+		// lucide-svelte icon component
+		leftIcon?: any;
+		showClear?: boolean;
+		helperText?: string;
+		errorText?: string;
+		successText?: string;
+		showCount?: boolean;
+		maxLength?: number;
+		label?: string;
+	}
 
-  let {
-    type = 'text',
-    size = 'default',
-    placeholder = '',
-    disabled = false,
-    error = false,
-    success = false,
-    class: className,
-    value = $bindable(''),
-    name,
-    id,
-    oninput,
-    onfocus,
-    onblur,
-    leftIcon,
-    showClear = false,
-    helperText,
-    errorText,
-    successText,
-    showCount = false,
-    maxLength,
-    label,
-    ...props
-  }: Props = $props();
+	let {
+		type = 'text',
+		size = 'default',
+		disabled = false,
+		error = false,
+		success = false,
+		class: className,
+		value = $bindable(''),
+		name,
+		id,
+		oninput,
+		onfocus,
+		onblur,
+		onclear,
+		leftIcon,
+		showClear = false,
+		helperText,
+		errorText,
+		successText,
+		showCount = false,
+		maxLength,
+		label,
+		...props
+	}: Props = $props();
 
-  let showPassword = $state(false);
+	const uid = $props.id();
+	const inputId = $derived(id || name || `in-${uid}`);
+	const msgId = `${uid}-msg`;
+	let showPassword = $state(false);
 
-  const sizes = {
-    sm: 'h-9 px-3 text-sm',
-    default: 'h-11 px-4 text-[15px]',
-    lg: 'h-12 px-5 text-base',
-  };
+	const sizes = { sm: 'h-9 text-sm', default: 'h-11 text-[15px]', lg: 'h-13 text-base' };
 
-  const baseClasses = $derived(
-    cn(
-      'w-full rounded-2xl font-medium transition-all duration-200 font-sans',
-      'bg-[#f5dddb] text-[#251818] placeholder:text-[#584140]/50',
-      'focus:outline-none focus:ring-2 focus:ring-[#ae2f34]/30 focus:bg-[#fbe3e1]',
-      disabled && 'opacity-50 cursor-not-allowed',
-      error && 'ring-2 ring-[#EF4444]/40 bg-[#EF4444]/10',
-      success && 'ring-2 ring-[#10B981]/40 bg-[#10B981]/10',
-      sizes[size],
-      className
-    )
-  );
+	const invalid = $derived(error || (!!errorText && error));
+	const hasValue = $derived(!!value && value.length > 0);
+	const trailing = $derived((type === 'password' ? 1 : 0) + (showClear && hasValue ? 1 : 0));
+	const message = $derived(invalid && errorText ? errorText : success && successText ? successText : helperText);
 
-  function handleInput(e: Event) {
-    const target = e.target as HTMLInputElement;
-    value = target.value;
-    if (oninput) {
-      oninput(target.value);
-    }
-  }
+	const classes = $derived(
+		cn(
+			'w-full rounded-field bg-card font-medium text-ink placeholder:text-ink-soft/70',
+			'shadow-[inset_0_0_0_1.5px_var(--color-hairline)] transition-shadow duration-150',
+			'hover:shadow-[inset_0_0_0_1.5px_var(--color-ink-soft)]',
+			'focus:outline-none focus:shadow-[inset_0_0_0_2px_var(--color-steel)]',
+			'disabled:cursor-not-allowed disabled:bg-fog disabled:opacity-60',
+			invalid && 'shadow-[inset_0_0_0_2px_var(--color-rejected)] hover:shadow-[inset_0_0_0_2px_var(--color-rejected)]',
+			success && !invalid && 'shadow-[inset_0_0_0_2px_var(--color-paid)]',
+			leftIcon ? 'pl-11' : 'pl-4',
+			trailing === 2 ? 'pr-20' : trailing === 1 ? 'pr-11' : 'pr-4',
+			sizes[size],
+			className
+		)
+	);
 
-  function togglePassword() {
-    showPassword = !showPassword;
-  }
+	function handleInput(e: Event) {
+		value = (e.currentTarget as HTMLInputElement).value;
+		oninput?.(value);
+	}
 
-  function clearInput() {
-    value = '';
-    if (oninput) {
-      oninput('');
-    }
-  }
+	function clearInput() {
+		value = '';
+		oninput?.('');
+		onclear?.();
+	}
 
-  function handleFocus() {
-    if (onfocus) onfocus();
-  }
-
-  function handleBlur() {
-    if (onblur) onblur();
-  }
-
-  const hasValue = $derived(value && value.length > 0);
-  const LeftIconComp = $derived(leftIcon);
+	const LeftIcon = $derived(leftIcon);
 </script>
 
 <div class="flex flex-col gap-1.5">
-  {#if label}
-    <label
-      for={id || name}
-      class="block text-[13px] font-semibold text-[#584140] mb-1.5"
-    >
-      {label}
-    </label>
-  {/if}
+	{#if label}
+		<label for={inputId} class="text-sm font-semibold text-ink">{label}</label>
+	{/if}
 
-  <div class="relative flex items-center">
-    {#if LeftIconComp}
-      <div class="absolute left-4 flex items-center justify-center pointer-events-none text-[#584140]">
-        <LeftIconComp size={18} />
-      </div>
-    {/if}
+	<div class="relative flex items-center">
+		{#if LeftIcon}
+			<span class="pointer-events-none absolute left-4 text-ink-soft" aria-hidden="true"><LeftIcon size={18} /></span>
+		{/if}
 
-    <input
-      type={type === 'password' && showPassword ? 'text' : type}
-      {id}
-      {name}
-      {placeholder}
-      value={value}
-      disabled={disabled}
-      class={baseClasses}
-      style="padding-left: {leftIcon ? '48px' : '16px'}; padding-right: {(type === 'password' || showClear) && hasValue ? '96px' : '16px'};"
-      oninput={handleInput}
-      onfocus={handleFocus}
-      onblur={handleBlur}
-      maxlength={maxLength}
-      {...props}
-    />
+		<input
+			type={type === 'password' && showPassword ? 'text' : type}
+			id={inputId}
+			{name}
+			{value}
+			{disabled}
+			class={classes}
+			oninput={handleInput}
+			onfocus={() => onfocus?.()}
+			onblur={() => onblur?.()}
+			maxlength={maxLength}
+			aria-invalid={invalid || undefined}
+			aria-describedby={message ? msgId : undefined}
+			{...props}
+		/>
 
-    {#if type === 'password' && hasValue}
-      <button
-        type="button"
-        class="absolute right-12 flex items-center justify-center p-1 rounded-[10px] text-[#584140] hover:bg-[#fbe3e1] transition-colors"
-        onclick={togglePassword}
-        aria-label={showPassword ? 'Hide password' : 'Show password'}
-      >
-        {#if showPassword}
-          <EyeOff size={18} />
-        {:else}
-          <Eye size={18} />
-        {/if}
-      </button>
-    {/if}
+		<div class="absolute right-1.5 flex items-center">
+			{#if showClear && hasValue}
+				<button
+					type="button"
+					class="grid size-8 place-items-center rounded-full text-ink-soft transition-colors hover:bg-mist hover:text-ink"
+					onclick={clearInput}
+					aria-label="Clear"
+				>
+					<X size={16} />
+				</button>
+			{/if}
+			{#if type === 'password'}
+				<button
+					type="button"
+					class="grid size-8 place-items-center rounded-full text-ink-soft transition-colors hover:bg-mist hover:text-ink"
+					onclick={() => (showPassword = !showPassword)}
+					aria-label={showPassword ? 'Hide password' : 'Show password'}
+					aria-pressed={showPassword}
+				>
+					{#if showPassword}<EyeOff size={18} />{:else}<Eye size={18} />{/if}
+				</button>
+			{/if}
+		</div>
+	</div>
 
-    {#if showClear && hasValue}
-      <button
-        type="button"
-        class="absolute right-4 flex items-center justify-center p-1 rounded-[10px] text-[#584140] hover:bg-[#fbe3e1] transition-colors"
-        onclick={clearInput}
-        aria-label="Clear input"
-      >
-        <X size={16} />
-      </button>
-    {/if}
-  </div>
-
-  {#if errorText && error}
-    <div class="flex items-center gap-1.5 text-xs mt-1 text-[#EF4444]">
-      <AlertCircle size={14} />
-      <span>{errorText}</span>
-    </div>
-  {:else if successText && success}
-    <div class="flex items-center gap-1.5 text-xs mt-1 text-[#10B981]">
-      <CheckCircle size={14} />
-      <span>{successText}</span>
-    </div>
-  {:else if helperText}
-    <div class="flex items-center gap-1.5 text-xs mt-1 text-[#584140]">{helperText}</div>
-  {/if}
-
-  {#if showCount && maxLength !== undefined}
-    <div class="flex justify-end text-xs mt-1">
-      <span class={value.length > maxLength ? 'text-[#EF4444]' : 'text-[#584140]'}>
-        {value.length}/{maxLength}
-      </span>
-    </div>
-  {/if}
+	{#if message || (showCount && maxLength !== undefined)}
+		<div class="flex items-start justify-between gap-3 text-[13px]">
+			{#if message}
+				<p
+					id={msgId}
+					class={cn('flex items-start gap-1.5', invalid ? 'text-rejected' : success ? 'text-paid' : 'text-ink-soft')}
+					role={invalid ? 'alert' : undefined}
+				>
+					{#if invalid}<CircleAlert size={15} class="mt-px flex-none" />{:else if success}<CircleCheck size={15} class="mt-px flex-none" />{/if}
+					<span>{message}</span>
+				</p>
+			{:else}<span></span>{/if}
+			{#if showCount && maxLength !== undefined}
+				<span class={cn('tabular-nums', value.length > maxLength ? 'text-rejected' : 'text-ink-soft')}>{value.length}/{maxLength}</span>
+			{/if}
+		</div>
+	{/if}
 </div>

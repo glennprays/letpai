@@ -1,108 +1,69 @@
 <script lang="ts">
-  import { cn } from '$lib/utils/cn';
-  import { Check } from 'lucide-svelte';
+	import { cn } from '$lib/utils/cn';
+	import { Check } from 'lucide-svelte';
+	import type { Snippet } from 'svelte';
 
-  interface Props {
-    checked?: boolean;
-    disabled?: boolean;
-    class?: string;
-    onchange?: (checked: boolean) => void;
-    id?: string;
-    label?: string;
-  }
+	interface Props {
+		checked?: boolean;
+		disabled?: boolean;
+		class?: string;
+		onchange?: (checked: boolean) => void;
+		id?: string;
+		label?: string;
+		/** Accessible name when there is no visible label. */
+		ariaLabel?: string;
+		/** Rich label content (e.g. a whole list row); replaces `label`. */
+		children?: Snippet;
+	}
 
-  let {
-    checked = $bindable(false),
-    disabled = false,
-    class: className,
-    onchange,
-    id,
-    label,
-    ...props
-  }: Props = $props();
+	let {
+		checked = $bindable(false),
+		disabled = false,
+		class: className,
+		onchange,
+		id,
+		label,
+		ariaLabel,
+		children
+	}: Props = $props();
 
-  function handleChange() {
-    if (disabled) return;
-    checked = !checked;
-    if (onchange) onchange(checked);
-  }
-
-  const baseClasses = $derived(cn(
-    'relative inline-flex items-center justify-center',
-    'min-h-[44px] min-w-[44px]',
-    'w-6 h-6 rounded-[10px] transition-all duration-200 ease-out',
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fff8f7]',
-    disabled && 'opacity-50 cursor-not-allowed',
-    !disabled && 'cursor-pointer',
-    checked
-      ? 'bg-[#ae2f34] border-[#ae2f34] shadow-[0_1px_3px_rgba(174,47,52,0.18)]'
-      : 'border-2 border-[#e0bfbd] hover:border-[#ae2f34] bg-[#f5dddb]',
-    className
-  ));
-
-  const checkboxId = $derived(id || `checkbox-${Math.random().toString(36).slice(2, 9)}`);
+	const uid = $props.id();
+	const inputId = $derived(id ?? `cb-${uid}`);
 </script>
 
-<div class="inline-flex items-center gap-3">
-  <!-- Subtle glow effect when checked -->
-  {#if checked}
-    <div
-      class="absolute w-6 h-6 rounded-[10px] bg-[#ae2f34] opacity-20 blur-sm -z-10"
-      style="transform: scale(1.2);"
-      aria-hidden="true"
-    ></div>
-  {/if}
-
-  <div
-    role="checkbox"
-    aria-checked={checked}
-    aria-disabled={disabled}
-    tabindex={!disabled ? 0 : undefined}
-    class={baseClasses}
-    onclick={handleChange}
-    onkeydown={(e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        handleChange();
-      }
-    }}
-    {...props}
-  >
-    {#if checked}
-      <div class="absolute inset-0 flex items-center justify-center">
-        <Check class="text-white animate-in zoom-in-50 duration-150" size={16} strokeWidth={3} />
-      </div>
-    {/if}
-  </div>
-
-  {#if label}
-    <!-- The visual checkbox is a div with role="checkbox"; users toggle by
-         clicking or focusing it directly. The label below is read-only text. -->
-    <span
-      class={cn(
-        'text-sm font-medium text-[#251818] select-none transition-colors',
-        disabled && 'opacity-50'
-      )}
-    >
-      {label}
-    </span>
-  {/if}
-</div>
-
-<style>
-  /* Smooth scale animation for checkmark */
-  @keyframes zoom-in {
-    from {
-      opacity: 0;
-      transform: scale(0.5);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1);
-    }
-  }
-
-  .animate-in.zoom-in-50 {
-    animation: zoom-in 150ms ease-out;
-  }
-</style>
+<!-- The whole row is a 44px hit target. -->
+<label
+	for={inputId}
+	class={cn(
+		'group inline-flex min-h-11 items-center gap-3 select-none',
+		disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer',
+		className
+	)}
+>
+	<span class="relative grid size-[22px] flex-none place-items-center">
+		<!-- Transparent native input laid over the drawn box: real hit target,
+		     keyboard and screen-reader behaviour, no clipped 1px element. -->
+		<input
+			id={inputId}
+			type="checkbox"
+			class="peer absolute inset-0 m-0 size-full cursor-[inherit] appearance-none opacity-0"
+			bind:checked
+			{disabled}
+			aria-label={label ? undefined : ariaLabel}
+			onchange={() => onchange?.(checked)}
+		/>
+		<span
+			aria-hidden="true"
+			class={cn(
+				'pointer-events-none grid size-[22px] place-items-center rounded-[7px] transition-colors duration-150',
+				'peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-steel',
+				checked
+					? 'bg-ink text-card'
+					: 'bg-card shadow-[inset_0_0_0_1.5px_var(--color-hairline)] group-hover:shadow-[inset_0_0_0_1.5px_var(--color-ink-soft)]'
+			)}
+		>
+			{#if checked}<Check size={14} strokeWidth={3} />{/if}
+		</span>
+	</span>
+	{#if children}{@render children()}{:else if label}<span class="text-sm font-medium text-ink">{label}</span>{/if}
+</label>

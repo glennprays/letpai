@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Logo options</title>
+<link rel="stylesheet" href="shared.css" />
+<style>
+	body { padding: 40px 24px; }
+	main { max-width: 1200px; margin: 0 auto; display: grid; gap: 24px; }
+	.opt { display: grid; grid-template-columns: 300px 1fr; gap: 32px; padding: 28px; }
+	.opt h2 { font: 700 30px/1 var(--display); letter-spacing: -0.03em; margin: 0 0 8px; }
+	.lockup { display: flex; align-items: center; gap: 12px; font: 700 44px/1 var(--display); letter-spacing: -0.055em; }
+	.lockup.small { font-size: 22px; gap: 8px; letter-spacing: -0.04em; }
+	.lockup b { color: var(--coral); }
+	.tiles { display: flex; gap: 16px; align-items: end; flex-wrap: wrap; margin-top: 20px; }
+	.tile { border-radius: 14px; display: grid; place-items: center; }
+	.tile.app { width: 72px; height: 72px; background: var(--fog); box-shadow: inset 0 0 0 1px var(--mist); }
+	.tile.dark { width: 72px; height: 72px; background: var(--ink); }
+	.fav { display: flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px 0 8px; background: var(--mist); border-radius: 8px 8px 0 0; font-size: 12px; }
+	.og { width: 360px; height: 189px; background: var(--fog); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; position: relative; box-shadow: var(--shadow-card); }
+	.og .t { font: 700 34px/.9 var(--display); letter-spacing: -0.06em; max-width: 8ch; }
+	.og .t span { color: var(--coral); }
+	.og i { position: absolute; right: 18px; bottom: 10px; width: 92px; transform: rotate(6deg); }
+	.ink-mono svg path, .ink-mono svg circle { fill: var(--ink) !important; }
+	.notes { font-size: 15px; }
+	.notes dt { font-weight: 700; margin-top: 10px; }
+	.notes dd { margin: 2px 0 0; color: var(--ink-soft); }
+	@media (max-width: 760px) { .opt { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<main>
+	<h1 class="display" style="font-size:56px; letter-spacing:-0.05em; margin:0">Logo options</h1>
+
+	<section class="card opt" id="logo-a">
+		<div>
+			<h2>A · Split coin</h2>
+			<dl class="notes">
+				<dt>Idea</dt><dd>One coin cut into two. Money, split.</dd>
+				<dt>Strength</dt><dd>Very clear at app-icon size; works as a one-colour stamp.</dd>
+				<dt>Trade-off</dt><dd>Split-circle marks are common in fintech; less ownable.</dd>
+			</dl>
+		</div>
+		<div>
+			<div class="lockup"><i data-art="logo-a" style="width:52px"></i>letpai</div>
+			<div class="tiles">
+				<div class="tile app"><i data-art="logo-a" style="width:44px"></i></div>
+				<div class="tile dark"><i data-art="logo-a" style="width:44px"></i></div>
+				<div class="fav"><i data-art="logo-a" style="width:16px"></i>Letpai</div>
+				<div class="lockup small ink-mono"><i data-art="logo-a" style="width:24px"></i>letpai</div>
+			</div>
+		</div>
+	</section>
+
+	<section class="card opt" id="logo-b">
+		<div>
+			<h2>B · Torn ticket</h2>
+			<dl class="notes">
+				<dt>Idea</dt><dd>The bill itself, torn into shares. The perforated edge repeats on receipts and the payment page.</dd>
+				<dt>Strength</dt><dd>Ties the mark to the product's signature detail; nobody else in the category uses it.</dd>
+				<dt>Trade-off</dt><dd>The tear line gets thin at 16px, so the favicon uses a simplified tear.</dd>
+			</dl>
+		</div>
+		<div>
+			<div class="lockup"><i data-art="logo-b" style="width:52px"></i>letpai</div>
+			<div class="tiles">
+				<div class="tile app"><i data-art="logo-b" style="width:44px"></i></div>
+				<div class="tile dark" style="background:var(--coral)"><i data-art="logo-b" style="width:44px"></i></div>
+				<div class="fav"><i data-art="logo-b" style="width:16px"></i>Letpai</div>
+				<div class="og"><span class="lockup small"><i data-art="logo-b" style="width:22px"></i>letpai</span><span class="t">You paid. <span>They pay you back.</span></span><i data-art="receipt"></i></div>
+			</div>
+		</div>
+	</section>
+
+	<section class="card opt" id="logo-c">
+		<div>
+			<h2>C · Bubble split</h2>
+			<dl class="notes">
+				<dt>Idea</dt><dd>A chat bubble pulled in two: the bill arrives in WhatsApp.</dd>
+				<dt>Strength</dt><dd>Says "WhatsApp" without borrowing WhatsApp's green.</dd>
+				<dt>Trade-off</dt><dd>Chat-bubble logos read as messaging apps first, money second.</dd>
+			</dl>
+		</div>
+		<div>
+			<div class="lockup"><i data-art="logo-c" style="width:52px"></i>letpai</div>
+			<div class="tiles">
+				<div class="tile app"><i data-art="logo-c" style="width:44px"></i></div>
+				<div class="tile dark"><i data-art="logo-c" style="width:44px"></i></div>
+				<div class="fav"><i data-art="logo-c" style="width:16px"></i>Letpai</div>
+				<div class="lockup small ink-mono"><i data-art="logo-c" style="width:24px"></i>letpai</div>
+			</div>
+		</div>
+	</section>
+</main>
+<script src="logos.js"></script>
+<script src="art.js"></script>
+</body>
+</html>

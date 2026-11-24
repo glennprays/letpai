@@ -1,30 +1,9 @@
 /**
  * Avatar utility for generating modern, accessible profile image fallbacks
- * Based on UX Pro Max guidelines: solid colors, hash-based, WCAG compliant
+ * Hash-based tint so the same person always gets the same colour.
  */
 
-// Professional color palette - WCAG AA compliant with white text
-const AVATAR_COLORS = [
-  '#6366F1', // Indigo 500
-  '#8B5CF6', // Violet 500
-  '#EC4899', // Pink 500
-  '#F43F5E', // Rose 500
-  '#EF4444', // Red 500
-  '#F97316', // Orange 500
-  '#F59E0B', // Amber 500
-  '#EAB308', // Yellow 500
-  '#84CC16', // Lime 500
-  '#22C55E', // Green 500
-  '#10B981', // Emerald 500
-  '#14B8A6', // Teal 500
-  '#06B6D4', // Cyan 500
-  '#0EA5E9', // Sky 500
-  '#3B82F6', // Blue 500
-  '#6366F1', // Indigo 500
-  '#8B5CF6', // Violet 500
-  '#D946EF', // Fuchsia 500
-  '#A855F7', // Purple 500
-] as const;
+import { avatarTones, font } from '$lib/constants/design';
 
 /**
  * Format phone number for display (e.g., 628123456789 → +62 812-3456-789)
@@ -97,8 +76,8 @@ export function getFirstName(fullName: string | undefined | null, phoneNumber?: 
  * @param identifier - User ID, name, email
  * @returns Hex color from palette
  */
-export function getAvatarColor(identifier: string | undefined | null): string {
-  if (!identifier) return AVATAR_COLORS[0];
+function avatarTone(identifier: string | undefined | null): readonly [string, string] {
+  if (!identifier) return avatarTones[0];
 
   // Simple string hash
   let hash = 0;
@@ -107,13 +86,17 @@ export function getAvatarColor(identifier: string | undefined | null): string {
     hash = str.charCodeAt(i) + ((hash << 5) - hash);
   }
 
-  const index = Math.abs(hash) % AVATAR_COLORS.length;
-  return AVATAR_COLORS[index];
+  return avatarTones[Math.abs(hash) % avatarTones.length];
+}
+
+/** Background colour of the generated avatar for this identifier. */
+export function getAvatarColor(identifier: string | undefined | null): string {
+  return avatarTone(identifier)[0];
 }
 
 /**
  * Generate SVG data URL for avatar fallback
- * Modern design: solid color, centered initials, no gradient
+ * Flat tint with ink-coloured initials (palette in design.ts avatarTones)
  * @param fullName - User's full name for initials
  * @param phoneNumber - Fallback phone number for initials
  * @param identifier - User identifier for consistent color
@@ -127,13 +110,13 @@ export function generateAvatarUrl(
   size: number = 40
 ): string {
   const initials = getInitials(fullName, phoneNumber);
-  const color = getAvatarColor(identifier || fullName || phoneNumber);
+  const [bg, fg] = avatarTone(identifier || fullName || phoneNumber);
 
   // Modern SVG: solid background, centered white text
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">
-    <rect width="${size}" height="${size}" fill="${color}"/>
+    <rect width="${size}" height="${size}" fill="${bg}"/>
     <text x="50%" y="52%" text-anchor="middle" dominant-baseline="middle"
-      fill="white" font-size="${size * 0.4}" font-weight="600" font-family="system-ui, -apple-system, sans-serif">
+      fill="${fg}" font-size="${size * 0.38}" font-weight="700" font-family='${font.sans}'>
       ${initials}
     </text>
   </svg>`;

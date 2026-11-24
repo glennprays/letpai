@@ -1,70 +1,66 @@
 <script lang="ts">
-  import { cn } from '$lib/utils/cn';
+	import { cn } from '$lib/utils/cn';
+	import Button from './Button.svelte';
+	import type { Snippet } from 'svelte';
 
-  interface Props {
-    icon?: any;
-    title?: string;
-    description?: string;
-    action?: {
-      label: string;
-      onclick: () => void;
-    };
-    class?: string;
-    size?: 'sm' | 'md' | 'lg';
-  }
+	interface Props {
+		/** Lucide icon (used when no `art` snippet is given). */
+		icon?: any;
+		/** Illustration from $lib/components/art. */
+		art?: Snippet;
+		title?: string;
+		description?: string;
+		action?: { label: string; onclick?: () => void; href?: string; icon?: any };
+		secondaryAction?: { label: string; onclick?: () => void; href?: string };
+		class?: string;
+		size?: 'sm' | 'md' | 'lg';
+	}
 
-  let {
-    icon,
-    title = 'No data found',
-    description = 'There are no items to display yet.',
-    action,
-    class: className,
-    size = 'md',
-    ...props
-  }: Props = $props();
+	let {
+		icon,
+		art,
+		title = 'Nothing here yet',
+		description,
+		action,
+		secondaryAction,
+		class: className,
+		size = 'md'
+	}: Props = $props();
 
-  const sizes = {
-    sm: 'py-8 px-4',
-    md: 'py-12 px-6',
-    lg: 'py-16 px-8'
-  };
-
-  const iconSizes = {
-    sm: 32,
-    md: 48,
-    lg: 64
-  };
+	const pad = { sm: 'py-8 px-5', md: 'py-12 px-6', lg: 'py-16 px-8' };
+	const Icon = $derived(icon);
 </script>
 
+<!-- Dashed hairline frame echoes the receipt's tear line: an empty slot
+     waiting for its first entry. -->
 <div
-  class={cn(
-    'flex flex-col items-center justify-center text-center bg-[#fff0ef] rounded-3xl',
-    sizes[size],
-    className
-  )}
-  {...props}
+	class={cn(
+		'flex flex-col items-center rounded-card border-2 border-dashed border-hairline text-center',
+		pad[size],
+		className
+	)}
 >
-  {#if icon}
-    {@const Icon = icon}
-    <div class="mb-4 text-[#584140]/30">
-      <Icon size={iconSizes[size]} />
-    </div>
-  {/if}
+	{#if art}
+		<div class="mb-5 w-28">{@render art()}</div>
+	{:else if Icon}
+		<div class="mb-4 grid size-14 place-items-center rounded-full bg-mist text-ink-soft" aria-hidden="true">
+			<Icon size={26} />
+		</div>
+	{/if}
 
-  <h3 class="text-lg font-semibold text-[#251818] mb-2">
-    {title}
-  </h3>
+	<h3 class="text-heading text-xl text-ink">{title}</h3>
+	{#if description}
+		<p class="mt-2 max-w-sm text-[15px] text-ink-soft">{description}</p>
+	{/if}
 
-  <p class="text-sm text-[#584140] max-w-sm mb-6">
-    {description}
-  </p>
-
-  {#if action}
-    <button
-      onclick={action.onclick}
-      class="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-br from-[#ae2f34] to-[#FF6B6B] text-white rounded-2xl font-medium hover:shadow-md transition-all"
-    >
-      {action.label}
-    </button>
-  {/if}
+	{#if action || secondaryAction}
+		<div class="mt-6 flex flex-wrap justify-center gap-2">
+			{#if action}
+				<Button href={action.href} onclick={action.onclick} leftIcon={action.icon}>{action.label}</Button>
+			{/if}
+			{#if secondaryAction}
+				<Button variant="secondary" href={secondaryAction.href} onclick={secondaryAction.onclick}>{secondaryAction.label}</Button>
+			{/if}
+		</div>
+	{/if}
 </div>

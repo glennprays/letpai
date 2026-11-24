@@ -1,225 +1,134 @@
 <script lang="ts">
-  import { untrack } from 'svelte';
-  import { cn } from '$lib/utils/cn';
-  import Input from '../ui/Input.svelte';
-  import PhoneInput from '../ui/PhoneInput.svelte';
-  import Button from '../ui/Button.svelte';
-  import { validateWhatsappNumber } from '$lib/utils/phone';
-  import type { Contact, ContactGroup, CreateContactRequest, UpdateContactRequest } from '$lib/types/api';
+	import { untrack } from 'svelte';
+	import { cn } from '$lib/utils/cn';
+	import { Check } from 'lucide-svelte';
+	import Input from '../ui/Input.svelte';
+	import PhoneInput from '../ui/PhoneInput.svelte';
+	import Button from '../ui/Button.svelte';
+	import { digitsOnly, validateWhatsappNumber } from '$lib/utils/phone';
+	import type { Contact, ContactGroup, CreateContactRequest, UpdateContactRequest } from '$lib/types/api';
 
-  interface Props {
-    contact?: Contact | null;
-    groups?: ContactGroup[];
-    loading?: boolean;
-    onsubmit?: (data: CreateContactRequest | UpdateContactRequest) => void;
-    oncancel?: () => void;
-    submitText?: string;
-    class?: string;
-  }
+	interface Props {
+		contact?: Contact | null;
+		groups?: ContactGroup[];
+		loading?: boolean;
+		/**
+		 * New contact: the full create payload. Edit: only changed fields;
+		 * `group_id: ''` means "take them out of their group" (PUT can't
+		 * clear it, so the page routes that through the bulk endpoint).
+		 */
+		onsubmit?: (data: CreateContactRequest | UpdateContactRequest) => void;
+		oncancel?: () => void;
+		submitText?: string;
+		class?: string;
+	}
 
-  let {
-    contact = null,
-    groups = [],
-    loading = false,
-    onsubmit,
-    oncancel,
-    submitText = 'Save Contact',
-    class: className,
-    ...props
-  }: Props = $props();
+	let { contact = null, groups = [], loading = false, onsubmit, oncancel, submitText = 'Save contact', class: className }: Props = $props();
 
-  // Form fields are initialised from the `contact` prop at mount only;
-  // wrap in untrack() to make that explicit (otherwise Svelte warns that
-  // changes to the prop won't update these fields — which is by design).
-  let name = $state(untrack(() => contact?.name || ''));
-  let phone = $state(untrack(() => contact?.whatsapp_number || ''));
-  let groupId = $state(untrack(() => contact?.group_id || ''));
-  let selectedGroupIds = $state<string[]>(untrack(() => (contact?.group_id ? [contact.group_id] : [])));
-  let notes = $state(untrack(() => contact?.notes || ''));
-  let errors = $state<{ name?: string; phone?: string }>({});
+	// Fields start from the contact at mount; the modal remounts per contact.
+	let name = $state(untrack(() => contact?.name ?? ''));
+	let phone = $state(untrack(() => contact?.whatsapp_number ?? ''));
+	let groupId = $state(untrack(() => contact?.group_id ?? ''));
+	let notes = $state(untrack(() => contact?.notes ?? ''));
+	let errors = $state<{ name?: string; phone?: string }>({});
 
-  function validate(): boolean {
-    errors = {};
+	function validate(): boolean {
+		const next: typeof errors = {};
+		if (name.trim().length < 2) next.name = name.trim() ? 'Use at least 2 characters.' : 'Enter a name.';
+		const phoneErr = validateWhatsappNumber(phone);
+		if (phoneErr) next.phone = phoneErr;
+		errors = next;
+		return !next.name && !next.phone;
+	}
 
-    if (!name.trim()) {
-      errors.name = 'Name is required';
-    } else if (name.trim().length < 2) {
-      errors.name = 'Name must be at least 2 characters';
-    }
+	function handleSubmit(e: SubmitEvent) {
+		e.preventDefault();
+		if (!validate()) return;
+		const trimmedName = name.trim();
+		const trimmedNotes = notes.trim();
 
-    const phoneErr = validateWhatsappNumber(phone);
-    if (phoneErr) {
-      errors.phone = phoneErr;
-    }
+		if (!contact) {
+			onsubmit?.({
+				name: trimmedName,
+				whatsapp_number: phone,
+				...(groupId && { group_id: groupId }),
+				...(trimmedNotes && { notes: trimmedNotes })
+			});
+			return;
+		}
 
-    return Object.keys(errors).length === 0;
-  }
+		const changes: UpdateContactRequest = {};
+		if (trimmedName !== contact.name) changes.name = trimmedName;
+		if (digitsOnly(phone) !== digitsOnly(contact.whatsapp_number)) changes.whatsapp_number = phone;
+		if (groupId !== (contact.group_id ?? '')) changes.group_id = groupId;
+		if (trimmedNotes !== (contact.notes ?? '')) changes.notes = trimmedNotes;
+		onsubmit?.(changes);
+	}
 
-  function handleSubmit() {
-    if (!validate()) return;
-
-    const normalizedPhone = phone;
-
-    // Use first selected group (TODO: backend support for multiple groups coming soon)
-    const primaryGroupId = selectedGroupIds.length > 0 ? selectedGroupIds[0] : undefined;
-
-    // For editing, use UpdateContactRequest format (optional fields)
-    // For creating, use CreateContactRequest format (required fields)
-    const data = contact
-      ? {
-          ...(name.trim() !== contact.name && { name: name.trim() }),
-          ...(normalizedPhone !== contact.whatsapp_number && { whatsapp_number: normalizedPhone }),
-          ...(primaryGroupId !== contact.group_id && { group_id: primaryGroupId || undefined }),
-          ...(notes.trim() !== (contact.notes || '') && { notes: notes.trim() || undefined })
-        }
-      : {
-          name: name.trim(),
-          whatsapp_number: normalizedPhone,
-          ...(primaryGroupId && { group_id: primaryGroupId }),
-          ...(notes.trim() && { notes: notes.trim() })
-        };
-
-    if (onsubmit) onsubmit(data);
-  }
-
-  function handleCancel() {
-    if (oncancel) oncancel();
-  }
+	const groupOptions = $derived([{ group_id: '', name: 'No group', color: '' }, ...groups]);
 </script>
 
-<form
-  class={cn('space-y-4', className)}
-  onsubmit={(e) => {
-    e.preventDefault();
-    handleSubmit();
-  }}
-  {...props}
->
-  <!-- Name -->
-  <div>
-    <Input
-      id="contact-name"
-      label="Full Name"
-      placeholder="Enter contact name"
-      bind:value={name}
-      error={!!errors.name}
-      errorText={errors.name}
-      disabled={loading}
-      maxLength={100}
-      showCount
-    />
-  </div>
+<form class={cn('flex flex-col gap-5', className)} onsubmit={handleSubmit} novalidate>
+	<Input
+		id="contact-name"
+		label="Name"
+		placeholder="Citra Lestari"
+		autocomplete="off"
+		bind:value={name}
+		error={!!errors.name}
+		errorText={errors.name}
+		disabled={loading}
+		maxLength={100}
+	/>
 
-  <!-- Phone Number -->
-  <div>
-    <PhoneInput
-      id="contact-phone"
-      label="WhatsApp Number"
-      placeholder="8123456789"
-      bind:value={phone}
-      error={errors.phone}
-      disabled={loading}
-    />
-  </div>
+	<PhoneInput id="contact-phone" label="WhatsApp number" bind:value={phone} error={errors.phone} disabled={loading} helperText="Reminders and payment links go here." />
 
-  <!-- Groups (Multiple Selection) -->
-  {#if groups && groups.length > 0}
-    <div>
-      <p id="contact-groups-label" class="block text-sm font-semibold text-[#584140] mb-2">
-        Groups {selectedGroupIds.length > 0 ? `(${selectedGroupIds.length})` : ''}
-      </p>
+	{#if groups.length > 0}
+		<fieldset>
+			<legend class="mb-2 text-sm font-semibold text-ink">Group</legend>
+			<div class="flex flex-wrap gap-2">
+				{#each groupOptions as g (g.group_id)}
+					{@const on = groupId === g.group_id}
+					<button
+						type="button"
+						aria-pressed={on}
+						disabled={loading}
+						onclick={() => (groupId = g.group_id)}
+						class={cn(
+							'inline-flex h-9 items-center gap-2 rounded-pill px-3.5 text-sm font-semibold transition-colors duration-150',
+							on ? 'bg-ink text-card' : 'bg-card text-ink shadow-[inset_0_0_0_1.5px_var(--color-hairline)] hover:bg-fog'
+						)}
+					>
+						{#if on}
+							<Check size={14} strokeWidth={3} aria-hidden="true" />
+						{:else if g.color}
+							<span class="size-2 rounded-full" style:background-color={g.color} aria-hidden="true"></span>
+						{/if}
+						{g.name}
+					</button>
+				{/each}
+			</div>
+		</fieldset>
+	{/if}
 
-      <!-- Group Chips Grid -->
-      <div class="flex flex-wrap gap-2" role="group" aria-labelledby="contact-groups-label">
-        {#each groups as group (group.group_id)}
-          {@const isSelected = selectedGroupIds.includes(group.group_id)}
-          <button
-            type="button"
-            onclick={() => {
-              if (isSelected) {
-                selectedGroupIds = selectedGroupIds.filter(id => id !== group.group_id);
-              } else {
-                selectedGroupIds = [...selectedGroupIds, group.group_id];
-              }
-            }}
-            class={cn(
-              'inline-flex items-center gap-2 px-3 py-2 rounded-2xl text-sm font-medium bg-[#f5dddb] transition-all duration-150',
-              'hover:scale-105 active:scale-95',
-              isSelected
-                ? 'bg-opacity-100'
-                : 'bg-[#fff0ef] hover:bg-[#f5dddb]'
-            )}
-            style={isSelected
-              ? `background-color: ${group.color}; color: white;`
-              : `background-color: ${group.color}15; color: ${group.color};`}
-          >
-            {#if isSelected}
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
-              </svg>
-            {/if}
-            <span>{group.name}</span>
-          </button>
-        {/each}
-      </div>
+	<div class="flex flex-col gap-1.5">
+		<label for="contact-notes" class="text-sm font-semibold text-ink">Note <span class="font-normal text-ink-soft">(optional)</span></label>
+		<textarea
+			id="contact-notes"
+			bind:value={notes}
+			disabled={loading}
+			placeholder="Prefers BCA transfers"
+			rows="2"
+			maxlength={500}
+			class="resize-none rounded-field bg-card px-4 py-3 text-[15px] text-ink shadow-[inset_0_0_0_1.5px_var(--color-hairline)] placeholder:text-ink-soft/70 focus:shadow-[inset_0_0_0_2px_var(--color-steel)] focus:outline-none disabled:opacity-60"
+		></textarea>
+		<p class="text-[13px] text-ink-soft">Only you see this.</p>
+	</div>
 
-      {#if selectedGroupIds.length === 0}
-        <p class="text-xs text-[#584140]/60 mt-1">
-          Select groups to organize this contact
-        </p>
-      {:else}
-        <p class="text-xs text-[#584140] mt-1">
-          {selectedGroupIds.length} group{selectedGroupIds.length === 1 ? '' : 's'} selected
-        </p>
-      {/if}
-    </div>
-  {/if}
-
-  <!-- Notes -->
-  <div>
-    <label
-      for="contact-notes"
-      class="block text-sm font-semibold text-[#584140] mb-2"
-    >
-      Notes (Optional)
-    </label>
-    <textarea
-      id="contact-notes"
-      bind:value={notes}
-      disabled={loading}
-      placeholder="Add notes about this contact..."
-      rows="3"
-      maxlength={500}
-      class="w-full px-4 py-3 bg-[#f5dddb] rounded-2xl font-medium text-[15px] text-[#251818] focus:ring-2 focus:ring-[#ae2f34]/30 transition-all duration-150 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed resize-none placeholder:text-[#584140]/50"
-    ></textarea>
-    {#if notes}
-      <div class="text-right text-xs text-[#584140]/60 mt-1">
-        {notes.length}/500
-      </div>
-    {/if}
-  </div>
-
-  <!-- Actions -->
-  <div class="flex gap-3 pt-2">
-    {#if oncancel}
-      <Button
-        type="button"
-        variant="secondary"
-        onclick={handleCancel}
-        disabled={loading}
-        class="flex-1"
-      >
-        Cancel
-      </Button>
-    {/if}
-
-    <Button
-      type="submit"
-      variant="primary"
-      loading={loading}
-      class="flex-1"
-    >
-      {submitText}
-    </Button>
-  </div>
+	<div class="flex gap-3 pt-1">
+		{#if oncancel}
+			<Button type="button" variant="ghost" onclick={oncancel} disabled={loading} class="flex-1">Cancel</Button>
+		{/if}
+		<Button type="submit" variant="ink" {loading} class="flex-1">{submitText}</Button>
+	</div>
 </form>

@@ -1,292 +1,116 @@
 <script lang="ts">
-  import { goto, invalidateAll } from '$app/navigation';
-  import { formatIDR, formatRelativeTime } from '$lib/utils/format';
-  import { Plus, RefreshCw, Inbox, Clock, CheckCircle2, XCircle } from 'lucide-svelte';
-  import type { PageData } from './$types';
+	import { invalidateAll } from '$app/navigation';
+	import { page } from '$app/state';
+	import Button from '$lib/components/ui/Button.svelte';
+	import Card from '$lib/components/ui/Card.svelte';
+	import EmptyState from '$lib/components/ui/EmptyState.svelte';
+	import Seo from '$lib/components/Seo.svelte';
+	import SessionRow from '$lib/components/session/SessionRow.svelte';
+	import { ArtReceipt, PaidStamp } from '$lib/components/art';
+	import { formatIDR } from '$lib/utils/format';
+	import { getFirstName } from '$lib/utils/avatar';
+	import { needsAction } from '$lib/services/sessions-list';
+	import { Plus, RefreshCw, ArrowRight, CloudOff } from 'lucide-svelte';
+	import type { PageData } from './$types';
 
-  interface Props {
-    data: PageData;
-  }
+	let { data }: { data: PageData } = $props();
+	let retrying = $state(false);
 
-  let { data }: Props = $props();
+	const sessions = $derived(Array.isArray(data.sessions) ? data.sessions : []);
+	const todo = $derived(needsAction(sessions));
+	const settled = $derived(sessions.filter((s) => s.status === 'completed').slice(0, 3));
+	const owed = $derived(data.stats?.total_pending ?? 0);
+	const people = $derived(data.stats?.pending_payments ?? 0);
+	const openCount = $derived(data.stats?.active_sessions ?? todo.length);
 
-  let activeFilter = $state<'all' | 'active' | 'completed' | 'cancelled'>('all');
-  let isRetrying = $state(false);
+	const user = $derived(page.data.user as { full_name?: string; whatsapp_number?: string } | null);
+	const hour = new Date().getHours();
+	const greeting = hour < 5 ? 'Hi' : hour < 11 ? 'Good morning' : hour < 15 ? 'Good afternoon' : hour < 19 ? 'Good evening' : 'Evening';
 
-  const filteredSessions = $derived.by(() => {
-    if (!data.sessions || !Array.isArray(data.sessions)) return [];
-    if (activeFilter === 'all') return data.sessions;
-    return data.sessions.filter((s) => s.status === activeFilter);
-  });
-
-  const filterCounts = $derived.by(() => {
-    if (!data.sessions || !Array.isArray(data.sessions)) {
-      return { all: 0, active: 0, completed: 0, cancelled: 0 };
-    }
-    return {
-      all: data.sessions.length,
-      active: data.sessions.filter((s) => s.status === 'active').length,
-      completed: data.sessions.filter((s) => s.status === 'completed').length,
-      cancelled: data.sessions.filter((s) => s.status === 'cancelled').length
-    };
-  });
-
-  function getStatusColor(status: string): string {
-    if (status === 'active') return 'text-[#92400E] bg-[#F59E0B]/15';
-    if (status === 'completed') return 'text-[#047857] bg-[#10B981]/15';
-    return 'text-[#991B1B] bg-[#EF4444]/15';
-  }
-
-  function getStatusIcon(status: string) {
-    if (status === 'active') return Clock;
-    if (status === 'completed') return CheckCircle2;
-    return XCircle;
-  }
-
-  function getProgressWidth(session: { paid_count?: number; participant_count?: number }): number {
-    const total = session.participant_count ?? 0;
-    const paid = session.paid_count ?? 0;
-    if (total <= 0) return 0;
-    return Math.round((paid / total) * 100);
-  }
-
-  function handleCardClick(sessionId: string) {
-    goto(`/sessions/${sessionId}`);
-  }
-
-  function handleCreateSession() {
-    goto('/sessions/new');
-  }
-
-  async function handleRetry() {
-    isRetrying = true;
-    try {
-      await invalidateAll();
-    } finally {
-      isRetrying = false;
-    }
-  }
+	async function retry() {
+		retrying = true;
+		try {
+			await invalidateAll();
+		} finally {
+			retrying = false;
+		}
+	}
 </script>
 
-<div class="min-h-screen">
-  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <!-- Header -->
-    <header class="flex items-center justify-between mb-8">
-      <div>
-        <h1 class="text-2xl font-semibold text-[#251818] tracking-tight">Sessions</h1>
-        <p class="text-sm text-[#584140] mt-1">Manage your bill splitting sessions</p>
-      </div>
-      <button
-        onclick={handleCreateSession}
-        class="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-br from-[#ae2f34] to-[#FF6B6B] text-white text-sm font-medium rounded-2xl hover:opacity-95 active:scale-[0.98] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fff8f7]"
-      >
-        <Plus class="w-4 h-4" />
-        <span class="hidden sm:inline">New Session</span>
-      </button>
-    </header>
+<Seo title="Home" noindex />
 
-    {#if data.error}
-      <!-- Error State -->
-      <div class="flex flex-col items-center justify-center py-20">
-        <div class="w-12 h-12 bg-[#EF4444]/15 rounded-full flex items-center justify-center mb-4">
-          <XCircle class="w-6 h-6 text-[#991B1B]" />
-        </div>
-        <h2 class="text-lg font-medium text-[#251818] mb-2">Failed to load</h2>
-        <p class="text-sm text-[#584140] text-center max-w-sm mb-6">{data.error}</p>
-        <button
-          onclick={handleRetry}
-          disabled={isRetrying}
-          class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#251818] bg-white rounded-2xl shadow-[0_1px_3px_rgba(37,24,24,0.04)] hover:bg-[#fff0ef] transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6]"
-        >
-          <RefreshCw class={isRetrying ? 'w-4 h-4 animate-spin' : 'w-4 h-4'} />
-          Try again
-        </button>
-      </div>
-    {:else}
-      <!-- Stats Overview -->
-      {#if data.stats}
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-          <!-- Active -->
-          <div class="bg-white rounded-3xl p-5 shadow-[0_1px_3px_rgba(37,24,24,0.04)]">
-            <div class="flex items-center gap-3">
-              <div class="w-10 h-10 bg-[#F59E0B]/15 rounded-2xl flex items-center justify-center">
-                <Clock class="w-5 h-5 text-[#92400E]" />
-              </div>
-              <div class="flex-1">
-                <p class="text-sm text-[#584140]">Active</p>
-                <p class="text-2xl font-semibold text-[#251818]">{data.stats.active_sessions}</p>
-              </div>
-            </div>
-          </div>
+<div class="mx-auto max-w-4xl px-4 pt-6 pb-10 sm:px-6 md:pt-10">
+	<header class="flex items-center justify-between gap-4">
+		<p class="text-[15px] font-semibold text-ink-soft">
+			{greeting}{user?.full_name ? `, ${getFirstName(user.full_name, user.whatsapp_number)}` : ''}
+		</p>
+		<Button href="/sessions/new" leftIcon={Plus} size="sm" class="hidden md:inline-flex">New session</Button>
+	</header>
 
-          <!-- Completed -->
-          <div class="bg-white rounded-3xl p-5 shadow-[0_1px_3px_rgba(37,24,24,0.04)]">
-            <div class="flex items-center gap-3">
-              <div class="w-10 h-10 bg-[#10B981]/15 rounded-2xl flex items-center justify-center">
-                <CheckCircle2 class="w-5 h-5 text-[#047857]" />
-              </div>
-              <div class="flex-1">
-                <p class="text-sm text-[#584140]">Completed</p>
-                <p class="text-2xl font-semibold text-[#251818]">{data.stats.completed_sessions}</p>
-              </div>
-            </div>
-          </div>
+	{#if data.error}
+		<EmptyState
+			class="mt-8"
+			icon={CloudOff}
+			title="We couldn't load your sessions"
+			description="{data.error} Check your connection and try again."
+			action={{ label: retrying ? 'Trying…' : 'Try again', onclick: retry, icon: RefreshCw }}
+		/>
+	{:else if sessions.length === 0}
+		<section class="mt-6">
+			<h1 class="text-poster text-[clamp(2.75rem,8vw,4.5rem)]">Paid for something? <span class="text-coral">Start here.</span></h1>
+			<p class="mt-4 max-w-[44ch] text-lg text-ink-soft">
+				Add the people and what they had. Letpai sends each of them their share on WhatsApp.
+			</p>
+			<EmptyState
+				class="mt-8"
+				title="No sessions yet"
+				description="Your first one takes about a minute. Name it after the night: dinner, a trip, groceries."
+				action={{ label: 'New session', href: '/sessions/new', icon: Plus }}
+			>
+				{#snippet art()}<ArtReceipt />{/snippet}
+			</EmptyState>
+		</section>
+	{:else}
+		<!-- The one number the host opens the app for. -->
+		<section class="mt-4" aria-labelledby="owed-label">
+			<p id="owed-label" class="text-eyebrow">Still owed to you</p>
+			{#if owed > 0}
+				<p class="text-amount mt-2 text-[clamp(3rem,11vw,5.5rem)] leading-[0.9] tracking-[-0.045em]">{formatIDR(owed)}</p>
+				<p class="mt-3 text-[17px] text-ink-soft">
+					{people} {people === 1 ? 'payment' : 'payments'} open across {openCount} {openCount === 1 ? 'session' : 'sessions'}
+				</p>
+			{:else}
+				<div class="mt-3 flex flex-wrap items-center gap-4">
+					<p class="text-amount text-[clamp(3rem,11vw,5.5rem)] leading-[0.9] tracking-[-0.045em]">{formatIDR(0)}</p>
+					<PaidStamp label="All settled" animate />
+				</div>
+				<p class="mt-3 text-[17px] text-ink-soft">Nobody owes you anything right now.</p>
+			{/if}
+		</section>
 
-          <!-- Pending -->
-          <div class="bg-white rounded-3xl p-5 shadow-[0_1px_3px_rgba(37,24,24,0.04)]">
-            <div class="flex items-center gap-3">
-              <div class="w-10 h-10 bg-[#EF4444]/15 rounded-2xl flex items-center justify-center">
-                <svg class="w-5 h-5 text-[#991B1B]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div class="flex-1">
-                <p class="text-sm text-[#584140]">Pending</p>
-                <p class="text-2xl font-semibold text-[#251818]">{data.stats.pending_payments}</p>
-                {#if data.stats.total_pending > 0}
-                  <p class="text-xs text-[#584140]">{formatIDR(data.stats.total_pending)}</p>
-                {/if}
-              </div>
-            </div>
-          </div>
-        </div>
-      {/if}
+		{#if todo.length > 0}
+			<section class="mt-10" aria-labelledby="todo-h">
+				<div class="mb-3 flex items-baseline justify-between px-1">
+					<h2 id="todo-h" class="text-heading text-xl">Needs you</h2>
+					<span class="text-sm text-ink-soft">Most unpaid first</span>
+				</div>
+				<Card padding="none" class="divide-y divide-mist overflow-hidden">
+					{#each todo.slice(0, 6) as s (s.session_id)}<SessionRow session={s} />{/each}
+				</Card>
+			</section>
+		{/if}
 
-      <!-- Filter Tabs -->
-      <div class="flex items-center gap-1 mb-6 overflow-x-auto">
-        <button
-          onclick={() => activeFilter = 'all'}
-          class="px-4 py-3 text-sm font-medium rounded-xl transition-colors min-h-[44px]"
-          class:bg-[#251818]={activeFilter === 'all'}
-          class:text-white={activeFilter === 'all'}
-          class:text-[#584140]={activeFilter !== 'all'}
-          class:hover:bg-[#fff0ef]={activeFilter !== 'all'}
-        >
-          All <span class="ml-1.5 opacity-60">{filterCounts.all}</span>
-        </button>
-        <button
-          onclick={() => activeFilter = 'active'}
-          class="px-4 py-3 text-sm font-medium rounded-xl transition-colors min-h-[44px]"
-          class:bg-[#251818]={activeFilter === 'active'}
-          class:text-white={activeFilter === 'active'}
-          class:text-[#584140]={activeFilter !== 'active'}
-          class:hover:bg-[#fff0ef]={activeFilter !== 'active'}
-        >
-          Active <span class="ml-1.5 opacity-60">{filterCounts.active}</span>
-        </button>
-        <button
-          onclick={() => activeFilter = 'completed'}
-          class="px-4 py-3 text-sm font-medium rounded-xl transition-colors min-h-[44px]"
-          class:bg-[#251818]={activeFilter === 'completed'}
-          class:text-white={activeFilter === 'completed'}
-          class:text-[#584140]={activeFilter !== 'completed'}
-          class:hover:bg-[#fff0ef]={activeFilter !== 'completed'}
-        >
-          Completed <span class="ml-1.5 opacity-60">{filterCounts.completed}</span>
-        </button>
-        <button
-          onclick={() => activeFilter = 'cancelled'}
-          class="px-4 py-3 text-sm font-medium rounded-xl transition-colors min-h-[44px]"
-          class:bg-[#251818]={activeFilter === 'cancelled'}
-          class:text-white={activeFilter === 'cancelled'}
-          class:text-[#584140]={activeFilter !== 'cancelled'}
-          class:hover:bg-[#fff0ef]={activeFilter !== 'cancelled'}
-        >
-          Cancelled <span class="ml-1.5 opacity-60">{filterCounts.cancelled}</span>
-        </button>
-      </div>
+		{#if settled.length > 0}
+			<section class="mt-10" aria-labelledby="settled-h">
+				<h2 id="settled-h" class="text-heading mb-3 px-1 text-xl">Recently settled</h2>
+				<Card padding="none" class="divide-y divide-mist overflow-hidden">
+					{#each settled as s (s.session_id)}<SessionRow session={s} />{/each}
+				</Card>
+			</section>
+		{/if}
 
-      <!-- Sessions List -->
-      {#if filteredSessions.length === 0}
-        <!-- Empty State -->
-        <div class="flex flex-col items-center justify-center py-20">
-          <div class="w-14 h-14 bg-[#fff0ef] rounded-full flex items-center justify-center mb-4">
-            <Inbox class="w-7 h-7 text-[#584140]" />
-          </div>
-          <h2 class="text-lg font-medium text-[#251818] mb-1">No sessions yet</h2>
-          <p class="text-sm text-[#584140] mb-6">Create your first session to start splitting bills</p>
-          <button
-            onclick={handleCreateSession}
-            class="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-br from-[#ae2f34] to-[#FF6B6B] text-white text-sm font-medium rounded-2xl hover:opacity-95 active:scale-[0.98] transition-all duration-150"
-          >
-            <Plus class="w-4 h-4" />
-            Create session
-          </button>
-        </div>
-      {:else}
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {#each filteredSessions as session (session.session_id)}
-            {@const StatusIcon = getStatusIcon(session.status)}
-            <div
-              role="button"
-              tabindex="0"
-              onclick={() => handleCardClick(session.session_id)}
-              onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleCardClick(session.session_id); } }}
-              class="bg-white rounded-2xl p-5 cursor-pointer hover:bg-[#fff0ef] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14B8A6] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fff8f7]"
-            >
-              <!-- Status & Time -->
-              <div class="flex items-center justify-between mb-3">
-                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full {getStatusColor(session.status)}">
-                  <StatusIcon class="w-3.5 h-3.5" />
-                  {session.status}
-                </span>
-                <span class="text-xs text-[#584140]">{formatRelativeTime(session.created_at)}</span>
-              </div>
-
-              <!-- Name -->
-              <h3 class="text-base font-semibold text-[#251818] mb-1 line-clamp-1">
-                {session.title}
-              </h3>
-
-              <!-- Description -->
-              {#if session.description}
-                <p class="text-sm text-[#584140] mb-4 line-clamp-2">
-                  {session.description}
-                </p>
-              {/if}
-
-              <!-- Amount -->
-              <div class="text-xl font-semibold text-[#251818] mb-4">
-                {formatIDR(session.total_amount)}
-              </div>
-
-              <!-- Live Split tracker: gradient (tertiary purple → secondary teal)
-                   marks the paid portion; the remainder is a softer surface tier
-                   so the split between paid and pending reads clearly. -->
-              <div class="space-y-2">
-                <div class="h-2 bg-[#f5dddb] rounded-full overflow-hidden relative">
-                  <div
-                    class="h-full rounded-full transition-all duration-300 bg-[#14B8A6]"
-                    style="width: {getProgressWidth(session)}%"
-                  ></div>
-                </div>
-                <div class="flex items-center justify-between text-xs text-[#584140]">
-                  <span>{session.paid_count ?? 0} of {session.participant_count ?? 0} paid</span>
-                  <span class="font-medium text-[#251818]">{getProgressWidth(session)}%</span>
-                </div>
-              </div>
-            </div>
-          {/each}
-        </div>
-      {/if}
-    {/if}
-  </div>
+		<div class="mt-8 flex justify-center">
+			<Button href="/sessions" variant="secondary" rightIcon={ArrowRight}>All {sessions.length} sessions</Button>
+		</div>
+	{/if}
 </div>
-
-<style>
-  .line-clamp-1 {
-    display: -webkit-box;
-    -webkit-line-clamp: 1;
-    line-clamp: 1;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-
-  .line-clamp-2 {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-</style>

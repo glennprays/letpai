@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Session A · Poster column</title>
+<link rel="stylesheet" href="shared.css" />
+<style>
+	.top { position: sticky; top: 12px; z-index: 3; width: min(720px, calc(100% - 24px)); margin: 12px auto 0; display: flex; align-items: center; justify-content: space-between; padding: 6px 6px 6px 16px; background: rgba(255,255,255,.88); backdrop-filter: blur(12px); border-radius: 24px; box-shadow: var(--shadow-float); }
+	main { max-width: 680px; margin: 0 auto; padding: 40px 20px 96px; }
+	.big { text-align: center; }
+	.big .amount { font-size: clamp(56px, 13vw, 104px); line-height: .85; letter-spacing: -0.06em; display: block; }
+	.big h1 { font: 600 17px/1.4 var(--ui); color: var(--ink-soft); margin: 14px auto 0; max-width: 40ch; }
+	.ring { display: flex; justify-content: center; gap: 6px; margin: 24px 0 8px; flex-wrap: wrap; }
+	.ring .avatar { width: 34px; height: 34px; font-size: 11px; }
+	.ring .avatar.p { background: var(--ink); color: #fff; }
+	.ring .avatar.s { box-shadow: inset 0 0 0 2px var(--review); background: var(--review-tint); color: var(--review); }
+	.ring .avatar.r { box-shadow: inset 0 0 0 2px var(--rejected); background: var(--rejected-tint); color: var(--rejected); }
+	h2 { font: 700 26px/1 var(--display); letter-spacing: -0.03em; margin: 40px 0 12px; }
+	.row { display: grid; grid-template-columns: 36px minmax(0,1fr) auto; gap: 4px 12px; align-items: center; padding: 14px 18px; }
+	.row + .row { border-top: 1px solid var(--mist); }
+	.row .n { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+	.row .m { grid-column: 2; font-size: 13px; color: var(--ink-soft); }
+	.row .btns { grid-column: 2 / -1; display: flex; gap: 8px; margin-top: 8px; }
+	.amt { font-family: var(--display); font-variant-numeric: tabular-nums; font-weight: 600; }
+	.receipt { padding: 22px 22px 32px; margin-top: 12px; filter: drop-shadow(0 1px 3px rgba(29,36,66,.08)); }
+	.line { display: flex; justify-content: space-between; font-size: 14px; padding: 4px 0; }
+</style>
+</head>
+<body>
+<header class="top"><span style="display:flex;align-items:center;gap:6px;font-weight:600"><svg class="icon"><use href="#i-back"/></svg>Sessions</span><button class="pill-btn ink sm"><svg class="icon"><use href="#i-bell"/></svg>Remind 5</button></header>
+<main>
+	<section class="big">
+		<span class="amount">Rp 726.465</span>
+		<div class="eyebrow" style="margin-top:12px">still out of Rp 1.176.915</div>
+		<h1>Friday dinner at Sate Khas Senayan with the design team and their plus-ones</h1>
+		<div class="ring">
+			<span class="avatar p">AK</span><span class="avatar s">BS</span><span class="avatar">CW</span><span class="avatar r">DA</span><span class="avatar p">EP</span><span class="avatar">FN</span><span class="avatar s">GR</span><span class="avatar p">HL</span><span class="avatar">IW</span><span class="avatar p">JS</span><span class="avatar">KD</span><span class="avatar p">LH</span>
+		</div>
+		<div class="muted" style="font-size:14px">5 paid · 2 to check · 1 sent back · 4 not paid</div>
+	</section>
+
+	<h2>Check these proofs</h2>
+	<div class="card">
+		<div class="row"><span class="avatar">BS</span><span class="n">Bima Santoso</span><span class="amt">Rp 177.870</span><span class="m">Tap to view the screenshot</span><div class="btns"><button class="pill-btn ink sm">Approve</button><button class="pill-btn ghost sm">Send back</button></div></div>
+		<div class="row"><span class="avatar">GR</span><span class="n">Gita Ramadhani</span><span class="amt">Rp 68.145</span><span class="m">Tap to view the screenshot</span><div class="btns"><button class="pill-btn ink sm">Approve</button><button class="pill-btn ghost sm">Send back</button></div></div>
+	</div>
+
+	<h2>Still owes</h2>
+	<div class="card">
+		<div class="row"><span class="avatar">CW</span><span class="n">Citra Wulandari Ningsih Kartika</span><span class="amt">Rp 177.870</span><span class="m">Reminded 1 day ago</span></div>
+		<div class="row"><span class="avatar">DA</span><span class="n">Dimas Arya</span><span class="amt">Rp 98.145</span><span class="m">Sent back · waiting for a new screenshot</span></div>
+		<div class="row"><span class="avatar">IW</span><span class="n">Indra Wijaya</span><span class="amt">Rp 68.145</span><span class="m" style="color:var(--rejected); font-weight:600">Message not delivered</span><div class="btns"><button class="pill-btn ink sm">Send again</button></div></div>
+		<div class="row"><span class="avatar">FN</span><span class="n">Fajar Nugroho</span><span class="amt">Rp 68.145</span><span class="m">Message retrying</span></div>
+		<div class="row"><span class="avatar">KD</span><span class="n">Kirana Dewi</span><span class="amt">Rp 68.145</span><span class="m">Can remind again in 6 h</span></div>
+	</div>
+
+	<h2>The bill</h2>
+	<div class="receipt">
+		<div class="line"><span>Sate kambing ×6</span><span>540.000</span></div>
+		<div class="line"><span>Es teh manis jumbo</span><span>168.000</span></div>
+		<div class="line"><span>Sop buntut · 3 people</span><span>285.000</span></div>
+		<div class="line"><span>Parking · Dimas</span><span>30.000</span></div>
+		<hr class="dotted" />
+		<div class="line" style="font-weight:700"><span>Total with service and tax</span><span class="amt">Rp 1.176.915</span></div>
+	</div>
+</main>
+<script src="art.js"></script>
+</body>
+</html>

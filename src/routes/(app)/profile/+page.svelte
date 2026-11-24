@@ -1,341 +1,141 @@
 <script lang="ts">
-  import { goto } from '$app/navigation';
-  import { auth } from '$lib/stores/auth';
-  import { updateProfile } from '$lib/services/auth';
-  import { getAvatarWithFallback, getDisplayName } from '$lib/utils/avatar';
-  import { ArrowLeft } from 'lucide-svelte';
-  import Input from '$lib/components/ui/Input.svelte';
-  import Button from '$lib/components/ui/Button.svelte';
+	import { goto } from '$app/navigation';
+	import { page } from '$app/state';
+	import { untrack } from 'svelte';
+	import { KeyRound, LogOut, Settings } from 'lucide-svelte';
+	import Seo from '$lib/components/Seo.svelte';
+	import Avatar from '$lib/components/ui/Avatar.svelte';
+	import Input from '$lib/components/ui/Input.svelte';
+	import Button from '$lib/components/ui/Button.svelte';
+	import AccountGroup from '$lib/components/account/AccountGroup.svelte';
+	import AccountRow from '$lib/components/account/AccountRow.svelte';
+	import { auth } from '$lib/stores/auth';
+	import { updateProfile } from '$lib/services/auth';
+	import { toUserMessage } from '$lib/services/api';
+	import { signOut } from '$lib/services/sign-out';
+	import { toast } from '$lib/stores/toast';
+	import { formatWhatsappDisplay } from '$lib/utils/phone';
 
-  let isReady = $state(false);
-  let initialized = $state(false);
+	// The (app) layout sends people here until they have a name, so the page
+	// has two jobs: a one-field welcome step, and the everyday profile.
+	// The store fills in on the client; layout data has the cookie user during
+	// SSR, so the first paint already shows the right mode.
+	const user = $derived($auth.user ?? (page.data.user as typeof $auth.user));
+	const initialName = untrack(() => user?.full_name ?? '');
+	let saved = $state(initialName);
+	let name = $state(initialName);
+	const welcome = !initialName;
 
-  let fullName = $state('');
-  let originalFullName = $state('');
-  let isSaving = $state(false);
-  let error = $state('');
+	let saving = $state(false);
+	let error = $state('');
 
-  $effect(() => {
-    if (!initialized && $auth.user?.user_id) {
-      const newName = $auth.user.full_name || '';
-      fullName = newName;
-      originalFullName = newName;
-      isReady = true;
-      initialized = true;
-    }
-  });
+	const changed = $derived(name.trim() !== saved);
 
-  function hasChanges(): boolean {
-    return fullName !== originalFullName;
-  }
-
-  function handleCancel() {
-    fullName = originalFullName;
-    error = '';
-  }
-
-  async function handleSave() {
-    if (!fullName.trim()) {
-      error = 'Name is required';
-      return;
-    }
-
-    if (fullName.trim().length > 100) {
-      error = 'Name must be less than 100 characters';
-      return;
-    }
-
-    isSaving = true;
-    error = '';
-
-    const wasFirstCompletion = originalFullName === '';
-    try {
-      await updateProfile({ full_name: fullName.trim() });
-      originalFullName = fullName;
-      if (wasFirstCompletion) {
-        await goto('/dashboard');
-        return;
-      }
-    } catch (err) {
-      error = err instanceof Error ? err.message : 'Failed to update profile';
-    } finally {
-      isSaving = false;
-    }
-  }
-
-  function goBack() {
-    goto('/dashboard');
-  }
+	async function save(e: SubmitEvent) {
+		e.preventDefault();
+		const next = name.trim();
+		if (next.length < 2) {
+			error = next ? 'Use at least 2 characters.' : 'Enter the name friends know you by.';
+			return;
+		}
+		saving = true;
+		error = '';
+		try {
+			const res = await updateProfile({ full_name: next });
+			if (res && 'success' in res && !res.success) throw new Error('message' in res ? String(res.message) : '');
+			saved = next;
+			name = next;
+			if (welcome) {
+				await goto('/dashboard', { invalidateAll: true });
+				return;
+			}
+			toast.success('Name updated.');
+		} catch (err) {
+			error = toUserMessage(err, "We couldn't save your name. Try again.");
+		} finally {
+			saving = false;
+		}
+	}
 </script>
 
-<div class="profile-container">
-  <!-- Back Button -->
-  <button class="back-button" onclick={goBack}>
-    <ArrowLeft size={20} />
-    <span>Back</span>
-  </button>
+<Seo title={welcome ? 'Welcome' : 'Profile'} noindex />
 
-  <!-- Profile Card -->
-  <div class="profile-card">
-    <h1 class="profile-title">Profile</h1>
+{#if welcome}
+	<div class="mx-auto flex max-w-md flex-col gap-6 px-4 pt-10 pb-10 sm:px-6 md:pt-16">
+		<div>
+			<p class="text-eyebrow text-coral-ink">One last thing</p>
+			<h1 class="text-poster mt-2 text-4xl sm:text-5xl">What do friends call you?</h1>
+			<p class="mt-3 text-ink-soft">Your name goes on every WhatsApp message and payment page, so people know who's asking.</p>
+		</div>
+		<form class="flex flex-col gap-4 rounded-card bg-card p-5 shadow-raised sm:p-6" onsubmit={save} novalidate>
+			<Input
+				id="full_name"
+				name="full_name"
+				label="Your name"
+				placeholder="Raka Pratama"
+				autocomplete="name"
+				bind:value={name}
+				error={!!error}
+				errorText={error}
+				maxLength={100}
+				disabled={saving}
+			/>
+			<Button type="submit" variant="ink" loading={saving} class="w-full">Continue</Button>
+		</form>
+	</div>
+{:else}
+	<div class="mx-auto flex max-w-2xl flex-col gap-8 px-4 pt-6 pb-10 sm:px-6 md:pt-10">
+		<h1 class="text-poster text-5xl sm:text-6xl">Profile</h1>
 
-    {#if !fullName && isReady}
-      <div class="profile-warning">
-        <p>Please complete your profile to continue</p>
-      </div>
-    {/if}
+		{#if user}
+			<section class="flex items-center gap-4 rounded-sheet bg-mist p-5 sm:p-6" aria-label="Signed in as">
+				<Avatar size="xl" src={user.avatar_url} fullName={saved || user.full_name} phoneNumber={user.whatsapp_number} identifier={user.user_id} />
+				<div class="min-w-0">
+					<p class="text-heading truncate text-2xl">{saved || user.full_name}</p>
+					<p class="mt-0.5 text-ink-soft tabular-nums">{formatWhatsappDisplay(user.whatsapp_number)}</p>
+				</div>
+			</section>
 
-    <!-- Avatar -->
-    <div class="avatar-section">
-      {#if isReady && $auth.user}
-        <img
-          src={getAvatarWithFallback(
-            $auth.user.avatar_url,
-            $auth.user.full_name,
-            $auth.user.whatsapp_number,
-            $auth.user.user_id,
-            100
-          )}
-          alt={getDisplayName($auth.user.full_name, $auth.user.whatsapp_number)}
-          class="avatar"
-        />
-      {:else}
-        <!-- Loading placeholder -->
-        <div class="avatar avatar-placeholder"></div>
-      {/if}
-    </div>
+			<form class="flex flex-col gap-4 rounded-card bg-card p-5 shadow-raised sm:p-6" onsubmit={save} novalidate>
+				<Input
+					id="full_name"
+					name="full_name"
+					label="Name"
+					autocomplete="name"
+					bind:value={name}
+					error={!!error}
+					errorText={error}
+					helperText="Shown to friends in WhatsApp messages and on payment pages."
+					maxLength={100}
+					disabled={saving}
+				/>
+				<div class="flex flex-col gap-1.5">
+					<span class="text-sm font-semibold text-ink">WhatsApp number</span>
+					<p class="flex h-11 items-center rounded-field bg-fog px-4 font-medium text-ink-soft tabular-nums">{formatWhatsappDisplay(user.whatsapp_number)}</p>
+					<p class="text-[13px] text-ink-soft">This is how you sign in, so it can't be changed here.</p>
+				</div>
+				{#if changed}
+					<div class="flex gap-2 sm:justify-end">
+						<Button
+							type="button"
+							variant="ghost"
+							class="flex-1 sm:flex-none"
+							disabled={saving}
+							onclick={() => {
+								name = saved;
+								error = '';
+							}}>Undo</Button
+						>
+						<Button type="submit" variant="ink" class="flex-1 sm:flex-none" loading={saving}>Save name</Button>
+					</div>
+				{/if}
+			</form>
+		{/if}
 
-    <!-- Form -->
-    {#if isReady && $auth.user}
-      <form onsubmit={(e) => { e.preventDefault(); handleSave(); }}>
-        <!-- Full Name -->
-        <div class="field-group">
-          <Input
-            id="full_name"
-            name="full_name"
-            type="text"
-            label="Full Name"
-            bind:value={fullName}
-            placeholder="Enter your full name"
-            disabled={isSaving}
-            error={!!error}
-            errorText={error}
-            maxLength={100}
-            showCount={true}
-          />
-        </div>
-
-        <!-- Phone Number (Read-only) -->
-        <div class="field-group">
-          <label for="phone" class="field-label">WhatsApp Number</label>
-          <input
-            id="phone"
-            type="text"
-            value={$auth.user.whatsapp_number}
-            disabled
-            class="phone-display"
-          />
-          <p class="field-helper">Your phone number cannot be changed</p>
-        </div>
-
-        <!-- Action Buttons -->
-        <div class="button-group">
-          <Button
-            type="button"
-            variant="ghost"
-            onclick={handleCancel}
-            disabled={isSaving || !hasChanges()}
-            class="!bg-[#f5dddb] !text-[#584140] hover:!bg-[#efd0ce]"
-          >
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            variant="primary"
-            loading={isSaving}
-            disabled={!hasChanges()}
-          >
-            Save Changes
-          </Button>
-        </div>
-      </form>
-    {:else}
-      <!-- Form loading placeholder -->
-      <div class="form-placeholder">
-        <div class="placeholder-field"></div>
-        <div class="placeholder-field"></div>
-        <div class="placeholder-field"></div>
-      </div>
-    {/if}
-  </div>
-</div>
-
-<style>
-  .profile-container {
-    min-height: 100vh;
-    background: #fff8f7;
-    padding: 24px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .back-button {
-    align-self: flex-start;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: none;
-    border: none;
-    color: #584140;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    padding: 8px;
-    margin-bottom: 24px;
-    border-radius: 8px;
-    transition: background-color 0.15s;
-  }
-
-  .back-button:hover {
-    background: #f5dddb;
-  }
-
-  .profile-card {
-    width: 100%;
-    max-width: 480px;
-    background: white;
-    border-radius: 24px;
-    padding: 32px;
-    box-shadow: 0 1px 3px rgba(37, 24, 24, 0.04);
-  }
-
-  .profile-title {
-    font-size: 24px;
-    font-weight: 600;
-    color: #251818;
-    text-align: center;
-    margin-bottom: 24px;
-  }
-
-  .profile-warning {
-    background: #FEF3C7;
-    border-radius: 8px;
-    padding: 12px 16px;
-    margin-bottom: 24px;
-    text-align: center;
-  }
-
-  .profile-warning p {
-    margin: 0;
-    font-size: 14px;
-    color: #92400E;
-    font-weight: 500;
-  }
-
-  .avatar-section {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 32px;
-  }
-
-  .avatar {
-    width: 100px;
-    height: 100px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 3px solid #f5dddb;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  }
-
-  .avatar-placeholder {
-    background: #f5dddb;
-    animation: pulse 1.5s ease-in-out infinite;
-  }
-
-  @keyframes pulse {
-    0%, 100% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0.5;
-    }
-  }
-
-  .field-group {
-    margin-bottom: 24px;
-  }
-
-  .field-label {
-    display: block;
-    font-size: 14px;
-    font-weight: 600;
-    color: #584140;
-    margin-bottom: 8px;
-  }
-
-  .phone-display {
-    width: 100%;
-    padding: 12px 16px;
-    border-radius: 12px;
-    background: #f5dddb;
-    color: #584140;
-    font-size: 15px;
-    font-family: inherit;
-    cursor: not-allowed;
-  }
-
-  .field-helper {
-    font-size: 13px;
-    color: #584140;
-    margin-top: 6px;
-    margin-bottom: 0;
-  }
-
-  .button-group {
-    display: flex;
-    gap: 12px;
-    margin-top: 32px;
-  }
-
-  .button-group :global(button) {
-    flex: 1;
-  }
-
-  .form-placeholder {
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
-  }
-
-  .placeholder-field {
-    height: 48px;
-    background: #f5dddb;
-    border-radius: 12px;
-    animation: pulse 1.5s ease-in-out infinite;
-  }
-
-  @media (max-width: 640px) {
-    .profile-container {
-      padding: 16px;
-    }
-
-    .profile-card {
-      padding: 24px;
-    }
-
-    .profile-title {
-      font-size: 20px;
-      margin-bottom: 20px;
-    }
-
-    .avatar {
-      width: 80px;
-      height: 80px;
-    }
-
-    .button-group {
-      flex-direction: column;
-    }
-  }
-</style>
+		<AccountGroup title="More">
+			<AccountRow icon={Settings} label="Settings" detail="Reminders and currency" href="/settings" />
+			<AccountRow icon={KeyRound} label="Change password" href="/forgot-password" />
+			<AccountRow icon={LogOut} label="Sign out" onclick={signOut} danger />
+		</AccountGroup>
+	</div>
+{/if}

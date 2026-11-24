@@ -1,5 +1,5 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { post } from '$lib/services/api';
+import { ApiError, post, toUserMessage } from '$lib/services/api';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => {
@@ -13,19 +13,24 @@ export const actions: Actions = {
     const password = formData.get('password') as string;
 
     if (!whatsapp_number || !password) {
-      return fail(400, { message: 'Please fill in all fields' });
+      return fail(400, { message: 'Enter your WhatsApp number and password.' });
     }
 
     let data: { success?: boolean; token?: string; user?: unknown; error?: { message?: string } };
     try {
       data = await post('/auth/login', { whatsapp_number, password }, fetch);
     } catch (err) {
+      // The API client throws on 4xx and on `success: false`; a wrong
+      // password arrives here, so show the backend's message, not a 500.
+      if (err instanceof ApiError && err.status > 0 && err.status < 500) {
+        return fail(401, { message: toUserMessage(err, 'That number and password do not match.') });
+      }
       console.error('Login error:', err);
-      return fail(500, { message: 'An error occurred during login' });
+      return fail(500, { message: toUserMessage(err, 'We could not sign you in. Try again in a moment.') });
     }
 
     if (!data.success || !data.token) {
-      return fail(401, { message: data.error?.message || 'Invalid credentials' });
+      return fail(401, { message: data.error?.message || 'That number and password do not match.' });
     }
 
     // 30-day session cookies. Token is non-httpOnly so the SPA can attach it
