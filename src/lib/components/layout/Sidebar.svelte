@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { goto } from '$app/navigation';
-	import { auth, logout } from '$lib/stores/auth';
-	import { toast } from '$lib/stores/toast';
+	import { auth } from '$lib/stores/auth';
+	import { signOut } from '$lib/services/sign-out';
+	import { formatWhatsappDisplay } from '$lib/utils/phone';
 	import { Plus, LogOut, Settings } from 'lucide-svelte';
 	import Logo from './Logo.svelte';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
@@ -12,12 +12,6 @@
 	import { APP_NAV, isActive } from './nav';
 
 	let { class: className }: { class?: string } = $props();
-
-	async function handleLogout() {
-		logout();
-		toast.success('Signed out.');
-		await goto('/', { invalidateAll: true });
-	}
 
 	const item = 'flex h-11 items-center gap-3 rounded-pill px-4 text-[15px] font-semibold transition-colors duration-150';
 </script>
@@ -49,7 +43,7 @@
 				<Avatar size="sm" src={$auth.user.avatar_url} fullName={$auth.user.full_name} phoneNumber={$auth.user.whatsapp_number} identifier={$auth.user.user_id} />
 				<span class="min-w-0">
 					<span class="block truncate text-sm font-semibold text-ink">{getFirstName($auth.user.full_name, $auth.user.whatsapp_number)}</span>
-					<span class="block truncate text-xs text-ink-soft">{$auth.user.whatsapp_number}</span>
+					<span class="block truncate text-xs text-ink-soft tabular-nums">{formatWhatsappDisplay($auth.user.whatsapp_number)}</span>
 				</span>
 			</a>
 		{/if}
@@ -60,7 +54,7 @@
 		>
 			<Settings size={17} aria-hidden="true" /> Settings
 		</a>
-		<button type="button" onclick={handleLogout} class={cn(item, 'h-10 text-sm text-ink-soft hover:bg-mist hover:text-ink')}>
+		<button type="button" onclick={signOut} class={cn(item, 'h-10 text-sm text-ink-soft hover:bg-mist hover:text-ink')}>
 			<LogOut size={17} aria-hidden="true" /> Sign out
 		</button>
 	</div>
