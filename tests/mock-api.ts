@@ -257,7 +257,7 @@ const route = (method: string, pattern: string, h: Handler) => routes.push([meth
 
 // ── Auth ───────────────────────────────────────────────────────────────────
 route('POST', '/auth/login', ({ body }) => {
-	if (body.password === 'wrong') return [200, fail('AUTH_005', 'That number and password do not match.')];
+	if (body.password === 'wrong') return [401, fail('AUTH_005', 'That number and password do not match.')];
 	const key = body.whatsapp_number === USERS.empty.whatsapp_number ? 'empty' : 'host';
 	return [200, { success: true, token: USERS[key].token, user: publicUser(key) }];
 });
