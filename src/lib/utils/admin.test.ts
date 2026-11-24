@@ -3,13 +3,13 @@ import { gatewayState, renderTemplate, templateVariables, timeAgo } from './admi
 
 describe('gatewayState', () => {
 	it('reads connected as sending', () => {
-		expect(gatewayState({ is_connected: true, gateway_token_valid: true, phone_number: '62' })).toMatchObject({ label: 'Sending', healthy: true });
+		expect(gatewayState({ is_connected: true, gateway_token_valid: true, has_token: false, phone_number: '62' })).toMatchObject({ label: 'Sending', healthy: true });
 	});
 	it('a valid token without a device needs pairing', () => {
-		expect(gatewayState({ is_connected: false, gateway_token_valid: true, phone_number: '' })).toMatchObject({ label: 'Needs pairing', tone: 'pending' });
+		expect(gatewayState({ is_connected: false, gateway_token_valid: true, has_token: false, phone_number: '' })).toMatchObject({ label: 'Needs pairing', tone: 'pending' });
 	});
 	it('no token is not set up, and no status is unknown', () => {
-		expect(gatewayState({ is_connected: false, gateway_token_valid: false, phone_number: '' }).label).toBe('Not set up');
+		expect(gatewayState({ is_connected: false, gateway_token_valid: false, has_token: false, phone_number: '' }).label).toBe('Not set up');
 		expect(gatewayState(null).label).toBe('Unknown');
 	});
 });

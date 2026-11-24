@@ -535,9 +535,10 @@ route('PUT', '/admin/profile', ({ body }) => {
 	return [200, { admin_id: ADMIN.admin_id, full_name: adminName, message: 'Profile updated' }];
 });
 route('PUT', '/admin/profile/setup-password', () => [200, { success: true }]);
-route('GET', '/admin/status', () => [200, { is_connected: true, gateway_token_valid: true, phone_number: '+6289988776655', last_connected_at: hoursAgo(5), message: 'Connected' }]);
+route('GET', '/admin/status', () => [200, { is_connected: true, gateway_token_valid: true, phone_number: '+6289988776655', has_token: true, token_phone: '+6289988776655', token_expires_at: new Date(Date.now() + 365 * 86400_000).toISOString(), last_connected_at: hoursAgo(5), message: 'Connected' }]);
 // Real clock, not the fixture clock: a code must be fresh whenever it's asked for.
 route('POST', '/admin/qr-code', () => [200, { qr_code: placeholderImage('QR', 240, 240), qr_code_expires_at: new Date(Date.now() + 3 * 60_000).toISOString() }]);
+route('POST', '/admin/whatsapp/register', () => [200, { success: true, data: { phone_number: '6289988776655', token_expires_at: new Date(Date.now() + 365 * 86400_000).toISOString() } }]);
 route('PUT', '/admin/config', () => [200, { success: true }]);
 route('POST', '/admin/disconnect-device', () => [200, { connection_status: 'disconnected', message: 'Device disconnected' }]);
 route('POST', '/admin/logout', () => [200, { success: true }]);
