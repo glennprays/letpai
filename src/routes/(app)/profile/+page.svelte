@@ -133,7 +133,7 @@
 		{/if}
 
 		<AccountGroup title="More">
-			<AccountRow icon={Settings} label="Settings" detail="Reminders, currency and legal" href="/settings" />
+			<AccountRow icon={Settings} label="Settings" detail="Reminders and currency" href="/settings" />
 			<AccountRow icon={KeyRound} label="Change password" href="/forgot-password" />
 			<AccountRow icon={LogOut} label="Sign out" onclick={signOut} danger />
 		</AccountGroup>

@@ -46,12 +46,11 @@ src/routes/
 ├── payment/[token]/              Public guest payment page (no navbar, noindex)
 ├── admin/                        Control panel with its own ink chrome: login, setup, overview,
 │                                 whatsapp, templates, admins (super admin), profile
-├── tos/, privacy/, cookies/      LegalPage layout
 ├── dev/styleguide/               Component gallery (dev, or LETPAI_STYLEGUIDE=1)
 └── +error.svelte
 ```
 
-`src/lib/`: `components/{ui,art,layout,session,contacts,account,admin,legal}`, `services/` (API calls and
+`src/lib/`: `components/{ui,art,layout,session,contacts,account,admin}`, `services/` (API calls and
 pure list helpers), `stores/` (auth, toast), `utils/` (format, phone, status, seo, admin), `types/api.ts`,
 `constants/design.ts`.
 

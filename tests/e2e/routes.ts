@@ -5,9 +5,6 @@ export type Who = 'anon' | 'host' | 'empty' | 'admin';
 export const ROUTES: Array<{ name: string; path: string; who: Who }> = [
 	{ name: 'landing', path: '/', who: 'anon' },
 	{ name: 'about', path: '/about', who: 'anon' },
-	{ name: 'tos', path: '/tos', who: 'anon' },
-	{ name: 'privacy', path: '/privacy', who: 'anon' },
-	{ name: 'cookies', path: '/cookies', who: 'anon' },
 	{ name: 'error-404', path: '/this-page-does-not-exist', who: 'anon' },
 	{ name: 'login', path: '/login', who: 'anon' },
 	{ name: 'register', path: '/register', who: 'anon' },

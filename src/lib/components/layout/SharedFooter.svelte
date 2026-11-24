@@ -10,15 +10,7 @@
 				{ label: 'Sign in', href: '/login' }
 			]
 		},
-		{ title: 'Company', links: [{ label: 'About', href: '/about' }] },
-		{
-			title: 'Legal',
-			links: [
-				{ label: 'Privacy', href: '/privacy' },
-				{ label: 'Terms', href: '/tos' },
-				{ label: 'Cookies', href: '/cookies' }
-			]
-		}
+		{ title: 'Company', links: [{ label: 'About', href: '/about' }] }
 	];
 	const year = new Date().getFullYear();
 </script>
@@ -28,7 +20,7 @@
 <footer class="mt-16 text-ink">
 	<div class="mx-auto max-w-6xl px-5 pb-10 sm:px-6">
 		<div class="border-t-[1.5px] border-dashed border-hairline pt-10"></div>
-		<div class="grid gap-10 sm:grid-cols-[1.6fr_repeat(3,1fr)]">
+		<div class="grid gap-10 sm:grid-cols-[1.6fr_repeat(2,1fr)]">
 			<div>
 				<Logo size="sm" />
 				<p class="mt-3 max-w-[30ch] text-sm text-ink-soft">You paid. They pay you back. Bill splitting with WhatsApp reminders.</p>

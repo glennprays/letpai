@@ -44,17 +44,14 @@ test('a new account without a name gets a one-field welcome step', async ({ page
 	await expect(page).toHaveURL(/\/dashboard$/);
 });
 
-test('settings lists account, facts and legal links', async ({ page, context }, testInfo) => {
+test('settings lists account and facts', async ({ page, context }, testInfo) => {
 	await loginAs(context, 'host');
 	await page.goto('/settings');
 	const main = page.getByRole('main');
 	await expect(main.getByRole('link', { name: /^Profile/ })).toContainText('Raka Pratama');
 	await expect(page.getByRole('region', { name: 'How Letpai works for you' })).toContainText('IDR');
 	for (const [name, href] of [
-		['Change password', '/forgot-password'],
-		['Terms of service', '/tos'],
-		['Privacy policy', '/privacy'],
-		['Cookies', '/cookies']
+		['Change password', '/forgot-password']
 	]) {
 		await expect(main.getByRole('link', { name: new RegExp(`^${name}`) })).toHaveAttribute('href', href);
 	}

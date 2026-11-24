@@ -99,7 +99,6 @@ Use these before writing markup. Each is demonstrated at `/dev/styleguide`
 | Art | `components/art` (receipt, satay, phone, coin, helmet, Paid stamp): flat, palette-only, `aria-hidden` |
 | Account rows | `account/AccountGroup` + `account/AccountRow` |
 | Admin | `admin/AdminHeader`, `admin/AdminAuthCard` |
-| Legal | `legal/LegalPage` |
 
 ## Interaction
 

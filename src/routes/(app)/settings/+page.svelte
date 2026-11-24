@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { BellRing, CircleUserRound, Coins, Cookie, FileText, KeyRound, LogOut, ShieldCheck } from 'lucide-svelte';
+	import { BellRing, CircleUserRound, Coins, KeyRound, LogOut } from 'lucide-svelte';
 	import Seo from '$lib/components/Seo.svelte';
 	import AccountGroup from '$lib/components/account/AccountGroup.svelte';
 	import AccountRow from '$lib/components/account/AccountRow.svelte';
@@ -27,12 +27,6 @@
 	<AccountGroup title="How Letpai works for you" note="These are fixed for now. Tell us if you need them changed.">
 		<AccountRow icon={BellRing} label="Reminders" detail="You send them. Each person gets at most one a day." />
 		<AccountRow icon={Coins} label="Currency" detail="Used for every session and payment link." value="IDR" />
-	</AccountGroup>
-
-	<AccountGroup title="Legal">
-		<AccountRow icon={FileText} label="Terms of service" href="/tos" />
-		<AccountRow icon={ShieldCheck} label="Privacy policy" href="/privacy" />
-		<AccountRow icon={Cookie} label="Cookies" href="/cookies" />
 	</AccountGroup>
 
 	<AccountGroup title="This device">

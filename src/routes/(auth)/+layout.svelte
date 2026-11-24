@@ -21,12 +21,5 @@
 		<div class="rounded-sheet bg-card p-6 shadow-float sm:p-8">
 			{@render children()}
 		</div>
-		<p class="mt-5 text-center text-[13px] text-ink-soft">
-			<a href="/tos" class="hover:text-ink">Terms</a>
-			<span class="mx-2" aria-hidden="true">·</span>
-			<a href="/privacy" class="hover:text-ink">Privacy</a>
-			<span class="mx-2" aria-hidden="true">·</span>
-			<a href="/cookies" class="hover:text-ink">Cookies</a>
-		</p>
 	</main>
 </div>
