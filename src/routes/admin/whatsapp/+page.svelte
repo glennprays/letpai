@@ -5,8 +5,15 @@
 	import AdminHeader from '$lib/components/admin/AdminHeader.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
+	import PhoneInput from '$lib/components/ui/PhoneInput.svelte';
 	import StatusPill from '$lib/components/ui/StatusPill.svelte';
-	import { generateQRCode, getWhatsAppStatus, type QRCodeResponse, type WhatsAppStatus } from '$lib/services/admin';
+	import {
+		generateQRCode,
+		getWhatsAppStatus,
+		registerGatewayPhone,
+		type QRCodeResponse,
+		type WhatsAppStatus
+	} from '$lib/services/admin';
 	import { toUserMessage } from '$lib/services/api';
 	import { gatewayState, timeAgo } from '$lib/utils/admin';
 	import { formatWhatsappDisplay } from '$lib/utils/phone';
@@ -22,6 +29,12 @@
 	let qrLoading = $state(false);
 	let qrError = $state('');
 	let now = $state(Date.now());
+
+	// Phone registration step: shown until a gateway JWT exists.
+	let regPhone = $state('');
+	let regLoading = $state(false);
+	let regError = $state('');
+	const needsRegistration = $derived(status === null || status.has_token !== true);
 
 	const gateway = $derived(gatewayState(status));
 	const connected = $derived(status?.is_connected === true);
@@ -68,6 +81,21 @@
 		}
 	}
 
+	async function register() {
+		regError = '';
+		regLoading = true;
+		try {
+			await registerGatewayPhone(regPhone);
+			// Refresh status (now has_token) and jump straight to pairing.
+			status = await getWhatsAppStatus();
+			await pair();
+		} catch (err) {
+			regError = toUserMessage(err, "The gateway didn't accept that number. Try again.");
+		} finally {
+			regLoading = false;
+		}
+	}
+
 	const mmss = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 </script>
 
@@ -90,20 +118,34 @@
 			<dl class="mt-5 grid grid-cols-2 gap-4 text-sm">
 				<div>
 					<dt class="text-ink-soft">Sending from</dt>
-					<dd class="mt-0.5 font-semibold text-ink tabular-nums">{status?.phone_number ? formatWhatsappDisplay(status.phone_number) : '—'}</dd>
+					<dd class="mt-0.5 font-semibold text-ink tabular-nums">{status?.token_phone || status?.phone_number ? formatWhatsappDisplay(status?.token_phone || status?.phone_number || '') : '—'}</dd>
 				</div>
 				<div>
 					<dt class="text-ink-soft">Last connected</dt>
 					<dd class="mt-0.5 font-semibold text-ink">{timeAgo(status?.last_connected_at)}</dd>
 				</div>
 			</dl>
+			{#if status?.token_expires_at}
+				<p class="mt-3 text-sm text-ink-soft">
+					Token expires <strong class="text-ink">{new Date(status.token_expires_at).toLocaleDateString('en-ID', { year: 'numeric', month: 'short', day: 'numeric' })}</strong>
+				</p>
+			{/if}
 			{#if refreshError}<p class="mt-4 text-sm text-rejected" role="alert">{refreshError}</p>{/if}
 		</section>
 	</Card>
 
 	<Card>
 		<section aria-labelledby="gw-pair">
-			<h2 id="gw-pair" class="text-heading text-lg">{status?.is_connected ? 'Link a different phone' : 'Link a phone'}</h2>
+			{#if needsRegistration}
+				<h2 id="gw-pair" class="text-heading text-lg">Connect WhatsApp</h2>
+				<p class="mt-3 text-sm text-ink">Enter the WhatsApp number this workspace sends from. We'll register it with the gateway, then link the phone here.</p>
+				<form class="mt-5 flex flex-col gap-4" onsubmit={(e) => { e.preventDefault(); register(); }}>
+					<PhoneInput bind:value={regPhone} label="WhatsApp number" helperText="This is where bills, reminders and sign-in codes come from." />
+					{#if regError}<p class="text-sm text-rejected" role="alert">{regError}</p>{/if}
+					<Button type="submit" variant="ink" loading={regLoading} disabled={!regPhone}>Connect WhatsApp</Button>
+				</form>
+			{:else}
+				<h2 id="gw-pair" class="text-heading text-lg">{status?.is_connected ? 'Link a different phone' : 'Link a phone'}</h2>
 			<ol class="mt-3 flex flex-col gap-2 text-sm text-ink">
 				{#each ['Show a code here.', 'On the sending phone, open WhatsApp → Settings → Linked devices → Link a device.', 'Scan the code. This page updates by itself once it links.'] as stepText, i (i)}
 					<li class="flex gap-3">
@@ -136,14 +178,15 @@
 			<Button class="mt-5" variant={status?.is_connected ? 'secondary' : 'ink'} leftIcon={QrCode} loading={qrLoading} onclick={pair}>
 				{qr ? 'Show a new code' : 'Show pairing code'}
 			</Button>
+			{/if}
 		</section>
 	</Card>
 </div>
 
 <section class="mt-4 rounded-card bg-mist p-5 text-sm text-ink-soft" aria-labelledby="gw-token">
-	<h2 id="gw-token" class="font-semibold text-ink">Changing the gateway token</h2>
+	<h2 id="gw-token" class="font-semibold text-ink">How the connection works</h2>
 	<p class="mt-1">
-		Set <code class="rounded-sm bg-card px-1.5 py-0.5 font-mono text-[13px] text-ink">WHATSAPP_API_KEY</code> in the backend's
-		<code class="rounded-sm bg-card px-1.5 py-0.5 font-mono text-[13px] text-ink">.env</code> and restart it. The token decides which phone number messages come from.
+		Registering a number above mints a gateway token that lasts about a year. The backend stores it
+		encrypted and renews the setup when the number changes. No env edit needed.
 	</p>
 </section>

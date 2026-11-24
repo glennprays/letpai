@@ -29,6 +29,12 @@ export interface WhatsAppStatus {
 	is_connected: boolean;
 	gateway_token_valid: boolean;
 	phone_number: string;
+	/** A gateway JWT is stored (the admin registered a phone). */
+	has_token: boolean;
+	/** Phone this workspace sends from, as stored at registration. */
+	token_phone?: string;
+	/** ISO timestamp of the stored JWT's exp claim. */
+	token_expires_at?: string;
 	last_connected_at?: string;
 	message?: string;
 }
@@ -138,15 +144,36 @@ export async function getWhatsAppStatus(
 	return get('/admin/status', customFetch, serverToken);
 }
 
-// No phone parameter: WAGA's JWT (configured via WHATSAPP_API_KEY on
-// the backend) is bound to the phone that originally registered with
-// the gateway, and the SDK derives the phone from the bearer token on
-// every call. Asking the admin to retype it was app-layer ceremony.
+// The gateway JWT is minted by the backend when the admin registers a
+// phone (registerGatewayPhone); generateQRCode pairs whatever phone is
+// in that stored token.
 export async function generateQRCode(
 	customFetch?: typeof fetch,
 	serverToken?: string
 ): Promise<QRCodeResponse> {
 	return post('/admin/qr-code', {}, customFetch, serverToken);
+}
+
+export interface RegisterGatewayResponse {
+	phone_number: string;
+	token_expires_at?: string;
+}
+
+// Register the WhatsApp number this workspace sends from. The backend
+// mints a gateway JWT for it, stores the JWT encrypted, and returns
+// its expiry. Call pair()/generateQRCode right after to link the device.
+export async function registerGatewayPhone(
+	phone_number: string,
+	customFetch?: typeof fetch,
+	serverToken?: string
+): Promise<RegisterGatewayResponse> {
+	const res = (await post(
+		'/admin/whatsapp/register',
+		{ phone_number },
+		customFetch,
+		serverToken
+	)) as { success: boolean; data: RegisterGatewayResponse };
+	return res.data;
 }
 
 export async function updateWhatsAppConfig(
