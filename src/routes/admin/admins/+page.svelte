@@ -123,11 +123,11 @@
 	<ul class="mt-6 divide-y divide-mist overflow-hidden rounded-card bg-card shadow-raised">
 		{#each admins as a (a.admin_id)}
 			{@const self = a.admin_id === data.profile?.admin_id}
-			<li class="flex items-center gap-3 px-4 py-3 sm:px-5" class:opacity-60={!a.is_active} data-testid="admin-row" aria-busy={busyId === a.admin_id}>
+			<li class="flex items-center gap-3 px-4 py-3 sm:px-5" data-testid="admin-row" aria-busy={busyId === a.admin_id}>
 				<Avatar size="md" fullName={a.full_name} phoneNumber={a.whatsapp_number} identifier={a.admin_id} class="flex-none" />
 				<div class="min-w-0 flex-1">
 					<p class="flex items-center gap-2">
-						<span class="truncate font-semibold text-ink">{a.full_name}</span>
+						<span class={['truncate font-semibold', a.is_active ? 'text-ink' : 'text-ink-soft']}>{a.full_name}</span>
 						{#if self}<span class="flex-none rounded-pill bg-mist px-2 py-0.5 text-[11px] font-semibold text-ink-soft">You</span>{/if}
 					</p>
 					<p class="mt-0.5 text-sm whitespace-nowrap text-ink-soft tabular-nums">

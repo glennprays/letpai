@@ -23,10 +23,11 @@ describe('design tokens', () => {
 		for (const [key, value] of Object.entries(shadow)) expect(themeVar(`shadow-${key}`), key).toBe(value);
 	});
 
-	it('defines no colour in @theme that design.ts lacks (legacy aliases excepted)', () => {
-		const legacy = new Set(['primary', 'secondary', 'surface', 'on-surface', 'on-surface-variant']);
-		const names = [...theme.matchAll(/--color-([a-z-]+):\s*#/g)].map((m) => m[1]);
-		for (const n of names) if (!legacy.has(n)) expect(color, n).toHaveProperty(n);
+	it('defines no colour in @theme that design.ts lacks, and no aliases', () => {
+		const names = [...theme.matchAll(/--color-([a-z-]+):/g)].map((m) => m[1]);
+		expect(names.length).toBeGreaterThan(0);
+		for (const n of names) expect(color, n).toHaveProperty(n);
+		expect(theme).not.toMatch(/--color-[a-z-]+:\s*var\(/);
 	});
 });
 

@@ -536,7 +536,8 @@ route('PUT', '/admin/profile', ({ body }) => {
 });
 route('PUT', '/admin/profile/setup-password', () => [200, { success: true }]);
 route('GET', '/admin/status', () => [200, { is_connected: true, gateway_token_valid: true, phone_number: '+6289988776655', last_connected_at: hoursAgo(5), message: 'Connected' }]);
-route('POST', '/admin/qr-code', () => [200, { qr_code: placeholderImage('QR', 240, 240), qr_code_expires_at: hoursAgo(-0.05) }]);
+// Real clock, not the fixture clock: a code must be fresh whenever it's asked for.
+route('POST', '/admin/qr-code', () => [200, { qr_code: placeholderImage('QR', 240, 240), qr_code_expires_at: new Date(Date.now() + 3 * 60_000).toISOString() }]);
 route('PUT', '/admin/config', () => [200, { success: true }]);
 route('POST', '/admin/disconnect-device', () => [200, { connection_status: 'disconnected', message: 'Device disconnected' }]);
 route('POST', '/admin/logout', () => [200, { success: true }]);

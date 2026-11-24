@@ -217,7 +217,8 @@
 			{#if description.trim()}<p class="mt-2 text-[15px] text-ink-soft [overflow-wrap:anywhere]">{description}</p>{/if}
 			<div class="my-4 border-t-[1.5px] border-dashed border-hairline"></div>
 			<p class="text-[13px] text-ink-soft">Your share</p>
-			<p class="text-amount text-3xl text-hairline">{currency === 'IDR' ? 'Rp' : currency} —</p>
+			<!-- Placeholder amount: ink-soft, not hairline, so it still passes contrast. -->
+			<p class="text-amount text-3xl text-ink-soft">{currency === 'IDR' ? 'Rp' : currency} —</p>
 			{#each bankRows.filter((r) => r.bank_name || r.account_number) as r, i (i)}
 				<div class="mt-4 rounded-field bg-fog px-3 py-2">
 					<p class="text-[12px] text-ink-soft">{r.bank_name || 'Bank'}{r.account_holder ? ` · ${r.account_holder}` : ''}</p>

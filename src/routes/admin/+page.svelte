@@ -66,7 +66,7 @@
 </section>
 
 <div class="mt-6 grid gap-4 md:grid-cols-2">
-	<Card href="/admin/whatsapp" label="WhatsApp gateway">
+	<Card href="/admin/whatsapp">
 		<div class="flex items-start justify-between gap-3">
 			<MessageCircle size={20} class="text-ink-soft" aria-hidden="true" />
 			<StatusPill tone={gateway.tone}>{gateway.label}</StatusPill>
@@ -80,14 +80,14 @@
 		{/if}
 	</Card>
 
-	<Card href="/admin/templates" label="Message templates">
+	<Card href="/admin/templates">
 		<FileText size={20} class="text-ink-soft" aria-hidden="true" />
 		<h2 class="text-heading mt-4 text-lg">Message templates</h2>
 		<p class="mt-1 text-sm text-ink-soft">The WhatsApp texts for new bills, reminders and sign-in codes. Preview and test before saving.</p>
 	</Card>
 
 	{#if isSuper}
-		<Card href="/admin/admins" label="Admin team">
+		<Card href="/admin/admins">
 			<Users size={20} class="text-ink-soft" aria-hidden="true" />
 			<h2 class="text-heading mt-4 text-lg">Admin team</h2>
 			{#if data.admins}

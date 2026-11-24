@@ -141,10 +141,10 @@
 			{#each rows as row (row.id)}
 				<li>
 					{#if row.existing}
-						<div class="flex items-center gap-3 px-4 py-2.5 opacity-60">
+						<div class="flex items-center gap-3 bg-fog/60 px-4 py-2.5">
 							<CircleCheck size={22} class="flex-none text-ink-soft" aria-hidden="true" />
 							<span class="min-w-0 flex-1">
-								<span class="block truncate font-medium text-ink">{row.name}</span>
+								<span class="block truncate font-medium text-ink-soft">{row.name}</span>
 								<span class="text-sm text-ink-soft tabular-nums">{formatWhatsappDisplay(row.phone)} · already saved</span>
 							</span>
 						</div>

@@ -2,11 +2,11 @@
 
 > Split bills with friends via WhatsApp
 
-Letpai is a bill splitting app that integrates with WhatsApp for seamless payment notifications and reminders. Create a session, add bill items, assign participants, and let everyone know what they owe — all through WhatsApp.
+Letpai splits a bill and collects the money over WhatsApp. Create a session, add the people and the items, and each person gets their share with a link to pay and upload proof. You approve it or send it back.
 
 ## Features
 
-- **Auth** — WhatsApp number + OTP login, JWT sessions
+- **Auth** — WhatsApp number + password, OTP on sign-up
 - **Sessions** — Create bill-splitting sessions with multiple bill items
 - **Smart Splits** — Per-item service charge & tax breakdown, fee-aware calculations
 - **Contacts** — Manage contacts, create groups, bulk import
@@ -21,7 +21,8 @@ Letpai is a bill splitting app that integrates with WhatsApp for seamless paymen
 | Framework | SvelteKit 2 |
 | UI | Svelte 5 (runes mode) |
 | Styling | Tailwind CSS v4 |
-| State | TanStack Query (Svelte) |
+| Data | SvelteKit load functions and form actions |
+| Tests | Vitest, Testing Library, Playwright |
 | Language | TypeScript |
 | Package Manager | pnpm |
 | Deployment | Docker (adapter-node) |
@@ -64,8 +65,8 @@ docker run -p 4001:3000 letpai-frontend
 src/
 ├── routes/           # SvelteKit file-based routing
 │   ├── (app)/       # Authenticated pages
-│   ├── (auth)/      # Login, Register, OTP
-│   ├── (admin)/     # Admin panel
+│   ├── (auth)/      # Login, Register (OTP), Forgot password
+│   ├── admin/       # Admin panel
 │   └── payment/     # Public payment page
 ├── lib/
 │   ├── components/  # Reusable UI components
@@ -73,6 +74,17 @@ src/
 │   ├── stores/      # Svelte stores
 │   ├── types/       # TypeScript types
 │   └── utils/       # Helpers (format, validation)
+```
+
+## Design and contributing
+
+- [`DESIGN.md`](DESIGN.md): the "Ink & Receipt" design system.
+- [`docs/VOICE.md`](docs/VOICE.md): how Letpai writes.
+- [`AGENTS.md`](AGENTS.md): conventions, commands and tests.
+
+```bash
+corepack pnpm check && npx vitest run
+./tests/serve.sh && PW_CHANNEL=chrome npx playwright test
 ```
 
 ## License
