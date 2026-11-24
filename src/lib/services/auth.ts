@@ -80,6 +80,19 @@ export async function updateProfile(data: { full_name?: string; avatar_url?: str
   return response;
 }
 
-export async function sendResetLink(data: { whatsapp_number: string }): Promise<{ success: boolean; message: string } | ErrorResponse> {
+export async function sendResetCode(data: { whatsapp_number: string }): Promise<{ success: boolean; message: string } | ErrorResponse> {
   return await post('/auth/forgot-password', data);
+}
+
+interface ResetPasswordResponse {
+  success: true;
+  message: string;
+}
+
+export async function resetPassword(data: { whatsapp_number: string; otp: string; new_password: string }): Promise<ResetPasswordResponse | ErrorResponse> {
+  return await post('/auth/reset-password', {
+    whatsapp_number: data.whatsapp_number,
+    otp_code: data.otp,
+    new_password: data.new_password
+  });
 }

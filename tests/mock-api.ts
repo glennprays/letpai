@@ -267,7 +267,11 @@ route('POST', '/auth/verify-otp', ({ body }) => {
 	return [200, { success: true, token: USERS.empty.token, user: publicUser('empty') }];
 });
 route('POST', '/auth/resend-otp', () => [200, ok({ expires_at: hoursAgo(-0.1) })]);
-route('POST', '/auth/forgot-password', () => [200, { success: true, message: 'Reset link sent to WhatsApp' }]);
+route('POST', '/auth/forgot-password', () => [200, { success: true, message: 'If that number is registered, we’ve sent a verification code.' }]);
+route('POST', '/auth/reset-password', ({ body }) => {
+	if (body.otp_code === '000000') return [400, fail('OTP_INVALID', 'That code is not right. Check WhatsApp and try again.')];
+	return [200, { success: true, message: 'Password updated. You can now sign in with your new password.' }];
+});
 route('POST', '/auth/logout', () => [200, ok()]);
 route('PUT', '/auth/profile', ({ req, body }) => {
 	const key = userFor(req) ?? 'host';

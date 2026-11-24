@@ -1,5 +1,5 @@
 import type { Actions, PageServerLoad } from './$types';
-import { sendResetLink } from '$lib/services/auth';
+import { sendResetCode } from '$lib/services/auth';
 import { fail } from '@sveltejs/kit';
 
 export const load: PageServerLoad = async ({ locals }) => {
@@ -18,18 +18,18 @@ export const actions: Actions = {
 		}
 
 		try {
-			const response = await sendResetLink({ whatsapp_number });
+			const response = await sendResetCode({ whatsapp_number });
 
 			if ('success' in response && response.success) {
-				return { success: true, message: response.message || 'Reset link sent' };
+				return { success: true, message: response.message || 'Verification code sent' };
 			} else {
 				return fail(400, {
-					message: ('error' in response && response.error?.message) || 'Failed to send reset link',
+					message: ('error' in response && response.error?.message) || 'Failed to send verification code',
 					whatsapp_number
 				});
 			}
 		} catch (error) {
-			console.error('Send reset link error:', error);
+			console.error('Send reset code error:', error);
 			return fail(500, {
 				message: 'An error occurred',
 				whatsapp_number
