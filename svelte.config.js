@@ -10,7 +10,7 @@ const config = {
 		// SvelteKit owns the CSP so it can add nonces/hashes for its own inline
 		// bootstrap script. The previous <meta> CSP in app.html had no hash, so
 		// browsers blocked hydration and every page stayed non-interactive.
-		// connect-src must include the deployed API origin (runtime-env.js
+		// connect-src must include the deployed API origin (/env.js
 		// sets the URL at container startup; `https:` covers deployed APIs).
 		csp: {
 			mode: 'auto',

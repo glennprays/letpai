@@ -20,3 +20,10 @@ for (const r of ROUTES) {
 		await expectNoErrors(errors.filter((e) => !(r.name === 'error-404' && e.includes('404'))));
 	});
 }
+
+test('browser config comes from the server env and is never cached', async ({ request }) => {
+	const res = await request.get('/env.js');
+	expect(res.status()).toBe(200);
+	expect(res.headers()['cache-control']).toBe('no-store');
+	expect(await res.text()).toMatch(/^window\.__env__ = \{"VITE_API_URL":"http:\/\/localhost:3000\/api\/v1"\};/);
+});
