@@ -34,6 +34,68 @@
 	let open = $state(false);
 	let root = $state<HTMLDivElement>();
 	let trigger = $state<HTMLButtonElement>();
+	let panel = $state<HTMLDivElement>();
+
+	// Popup geometry measured from the trigger, in viewport coordinates. The
+	// panel is portal-ed to <body> and fixed-positioned so no ancestor can
+	// clip it (list cards' overflow, the receipt's mask + drop-shadow filter)
+	// or offset it (transformed wrappers). The viewport clamp keeps the 240px
+	// panel on-screen however the trigger's row happens to wrap or align.
+	const MENU_WIDTH = 240;
+	const MENU_GAP = 6;
+	const EDGE = 8;
+	let menuX = $state(0);
+	let menuY = $state(0);
+
+	function place() {
+		const t = trigger;
+		if (!t) return;
+		const r = t.getBoundingClientRect();
+		const vw = document.documentElement.clientWidth;
+		const height = panel?.offsetHeight ?? Math.min(items.length * 48 + 12, 288);
+
+		let x = align === 'right' ? r.right - MENU_WIDTH : r.left;
+		x = Math.max(EDGE, Math.min(x, vw - MENU_WIDTH - EDGE));
+
+		let y;
+		if (side === 'top') {
+			// `top` styles the panel's top edge, so subtract its height to keep
+			// the panel's bottom 6px above the trigger.
+			y = r.top - height - MENU_GAP;
+		} else {
+			y = r.bottom + MENU_GAP;
+			// Flip above when the panel would spill past the bottom edge and
+			// there is genuinely more room above the trigger.
+			if (y + height > window.innerHeight - EDGE && r.top - height - MENU_GAP > EDGE) {
+				y = r.top - height - MENU_GAP;
+			}
+		}
+
+		menuX = x;
+		menuY = y;
+	}
+
+	/** Move the rendered panel to <body> so clipping/containing ancestors can't touch it. */
+	function portal(node: HTMLDivElement) {
+		document.body.appendChild(node);
+		return {
+			destroy() {
+				node.remove();
+			}
+		};
+	}
+
+	$effect(() => {
+		if (!open) return;
+		place();
+		// Captured scroll: any scrollable ancestor re-anchors the trigger.
+		window.addEventListener('scroll', place, true);
+		window.addEventListener('resize', place);
+		return () => {
+			window.removeEventListener('scroll', place, true);
+			window.removeEventListener('resize', place);
+		};
+	});
 
 	function close(focusTrigger = false) {
 		open = false;
@@ -42,10 +104,12 @@
 
 	$effect(() => {
 		if (!open) return;
-		const first = root?.querySelector<HTMLElement>('[role="menuitem"]:not([aria-disabled="true"])');
+		const first = panel?.querySelector<HTMLElement>('[role="menuitem"]:not([aria-disabled="true"])');
 		first?.focus();
 		const onDoc = (e: MouseEvent) => {
-			if (root && !root.contains(e.target as Node)) close();
+			const target = e.target as Node;
+			if (root?.contains(target) || panel?.contains(target)) return;
+			close();
 		};
 		document.addEventListener('click', onDoc);
 		return () => document.removeEventListener('click', onDoc);
@@ -53,7 +117,7 @@
 
 	function onkeydown(e: KeyboardEvent) {
 		if (!open) return;
-		const els = [...(root?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? [])];
+		const els = [...(panel?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? [])];
 		const i = els.indexOf(document.activeElement as HTMLElement);
 		if (e.key === 'Escape') {
 			e.preventDefault();
@@ -104,15 +168,17 @@
 	</button>
 	{#if open}
 		<div
+			bind:this={panel}
+			use:portal
 			id="{uid}-menu"
 			role="menu"
 			aria-label={label}
-			class={cn(
-				'absolute z-40 max-h-72 w-60 overflow-y-auto rounded-card bg-card p-1.5 shadow-pop',
-				side === 'top' ? 'bottom-[calc(100%+6px)]' : 'top-[calc(100%+6px)]',
-				align === 'right' ? 'right-0' : 'left-0'
-			)}
-			in:fly={{ y: side === "top" ? 4 : -4, duration: 120 }}
+			tabindex="-1"
+			class="fixed z-[60] max-h-72 w-60 overflow-y-auto rounded-card bg-card p-1.5 shadow-pop"
+			style:left="{menuX}px"
+			style:top="{menuY}px"
+			{onkeydown}
+			in:fly={{ y: side === 'top' ? 4 : -4, duration: 120 }}
 		>
 			{#each items as item, i (i)}
 				{@const Icon = item.icon}

@@ -26,6 +26,7 @@
 			{@const active = isActive(nav.href, page.url.pathname)}
 			<a
 				href={nav.href}
+				data-sveltekit-preload-data="hover"
 				aria-current={active ? 'page' : undefined}
 				class={cn(item, active ? 'bg-card text-ink shadow-raised' : 'text-ink-soft hover:bg-mist hover:text-ink')}
 			>
@@ -35,11 +36,11 @@
 		{/each}
 	</nav>
 
-	<Button href="/sessions/new" leftIcon={Plus} class="mt-5 w-full">New session</Button>
+	<Button href="/sessions/new" data-sveltekit-preload-data="hover" leftIcon={Plus} class="mt-5 w-full">New session</Button>
 
 	<div class="mt-auto flex flex-col gap-1">
 		{#if $auth.user}
-			<a href="/profile" class="mb-2 flex items-center gap-3 rounded-card px-3 py-2 transition-colors hover:bg-mist">
+			<a href="/profile" data-sveltekit-preload-data="hover" class="mb-2 flex items-center gap-3 rounded-card px-3 py-2 transition-colors hover:bg-mist">
 				<Avatar size="sm" src={$auth.user.avatar_url} fullName={$auth.user.full_name} phoneNumber={$auth.user.whatsapp_number} identifier={$auth.user.user_id} />
 				<span class="min-w-0">
 					<span class="block truncate text-sm font-semibold text-ink">{getFirstName($auth.user.full_name, $auth.user.whatsapp_number)}</span>
@@ -49,6 +50,7 @@
 		{/if}
 		<a
 			href="/settings"
+			data-sveltekit-preload-data="hover"
 			aria-current={page.url.pathname === '/settings' ? 'page' : undefined}
 			class={cn(item, 'h-10 text-sm', page.url.pathname === '/settings' ? 'bg-card text-ink shadow-raised' : 'text-ink-soft hover:bg-mist hover:text-ink')}
 		>
