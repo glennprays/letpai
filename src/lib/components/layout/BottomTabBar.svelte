@@ -17,6 +17,7 @@
 	{@const active = isActive(nav.href, page.url.pathname)}
 	<a
 		href={nav.href}
+		data-sveltekit-preload-data="tap"
 		aria-current={active ? 'page' : undefined}
 		class={cn(
 			'flex min-h-12 flex-1 flex-col items-center justify-center gap-0.5 rounded-sheet text-[11px] font-semibold transition-colors',
@@ -36,6 +37,7 @@
 		{#each left as nav (nav.href)}{@render tab(nav)}{/each}
 		<a
 			href="/sessions/new"
+			data-sveltekit-preload-data="tap"
 			aria-label="New session"
 			aria-current={page.url.pathname === '/sessions/new' ? 'page' : undefined}
 			class="mx-1 grid size-12 flex-none place-items-center rounded-full bg-coral text-card transition-colors hover:bg-coral-hover active:scale-95"
